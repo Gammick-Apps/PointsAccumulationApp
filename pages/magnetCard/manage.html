@@ -27,6 +27,8 @@
         var isInitialLoadTasks = true;
         var isInitialLoadProducts = true;
 
+        var printSwitch;
+
         var gridOptions
         var columnDefs = [
             { headerName: "כיתה", field: "grade", editable: true },
@@ -93,8 +95,11 @@
                 swich_sec = document.getElementById("swich-sec");
                 systemConfig.hasBuy != 1 ?
                     swich_sec.style.display = 'none' :
-                    swich.checked = systemConfig.buy
-                showLabel()
+                    swich.checked = systemConfig.buy;
+                printSwitch = document.getElementById("print-switch");
+                printSwitch.checked = systemConfig.hasPrint == "1" ? true : false;
+                showLabel();
+                showPrintLabel();
                 fileName = 'uniqTasks'
                 window.expose.SendExcel("sendReadExcel", fileName);
                 window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
@@ -150,7 +155,7 @@
                 defaultColDef: {
                     sortable: true,
                 },
-                 onCellClicked: cellClickedTask,
+                onCellClicked: cellClickedTask,
                 onCellEditingStopped: editTask,
                 onRowSelected: onTaskRowSelected,
                 onFirstDataRendered: onTasksFirstRendered,
@@ -348,10 +353,28 @@
             });
         }
 
+        function printChange() {
+            updatePrintConfig();
+            showPrintLabel();
+        }
+
+        function updatePrintConfig() {
+            systemConfig.hasPrint = printSwitch.checked ? "1" : "0";
+            fileName = 'systemConfig';
+            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(systemConfig)]);
+            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => { });
+        }
+
         function showLabel() {
             swich.checked ?
                 document.querySelector(".form-check-label").innerHTML = 'מצב קנייה פעיל' :
                 document.querySelector(".form-check-label").innerHTML = 'מצב צבירת נקודות פעיל';
+        }
+
+        function showPrintLabel() {
+            printSwitch.checked ?
+                document.querySelector(".form-print-label").innerHTML = 'הדפסת קבלה פעילה' :
+                document.querySelector(".form-print-label").innerHTML = 'הדפסת קבלה לא פעילה';
         }
 
     </script>
@@ -368,6 +391,11 @@
                         <input class="form-check-input" type="checkbox" role="switch" id="swich"
                             onchange="swichChange()">
                         <label class="form-check-label" for="swich"></label>
+                    </div>
+                    <div class="form-check form-switch mb-2" id="print-switch-sec">
+                        <input class="form-check-input" type="checkbox" role="switch" id="print-switch"
+                            onchange="printChange()">
+                        <label class="form-print-label" for="print-switch"></label>
                     </div>
                     <div id="tasksSec" class="h-50 mb-2" style="text-align: right; visibility: hidden;">
                         <label> רשימת המשימות</label>
