@@ -14,6 +14,7 @@
         var fileName
 
         function onLoad() {
+            debugger
             fileName = 'systemConfig'
             window.expose.SendExcel("sendReadExcel", fileName);
             window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
@@ -25,7 +26,7 @@
                 }
                 if (currentDate > systemConfig.date)
                     login('expired')
-                else if (systemConfig.device == 2 || systemConfig.device == 4 || systemConfig.device == "1" && systemConfig.buy == 1)
+                else if (systemConfig.device == 2 || systemConfig.device == 4 || systemConfig.device == "1" && systemConfig.type == "2")
                     login("../magnetCard/user")
                 else if (systemConfig.device == 1)
                     login("../barcode/user")
