@@ -26,7 +26,7 @@
                 }
                 if (currentDate > systemConfig.date)
                     login('expired')
-                else if (systemConfig.device == 2 || systemConfig.device == 4 || systemConfig.device == "1" && systemConfig.type == "2")
+                else if (systemConfig.device == 2 || systemConfig.device == 4 || systemConfig.device == "1" && (systemConfig.type == "2" || systemConfig.buy == "1"))
                     login("../magnetCard/user")
                 else if (systemConfig.device == 1)
                     login("../barcode/user")

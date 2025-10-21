@@ -104,7 +104,7 @@
                 window.expose.SendExcel("sendReadExcel", fileName);
                 window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
                     if (data != 0) {
-                        if (systemConfig.device != "1") {
+                        if (systemConfig.device != "1" || (systemConfig.device == "1" && systemConfig.type =="2") ) {
                             uniqTasks = JSON.parse(data)
                             createTasksGrid()
                         }

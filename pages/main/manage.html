@@ -22,7 +22,7 @@
                 else {
                     systemConfig = JSON.parse(data)
                 }
-                if (systemConfig.device == 2 || systemConfig.device == 4 || systemConfig.device == 1 && systemConfig.hasBuy == "1")
+                if (systemConfig.device == 2 || systemConfig.device == 4 || systemConfig.device == 1 && (systemConfig.hasBuy == "1" || systemConfig.type=="2" ))
                     login("../magnetCard/manage")
                 else if (systemConfig.device == 1)
                     login("../barcode/manage")
