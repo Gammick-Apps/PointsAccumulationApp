@@ -34,7 +34,7 @@
 
     function onLoad() {
       step = Steps.step1;
-      updateLines("!...שלום", "יש לתקף את הכרטיס האישי בסורק הברקוד") 
+      // updateLines("!...שלום", "יש לתקף את הכרטיס האישי בסורק הברקוד") 
       fileName = 'systemConfig'
       window.expose.SendExcel("sendReadExcel", fileName);
       window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
@@ -111,7 +111,7 @@
         return;
       }
       document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step)
-      updateLines("(: שלום  " + studentResult.name, "יש לסרוק את הברקוד לעדכון משימה","עד כה צברת " + studentResult.points + " נקודות") 
+      updateLines("(: שלום  " + studentResult.name, "לחצי לבחירת האפשרות המתאימה") 
     }
 
     function updateTask() {
@@ -170,13 +170,13 @@
           window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => { });
         }
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
-        updateLines( "ביצעת את משימה" + " " + result.name, " כעת יש בחשבונך " + studentResult.points + " נקודות ","...לא לשכוח לקחת את האישור מהמדפסת") 
+        updateLines( "!"+result.name,"הלב שלך דופק היום בקצב אחר, נוספו לך "+result.points+" פעימות של חיים", " סך הפעימות בליבך נכון לעכשיו: " + studentResult.points + " פעימות ") 
         if (systemConfig.hasPrint == 1)
           setTimeout(function () {
             toPrint();
-          }, 2000);
+          }, 5000);
         else
-          reset(2000);
+          reset(5000);
       });
     }
 
