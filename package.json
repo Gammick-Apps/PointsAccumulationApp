@@ -18,8 +18,8 @@
   "author": "Efrat Malka",
   "license": "CC0-1.0",
   "devDependencies": {
-    "electron": "^9.0.0",
-    "electron-builder": "^22.8.0",
+    "electron": "^37.4.0",
+    "electron-builder": "^26.0.12",
     "nodemon": "^2.0.0"
   },
   "dependencies": {
