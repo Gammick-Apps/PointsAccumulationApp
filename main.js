@@ -86,16 +86,22 @@ ipcMain.on("sendReadExcel", (event, args) => {
 });
 
 ipcMain.on("sendWriteExcel", (event, args) => {
+  console.log("strarting writeExcel with args:", args);
   if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
     try {
-      JSON.parse(args[1]);
-      fs.writeFile(args[0] + '.txt', args[1], err => {
-        if (err) {
-          console.error(err);
-        } else {
-          mainWindow.webContents.send("receiveWriteExcel" + args[0], 1);
-        }
-      });
+      const parsedData = JSON.parse(args[1]);
+      // Additional validation: ensure it's an array or object
+      if (typeof parsedData === 'object' && parsedData !== null) {
+        fs.writeFile(args[0] + '.txt', args[1], err => {
+          if (err) {
+            console.error(err);
+          } else {
+            mainWindow.webContents.send("receiveWriteExcel" + args[0], 1);
+          }
+        });
+      } else {
+        console.error("Data must be an object or array:", parsedData);
+      }
     } catch (e) {
       console.error("Invalid JSON data:", e);
       mainWindow.webContents.send("receiveWriteExcel" + args[0], 0);
