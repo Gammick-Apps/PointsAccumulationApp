@@ -17,7 +17,6 @@ function createWindow() {
   mainWindow.loadFile('pages/main/user.html')
   mainWindow.menuBarVisible = false
   mainWindow.fullScreen = true;
-    mainWindow.menuBarVisible = true
 
   if (!app.isPackaged) {
     mainWindow.menuBarVisible = true
