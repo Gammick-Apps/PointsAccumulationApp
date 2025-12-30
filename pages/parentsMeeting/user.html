@@ -126,7 +126,7 @@
 
     function paretntStart() {
       step = Steps.step2;
-      updateLines(""," שלום " + result.name,"כתבי כאן כמה מילים טובות לביתך")
+      updateLines(""," שלום " +" אמא של "+ result.name,"כתבי כאן כמה מילים טובות לביתך")
       document.getElementById("line2").style.fontSize = "4.5vw"
       document.getElementById("text").style.top = "15%";
       document.getElementById("content").value = result.text ? result.text : ""
@@ -193,7 +193,7 @@
         <br>
         <div id="content">
           <div>${result.name}</div>
-          <div>${systemConfig.position}</div>
+          <div>${result.grade}</div>
           <div>${result.text || "הנחת ממך בוודאי אשמע, את הדש תקבלי בפעם הבאה!"}</div>
         </div>
         <br>
