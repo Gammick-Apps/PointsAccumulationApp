@@ -126,7 +126,7 @@
 
     function paretntStart() {
       step = Steps.step2;
-      updateLines(""," שלום " +" אמא של "+ result.name,"כתבי כאן כמה מילים טובות לביתך")
+      updateLines("", " שלום " + " אמא של " + result.name, "כתבי כאן כמה מילים טובות לביתך")
       document.getElementById("line2").style.fontSize = "4.5vw"
       document.getElementById("text").style.top = "15%";
       document.getElementById("content").value = result.text ? result.text : ""
@@ -135,7 +135,7 @@
 
     function studentStart() {
       step = Steps.step2;
-      updateLines("","שלום " + result.name,"!המכתב מאמא מודפס עכשיו. בהנאה");
+      updateLines("", "שלום " + result.name, "!המכתב מאמא מודפס עכשיו. בהנאה");
       setTimeout(function () {
         toPrint();
       }, 2500);
@@ -154,7 +154,7 @@
       window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
         document.getElementById("form").style.display = "none"
         document.getElementById("text").style.top = "30%";
-        updateLines("","!המכתב נשמר","...תודה רבה על שיתוף הפעולה")
+        updateLines("", "!המכתב נשמר", "...תודה רבה על שיתוף הפעולה")
         reset(2000);
       });
     }
@@ -255,8 +255,7 @@
     <div id="position">עמדה</div>
   </div>
 
-  <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel"
-    aria-hidden="true">
+  <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
