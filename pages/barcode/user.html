@@ -29,7 +29,8 @@
     const Steps = {
       step1: "1",
       step2: "2",
-      step3: "3"
+      step3: "3",
+      step4: "4"
     };
 
     function onLoad() {
@@ -91,6 +92,10 @@
             //משימה רגילה/כללית
             updateTask();
           }
+          else if (step == Steps.step3) {
+            //משימה חקקת
+            updateTaskSpecial();
+          }
         }
       } else {
         buffer += e.key;
@@ -110,7 +115,7 @@
         return;
       }
       document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step)
-      updateLines("(: שלום  " + studentResult.name, "לחצי לבחירת האפשרות המתאימה") 
+      updateLines("(: שלום  " + studentResult.name, "לחצי לבחירת האפשרות המתאימה")
     }
 
     function updateTask() {
@@ -137,6 +142,22 @@
           showAlert("הי, אסור להגיש משימה פעמיים!");
           return;
         }
+      finishSession()
+    }
+
+    function updateTaskSpecial() {
+      step = Steps.step4;
+      for (var i = 0; i < uniqTasks.length; i++) {
+        if (uniqTasks[i]["code"] == searchVal) {
+          result = uniqTasks[i]
+          break;
+        }
+      }
+      if (result == "") {
+        showAlert("קוד לא תקין, גשו למורה!")
+        return;
+      }
+
       finishSession()
     }
 
@@ -168,14 +189,21 @@
           window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(uniqTasks)]);
           window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => { });
         }
-        document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
-        updateLines( "!"+result.name,"הלב שלך דופק היום בקצב אחר, נוספו לך "+result.points+" פעימות של חיים", " סך הפעימות בליבך נכון לעכשיו: " + studentResult.points + " פעימות ") 
-        if (systemConfig.hasPrint == 1)
-          setTimeout(function () {
-            toPrint();
-          }, 5000);
-        else
-          reset(5000);
+        document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, "3");
+        if (step == Steps.step3)
+          updateLines("!" + result.name, "הלב שלך דופק היום בקצב אחר, נוספו לך " + result.points + " פעימות של חיים", " סך הפעימות בליבך נכון לעכשיו: " + studentResult.points + " פעימות ", "!חקקת גם על לוח ליבך? הוסיפי לך עוד פעימה")
+        else if (step == Steps.step4) {
+          if (result.code == '510000003') {
+            updateLines("!" + "אשרייך", "הלב שלך דופק היום בקצב מוגבר ", " סך הפעימות שלך כעת  : " + studentResult.points + " פעימות ")
+            reset(2500)
+          }
+          else {
+            updateLines("!" + "בהצלחה","")
+            reset(2500)
+          }
+        }
+
+
       });
     }
 
@@ -239,10 +267,11 @@
       }, time);
     }
 
-    function updateLines(line1Text, line2Text, line3Text = "") {
+    function updateLines(line1Text, line2Text, line3Text = "", line4Text = "") {
       document.getElementById("line1").innerHTML = line1Text;
       document.getElementById("line2").innerHTML = line2Text;
       document.getElementById("line3").innerHTML = line3Text;
+      document.getElementById("line4").innerHTML = line4Text;
     }
 
     function showAlert(message) {
@@ -266,6 +295,8 @@
       <div id="line1"></div>
       <div id="line2"></div>
       <div id="line3"></div>
+      <br>
+      <div id="line4"></div>
       <br><br>
     </div>
     <div id="position">עמדה</div>

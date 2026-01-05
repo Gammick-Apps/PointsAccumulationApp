@@ -16,9 +16,16 @@
 }
 
 #line2 {
-    font-size: 3vw;}
+    font-size: 3vw;
+}
 
 #line3 {
     font-size: 2vw;
 }
 
+#line4 {
+       font-size: 3vw;
+color: #f61cbc;
+    font-weight: 600;
+
+}
