@@ -128,7 +128,7 @@
       }
 
       if (systemConfig.type == "1") {
-        if (result.used == 1) {
+        if (result.used == 1 && result.code != "510000001" && result.code != "520000001") {
           showAlert("הי, משימה זו כבר תוקפה!");
           return;
         }
