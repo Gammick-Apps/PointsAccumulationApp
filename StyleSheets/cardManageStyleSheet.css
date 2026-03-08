@@ -2,7 +2,7 @@
     position: absolute;
     left: 4%;
     right: 4%;
-    top: 5%;
+    top: 2.5%;
     bottom: 10%;
     width: 92%;
     margin-right: auto;
@@ -20,6 +20,7 @@
     font-size: 1.5vw;
     font-weight: 300;
     text-align: center;
+
 }
 
 .ag-theme-alpine {
@@ -31,3 +32,9 @@
     direction: rtl;
 }
 
+.form-print-label,
+.form-check-input
+{
+    display: block;
+    margin-top: 20px; 
+}
