@@ -1,8 +1,8 @@
-﻿.text {
+﻿﻿.text {
     position: absolute;
     left: 10%;
     right: 10%;
-    top: 2.5%;
+    top: 10%;
     bottom: 10%;
     width: 30%;
     text-align: center;
