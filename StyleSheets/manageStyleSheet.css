@@ -2,7 +2,7 @@
     position: absolute;
     left: 10%;
     right: 10%;
-    top: 10%;
+    top: 2.5%;
     bottom: 10%;
     width: 80%;
     text-align: center;
@@ -17,7 +17,7 @@
 }
 
 #line2 {
-    font-size: 1vw;
+    font-size: 1.5vw;
     font-weight: 300;
 }
 

@@ -2,7 +2,7 @@
     position: absolute;
     left: 4%;
     right: 4%;
-    top: 5%;
+    top: 2.5%;
     bottom: 10%;
     width: 92%;
     margin-right: auto;
@@ -31,3 +31,9 @@
     direction: rtl;
 }
 
+.form-print-label,
+.form-check-input
+{
+    display: block;
+    margin-top: 100px; 
+}

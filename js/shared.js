@@ -34,8 +34,10 @@ function getBackground(device, color, step = "") {
                     return "url('../../resources/barcode/greenBackground" + step + ".gif')";
                 case "3":
                     return "url('../../resources/barcode/ravKavBackground.png')";
-                case "4":
+                case "4":                                      
                     return "url('../../personalBackground.png')";
+                case "5":
+                    return "url('../../resources/gammick/gammickBackground.png')";
             }
         };
         case "2":
@@ -48,10 +50,12 @@ function getBackground(device, color, step = "") {
                         return "url('../../resources/magnetCard/ravKavBackground.png')";
                     case "4":
                         return "url('../../personalBackground.png')";
+                     case "5":
+                        return "url('../../resources/gammick/gammickBackground.png')";
                 };
             };
-        case "3": {
-            return "url('../../resources/digitalCard/background" + step + ".gif')";
+        case "3":{     
+                return "url('../../resources/digitalCard/background" + step + ".gif')";
         };
     }
 }
@@ -65,6 +69,8 @@ function getPosition(color) {
         case "3":
         case "4":
             return ["#ffffff","#000000"];
+        case "5":
+            return ["#ffffff","#00eac8"];
     }
 }
 
@@ -74,6 +80,8 @@ function getTextColor(color) {
             return "#ffffff";
         case "1":
             return "#000000";
+        case "2":
+            return "#00eac8";
     }
 }
 
