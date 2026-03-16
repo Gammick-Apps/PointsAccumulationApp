@@ -60,24 +60,24 @@
                 else {
                     systemConfig = JSON.parse(data)
                 }
-                    fileName = 'personalBackground';
-                    window.expose.SendImage("getBackground", fileName);
-                    window.expose.receive("receiveGetBackground" + fileName, (data) => {
-                        if (data && data != 0) {
-                            document.getElementById("background").style.backgroundImage = 'url("data:image/png;base64,' + data + '")';
-                        } else {
-                            if (typeof getBackground === 'function') {
-                                document.getElementById("background").style.backgroundImage = getBackground("1", "1");
-                            }
+                fileName = 'personalBackground';
+                window.expose.SendImage("getBackground", fileName);
+                window.expose.receive("receiveGetBackground" + fileName, (data) => {
+                    if (data && data != 0) {
+                        document.getElementById("background").style.backgroundImage = 'url("data:image/png;base64,' + data + '")';
+                    } else {
+                        if (typeof getBackground === 'function') {
+                            document.getElementById("background").style.backgroundImage = getBackground("1", "1");
                         }
-                    });
+                    }
+                });
 
                 // תיקון: הגנה מפני מפתחות שקיימים באקסל אך לא ב-HTML (כמו customImg)
                 Object.entries(systemConfig).forEach(x => {
                     const key = x[0];
                     const value = x[1];
                     const element = document.getElementById(key);
-                    
+
                     if (key !== 'buy' && element !== null) {
                         element.value = value;
                     }
@@ -364,7 +364,7 @@
                             <option value="5">עיצוב Gammick </option>
                         </select>
                     </div>
-                    <div class="col-md-2" id="textColorWrapper" >
+                    <div class="col-md-2" id="textColorWrapper">
                         <label for="textColor" class="form-label"> צבע כיתוב</label>
                         <select class="form-control" id="textColor">
                             <option value="0">לבן</option>
