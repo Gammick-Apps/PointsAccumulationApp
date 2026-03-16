@@ -85,6 +85,21 @@ ipcMain.on("sendReadExcel", (event, args) => {
     });
 });
 
+ipcMain.on("getBackground", (event, args) => {
+  fs.readFile(args + '.png', { encoding: 'base64', flag: 'r' }, function (err, data) {
+    if (err) {
+      console.log("background read error", err);
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.send("receiveGetBackground" + args, 0);
+      }
+    } else {
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.send("receiveGetBackground" + args, data);
+      }
+    }
+  });
+});
+
 ipcMain.on("sendWriteExcel", (event, args) => {
   if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
     try {
