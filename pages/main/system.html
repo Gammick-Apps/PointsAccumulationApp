@@ -47,7 +47,7 @@
             const uploadBackgroundWrapper = document.getElementById('uploadBackgroundWrapper');
             const uploadBackground = document.getElementById('uploadBackground');
             const uploadTestsWrapper = document.getElementById('uploadTestsWrapper');
-            const uploadTests = document.getElementById('uploadTests'); // וודאי שזה תואם ל-ID למטה
+            const uploadTest = document.getElementById('uploadTest'); // וודאי שזה תואם ל-ID למטה
             const uploadPollsWrapper = document.getElementById('uploadPollsWrapper');
             const uploadPolls = document.getElementById('uploadPolls');
 
@@ -60,20 +60,24 @@
                 else {
                     systemConfig = JSON.parse(data)
                 }
-                fileName = 'personalBackground';
-                window.expose.SendImage("getBackground", fileName);
-                window.expose.receive("receiveGetBackground" + fileName, (data) => {
-                    if (data && data != 0) {
-                        document.getElementById("background").style.backgroundImage = 'url("data:image/png;base64,' + data + '")';
-                    } else {
-                        if (typeof getBackground === 'function') {
-                            document.getElementById("background").style.backgroundImage = getBackground("1", "1");
-                        }
-                    }
-                });
+                document.getElementById("background").style.backgroundImage = getBackground("1", "1");
+                // fileName = 'personalBackground';
+                // window.expose.SendImage("getBackground", fileName);
+                // window.expose.receive("receiveGetBackground" + fileName, (data) => {
+                //     if (data && data != 0) {
+                //         document.getElementById("background").style.backgroundImage = 'url("data:image/png;base64,' + data + '")';
+                //     } else {
+                //         if (typeof getBackground === 'function') {
+                //             document.getElementById("background").style.backgroundImage = getBackground("1", "1");
+                //         }
+                //     }
+                // });
 
                 // תיקון: הגנה מפני מפתחות שקיימים באקסל אך לא ב-HTML (כמו customImg)
                 Object.entries(systemConfig).forEach(x => {
+                //       if (x[0] != 'buy')
+                //         document.getElementById(x[0]).value = x[1]
+                // })
                     const key = x[0];
                     const value = x[1];
                     const element = document.getElementById(key);
@@ -89,7 +93,7 @@
                 hasBuy.dispatchEvent(changeEvent);
                 hasParents.dispatchEvent(changeEvent);
                 hasTests.dispatchEvent(changeEvent);
-                color.dispatchEvent(changeEvent); // זה יציג את התיקייה של "בחר רקע" אם הערך הוא 4
+                color.dispatchEvent(changeEvent); 
                 textColor.dispatchEvent(changeEvent);
             })
 
@@ -210,7 +214,7 @@
                     else if (searchVal == '207594581')
                         login('../parentsMeeting/user')
                 }
-                searchVal = ""; // איפוס החיפוש לאחר אנטר
+                searchVal = "";
             } else {
                 searchVal += e.key;
             }
@@ -313,6 +317,9 @@
         function update() {
             Object.entries(systemConfig).forEach(x => {
                 var key = x[0]
+                //      if (key != 'buy')
+                //     systemConfig[key] = document.getElementById(x[0]).value;
+                // else {
                 const element = document.getElementById(key);
                 if (key != 'buy' && element)
                     systemConfig[key] = element.value;
@@ -341,7 +348,7 @@
             <div id="line1">הגדרות המערכת</div>
             <div id="line3"></div>
             <br />
-            <form class="g-2" id="myForm" style="direction: rtl;" onsubmit="event.preventDefault();">
+            <form class="g-2" id="myForm" style="direction: rtl;" >
                 <div class="row">
                     <div class="col-md-2">
                         <label for="device" class="form-label">סוג מכשיר</label>
@@ -424,7 +431,7 @@
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">.</label>
-                        <button type="button" onclick="update()" class="form-control">עדכן</button>
+                        <button type="submit" onclick="update()" class="form-control">עדכן</button>
                     </div>
                 </div>
                 <div class="row">
@@ -449,8 +456,8 @@
                         <input type=file class="form-control" id="uploadParents" name="files[]">
                     </div>
                     <div class="col-md-2" id="uploadTestsWrapper" style="display: none;">
-                        <label for="uploadTests" class="form-label">מבחנים</label>
-                        <input type="file" class="form-control" id="uploadTests">
+                        <label for="uploadTest" class="form-label">מבחנים</label>
+                        <input type="file" class="form-control" id="uploadTest">
                     </div>
                     <div class="col-md-2" id="uploadPollsWrapper" style="display: none;">
                         <label for="uploadPolls" class="form-label">סקרים</label>
@@ -460,11 +467,11 @@
                 <div class="row">
                     <div class="col-md-1">
                         <label class="form-label">.</label>
-                        <button type="button" onclick="exportUniqTasks()" class="form-control"> משימות</button>
+                        <button type="submit" onclick="exportUniqTasks()" class="form-control"> משימות</button>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">.</label>
-                        <button type="button" id="reset" onclick="resetExcel()" class="form-control"> איפוס </button>
+                        <button type="submit" id="reset" onclick="resetExcel()" class="form-control"> איפוס </button>
                     </div>
                 </div>
             </form>
@@ -483,7 +490,7 @@
         document.getElementById('uploaduniqTasks').addEventListener('change', handleFileSelect, false);
         document.getElementById('uploadProducts').addEventListener('change', handleFileSelect, false);
         document.getElementById('uploadParents').addEventListener('change', handleFileSelect, false);
-        document.getElementById('uploadTests').addEventListener('change', handleFileSelect, false); // תוקן ל-uploadTests
+        document.getElementById('uploadTest').addEventListener('change', handleFileSelect, false); //
     </script>
 </body>
 
