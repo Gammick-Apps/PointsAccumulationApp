@@ -15,12 +15,12 @@ function createWindow() {
     }
   })
   mainWindow.loadFile('pages/main/user.html')
-  mainWindow.menuBarVisible = true;
+  mainWindow.menuBarVisible = false;
   mainWindow.fullScreen = true;
 
-  // if (!app.isPackaged) {
-  //   mainWindow.menuBarVisible = true
-  // }
+  if (!app.isPackaged) {
+    mainWindow.menuBarVisible = true
+  }
 
   ses.on('will-download', (e, downloadItem, webContents) => {
     let name = downloadItem.getFilename()
