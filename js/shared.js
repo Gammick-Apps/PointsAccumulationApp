@@ -27,10 +27,6 @@ function getBackgroundUrl() {
                 window.expose.receive("receiveGetBackground" + fileName, (data) => {
                     if (data && data != 0) {
                         document.getElementById("background").style.backgroundImage = 'url("data:image/png;base64,' + data + '")';
-                    } else {
-                        if (typeof getBackground === 'function') {
-                            document.getElementById("background").style.backgroundImage = getBackground("1", "1");
-                        }
                     }
                 });
 }

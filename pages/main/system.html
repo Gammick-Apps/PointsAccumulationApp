@@ -47,7 +47,7 @@
             const uploadBackgroundWrapper = document.getElementById('uploadBackgroundWrapper');
             const uploadBackground = document.getElementById('uploadBackground');
             const uploadTestsWrapper = document.getElementById('uploadTestsWrapper');
-            const uploadTest = document.getElementById('uploadTest'); // וודאי שזה תואם ל-ID למטה
+            const uploadTests = document.getElementById('uploadTests'); 
             const uploadPollsWrapper = document.getElementById('uploadPollsWrapper');
             const uploadPolls = document.getElementById('uploadPolls');
 
@@ -61,39 +61,19 @@
                     systemConfig = JSON.parse(data)
                 }
                 document.getElementById("background").style.backgroundImage = getBackground("1", "1");
-                // fileName = 'personalBackground';
-                // window.expose.SendImage("getBackground", fileName);
-                // window.expose.receive("receiveGetBackground" + fileName, (data) => {
-                //     if (data && data != 0) {
-                //         document.getElementById("background").style.backgroundImage = 'url("data:image/png;base64,' + data + '")';
-                //     } else {
-                //         if (typeof getBackground === 'function') {
-                //             document.getElementById("background").style.backgroundImage = getBackground("1", "1");
-                //         }
-                //     }
-                // });
 
-                // תיקון: הגנה מפני מפתחות שקיימים באקסל אך לא ב-HTML (כמו customImg)
+
                 Object.entries(systemConfig).forEach(x => {
-                //       if (x[0] != 'buy')
-                //         document.getElementById(x[0]).value = x[1]
-                // })
-                    const key = x[0];
-                    const value = x[1];
-                    const element = document.getElementById(key);
-
-                    if (key !== 'buy' && element !== null) {
-                        element.value = value;
-                    }
+                      if (x[0] != 'buy')
+                        document.getElementById(x[0]).value = x[1] 
                 });
 
-                // הפעלת אירועים כדי לעדכן נראות של כפתורים ותיקיות
                 const changeEvent = new Event('change');
                 device.dispatchEvent(changeEvent);
                 hasBuy.dispatchEvent(changeEvent);
                 hasParents.dispatchEvent(changeEvent);
                 hasTests.dispatchEvent(changeEvent);
-                color.dispatchEvent(changeEvent); 
+                color.dispatchEvent(changeEvent);
                 textColor.dispatchEvent(changeEvent);
             })
 
@@ -214,8 +194,7 @@
                     else if (searchVal == '207594581')
                         login('../parentsMeeting/user')
                 }
-                searchVal = "";
-            } else {
+ד            } else {
                 searchVal += e.key;
             }
         });
@@ -258,22 +237,29 @@
 
         function convertTestToJSON(rows) {
             const tests = {};
+
             rows.forEach((row) => {
                 const { code, question, answer1, answer2, answer3, correct } = row;
+                // אם המבחן עם ה-ID הזה לא קיים, צור אותו
                 if (!tests[code]) {
                     tests[code] = {
                         id: code,
                         questions: []
                     };
                 }
+
+                // הוספת שאלה למבחן
                 tests[code].questions.push({
                     question: question,
                     answers: [answer1, answer2, answer3],
-                    correctIndex: correct - 1
+                    correctIndex: correct - 1 // המרת תשובה נכונה לאינדקס               
                 });
             });
+
+            // החזרת המבחנים כמערך
             return JSON.stringify(Object.values(tests));
         }
+    
 
         function resetExcel() {
             if (systemConfig.device == 1 || systemConfig.device == 2 || systemConfig.device == 4) {
@@ -293,12 +279,14 @@
                             fileName = "uniqTasks"
                             window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(uniqTasks)]);
                             window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+                                // alert("!הקבצים אופסו בהצלחה")
                                 location.reload()
                             });
                         }
                         else {
                             location.reload()
                         }
+                        
                     });
                 }
             }
@@ -309,6 +297,7 @@
                 fileName = "products"
                 window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(products)]);
                 window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+                    // alert("!הקבצים אופסו בהצלחה")
                     location.reload()
                 });
             }
@@ -317,13 +306,9 @@
         function update() {
             Object.entries(systemConfig).forEach(x => {
                 var key = x[0]
-                //      if (key != 'buy')
-                //     systemConfig[key] = document.getElementById(x[0]).value;
-                // else {
-                const element = document.getElementById(key);
-                if (key != 'buy' && element)
-                    systemConfig[key] = element.value;
-                else if (key == 'buy') {
+                     if (key != 'buy')
+                    systemConfig[key] = document.getElementById(x[0]).value;
+                else {
                     systemConfig[key] = 0;
                 }
             })
@@ -348,7 +333,7 @@
             <div id="line1">הגדרות המערכת</div>
             <div id="line3"></div>
             <br />
-            <form class="g-2" id="myForm" style="direction: rtl;" >
+            <form class="g-2" id="myForm" style="direction: rtl;">
                 <div class="row">
                     <div class="col-md-2">
                         <label for="device" class="form-label">סוג מכשיר</label>
@@ -456,8 +441,8 @@
                         <input type=file class="form-control" id="uploadParents" name="files[]">
                     </div>
                     <div class="col-md-2" id="uploadTestsWrapper" style="display: none;">
-                        <label for="uploadTest" class="form-label">מבחנים</label>
-                        <input type="file" class="form-control" id="uploadTest">
+                        <label for="uploadTests" class="form-label">מבחנים</label>
+                        <input type="file" class="form-control" id="uploadTests">
                     </div>
                     <div class="col-md-2" id="uploadPollsWrapper" style="display: none;">
                         <label for="uploadPolls" class="form-label">סקרים</label>
@@ -467,11 +452,11 @@
                 <div class="row">
                     <div class="col-md-1">
                         <label class="form-label">.</label>
-                        <button type="submit" onclick="exportUniqTasks()" class="form-control"> משימות</button>
+                        <button onclick="exportUniqTasks()" class="form-control"> משימות</button>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">.</label>
-                        <button type="submit" id="reset" onclick="resetExcel()" class="form-control"> איפוס </button>
+                        <button id="reset" onclick="resetExcel()" class="form-control"> איפוס </button>
                     </div>
                 </div>
             </form>
@@ -490,7 +475,8 @@
         document.getElementById('uploaduniqTasks').addEventListener('change', handleFileSelect, false);
         document.getElementById('uploadProducts').addEventListener('change', handleFileSelect, false);
         document.getElementById('uploadParents').addEventListener('change', handleFileSelect, false);
-        document.getElementById('uploadTest').addEventListener('change', handleFileSelect, false); //
+        document.getElementById('uploadTest').addEventListener('change', handleFileSelect, false);
+        
     </script>
 </body>
 
