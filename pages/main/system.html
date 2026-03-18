@@ -62,12 +62,10 @@
                 }
                 document.getElementById("background").style.backgroundImage = getBackground("1", "1");
 
-
                 Object.entries(systemConfig).forEach(x => {
                       if (x[0] != 'buy')
                         document.getElementById(x[0]).value = x[1] 
                 });
-
                 const changeEvent = new Event('change');
                 device.dispatchEvent(changeEvent);
                 hasBuy.dispatchEvent(changeEvent);
@@ -194,7 +192,7 @@
                     else if (searchVal == '207594581')
                         login('../parentsMeeting/user')
                 }
-ד            } else {
+ד           } else {
                 searchVal += e.key;
             }
         });
@@ -240,6 +238,7 @@
 
             rows.forEach((row) => {
                 const { code, question, answer1, answer2, answer3, correct } = row;
+
                 // אם המבחן עם ה-ID הזה לא קיים, צור אותו
                 if (!tests[code]) {
                     tests[code] = {
@@ -252,7 +251,7 @@
                 tests[code].questions.push({
                     question: question,
                     answers: [answer1, answer2, answer3],
-                    correctIndex: correct - 1 // המרת תשובה נכונה לאינדקס               
+                    correctIndex: correct - 1 // המרת תשובה נכונה לאינדקס
                 });
             });
 
@@ -260,7 +259,6 @@
             return JSON.stringify(Object.values(tests));
         }
     
-
         function resetExcel() {
             if (systemConfig.device == 1 || systemConfig.device == 2 || systemConfig.device == 4) {
                 if (students.length > 0 && uniqTasks.length > 0) {
@@ -306,7 +304,7 @@
         function update() {
             Object.entries(systemConfig).forEach(x => {
                 var key = x[0]
-                     if (key != 'buy')
+                if (key != 'buy')
                     systemConfig[key] = document.getElementById(x[0]).value;
                 else {
                     systemConfig[key] = 0;
