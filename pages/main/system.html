@@ -47,7 +47,7 @@
             const uploadBackgroundWrapper = document.getElementById('uploadBackgroundWrapper');
             const uploadBackground = document.getElementById('uploadBackground');
             const uploadTestsWrapper = document.getElementById('uploadTestsWrapper');
-            const uploadTests = document.getElementById('uploadTests'); 
+            const uploadTests = document.getElementById('uploadTests');
             const uploadPollsWrapper = document.getElementById('uploadPollsWrapper');
             const uploadPolls = document.getElementById('uploadPolls');
 
@@ -63,9 +63,9 @@
                 document.getElementById("background").style.backgroundImage = getBackground("1", "1");
 
                 Object.entries(systemConfig).forEach(x => {
-                      if (x[0] != 'buy')
+                    if (x[0] != 'buy')
                         document.getElementById(x[0]).value = x[1] 
-                });
+                })
                 const changeEvent = new Event('change');
                 device.dispatchEvent(changeEvent);
                 hasBuy.dispatchEvent(changeEvent);
@@ -474,7 +474,7 @@
         document.getElementById('uploadProducts').addEventListener('change', handleFileSelect, false);
         document.getElementById('uploadParents').addEventListener('change', handleFileSelect, false);
         document.getElementById('uploadTests').addEventListener('change', handleFileSelect, false);
-        
+
     </script>
 </body>
 
