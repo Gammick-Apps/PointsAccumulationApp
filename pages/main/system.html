@@ -191,7 +191,7 @@
                         login("manage")
                     else if (searchVal == '207594581')
                         login('../parentsMeeting/user')
-                }   
+                }
             } else {
                 searchVal += e.key;
             }
@@ -258,7 +258,7 @@
             // החזרת המבחנים כמערך
             return JSON.stringify(Object.values(tests));
         }
-    
+
         function resetExcel() {
             if (systemConfig.device == 1 || systemConfig.device == 2 || systemConfig.device == 4) {
                 if (students.length > 0 && uniqTasks.length > 0) {
@@ -284,7 +284,7 @@
                         else {
                             location.reload()
                         }
- 
+
                     });
                 }
             }
