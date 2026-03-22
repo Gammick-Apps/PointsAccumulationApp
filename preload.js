@@ -15,6 +15,9 @@ contextBridge.exposeInMainWorld('expose', {
     ReceiveExcel: (channel, func) => {
         ipcRenderer.on(channel, (event, ...args) => func(...args));
     },
+     SendImage: (channel, data) => {
+        ipcRenderer.send(channel, data);
+    },
     appClose: () => {
         ipc.send('close')
     }

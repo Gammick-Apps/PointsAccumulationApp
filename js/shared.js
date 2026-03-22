@@ -21,6 +21,16 @@ function login(page) {
     window.location.href = page + '.html';
 }
 
+function getBackgroundUrl() {
+     fileName = 'personalBackground';
+                window.expose.SendImage("getBackground", fileName);
+                window.expose.receive("receiveGetBackground" + fileName, (data) => {
+                    if (data && data != 0) {
+                        document.getElementById("background").style.backgroundImage = 'url("data:image/png;base64,' + data + '")';
+                    }
+                });
+}
+
 function getBackground(device, color, step = "") {
     switch (device) {
         case "0": {
@@ -35,7 +45,7 @@ function getBackground(device, color, step = "") {
                 case "3":
                     return "url('../../resources/barcode/ravKavBackground.png')";
                 case "4":                                      
-                    return "url('../../personalBackground.png')";
+                    return getBackgroundUrl();
                 case "5":
                     return "url('../../resources/gammick/gammickBackground.png')";
             }
