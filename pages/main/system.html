@@ -64,7 +64,7 @@
 
                 Object.entries(systemConfig).forEach(x => {
                     if (x[0] != 'buy')
-                        document.getElementById(x[0]).value = x[1] 
+                        document.getElementById(x[0]).value = x[1]
                 })
                 const changeEvent = new Event('change');
                 device.dispatchEvent(changeEvent);
@@ -191,8 +191,8 @@
                         login("manage")
                     else if (searchVal == '207594581')
                         login('../parentsMeeting/user')
-                }
-ד           } else {
+                }   
+            } else {
                 searchVal += e.key;
             }
         });
@@ -284,7 +284,7 @@
                         else {
                             location.reload()
                         }
-                        
+ 
                     });
                 }
             }
@@ -354,7 +354,7 @@
                             <option value="5">עיצוב Gammick </option>
                         </select>
                     </div>
-                    <div class="col-md-2" id="textColorWrapper">
+                    <div class="col-md-2" id="textColorWrapper" >
                         <label for="textColor" class="form-label"> צבע כיתוב</label>
                         <select class="form-control" id="textColor">
                             <option value="0">לבן</option>
@@ -439,8 +439,8 @@
                         <input type=file class="form-control" id="uploadParents" name="files[]">
                     </div>
                     <div class="col-md-2" id="uploadTestsWrapper" style="display: none;">
-                        <label for="uploadTests" class="form-label">מבחנים</label>
-                        <input type="file" class="form-control" id="uploadTests">
+                        <label for="uploadTest" class="form-label">מבחנים</label>
+                        <input type="file" class="form-control" id="uploadTest">
                     </div>
                     <div class="col-md-2" id="uploadPollsWrapper" style="display: none;">
                         <label for="uploadPolls" class="form-label">סקרים</label>
@@ -473,7 +473,7 @@
         document.getElementById('uploaduniqTasks').addEventListener('change', handleFileSelect, false);
         document.getElementById('uploadProducts').addEventListener('change', handleFileSelect, false);
         document.getElementById('uploadParents').addEventListener('change', handleFileSelect, false);
-        document.getElementById('uploadTests').addEventListener('change', handleFileSelect, false);
+        document.getElementById('uploadTest').addEventListener('change', handleFileSelect, false);
 
     </script>
 </body>
