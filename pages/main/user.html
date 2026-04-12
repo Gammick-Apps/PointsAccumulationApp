@@ -14,7 +14,7 @@
         var fileName
 
         function onLoad() {
-            debugger
+            // debugger
             fileName = 'systemConfig'
             window.expose.SendExcel("sendReadExcel", fileName);
             window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {

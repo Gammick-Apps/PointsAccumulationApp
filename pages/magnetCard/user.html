@@ -315,6 +315,19 @@
                     break;
                 }
             }
+             if (studentResult == "") {
+      
+        for (var i = 0; i < students.length; i++) {
+            var code = students[i]["code"];
+            if (typeof code === "string") {
+                code = code.replace(/\*/g, "");
+            }
+            if (code == searchVal) {
+                studentResult = students[i];
+                break;
+            }
+        }
+    }
             if (studentResult == "") {
                 showAlert("  קוד לא קיים. גשו למורה!")
                 return;
