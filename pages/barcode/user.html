@@ -99,8 +99,8 @@
     });
 
     function searchInExcel() {
-    step = Steps.step2
-    for (var i = 0; i < students.length; i++) {
+      step = Steps.step2
+      for (var i = 0; i < students.length; i++) {
         if (students[i]["tz"] == searchVal || students[i]["code"] == searchVal) {
           studentResult = students[i];
           break;
@@ -109,7 +109,7 @@
       if (studentResult == "") {
         showAlert("הברקוד לא מופיע ברשימות. גשו למורה!")
         return;
-         }
+      }
       document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step)
       updateLines("(: שלום  " + studentResult.name, "יש לסרוק את הברקוד לעדכון משימה","עד כה צברת " + studentResult.points + " נקודות") 
     }
