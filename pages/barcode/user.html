@@ -34,7 +34,7 @@
 
     function onLoad() {
       step = Steps.step1;
-      updateLines("!...שלום", "יש לתקף את הכרטיס האישי בסורק הברקוד")  
+      updateLines("!...שלום", "יש לתקף את הכרטיס האישי בסורק הברקוד") 
       fileName = 'systemConfig'
       window.expose.SendExcel("sendReadExcel", fileName);
       window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
@@ -105,14 +105,12 @@
           studentResult = students[i];
           break;
         }
-    }
-    if (studentResult == "") {
-        showAlert("הברקוד לא מופיע ברשימות. גשו למורה!");
+      }
+      if (studentResult == "") {
+        showAlert("הברקוד לא מופיע ברשימות. גשו למורה!")
         return;
     }
-    document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
-    updateLines("(: שלום  " + studentResult.name, "יש לסרוק את הברקוד לעדכון משימה", "עד כה צברת " + studentResult.points + " נקודות");
-   }
+
     function updateTask() {
       step = Steps.step3;
       for (var i = 0; i < uniqTasks.length; i++) {
@@ -169,7 +167,7 @@
           window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => { });
         }
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
-        updateLines( "ביצעת את משימה" + " " + result.name, " כעת יש בחשבונך " + studentResult.points + " נקודות ","...לא לשכוח לקחת את האישור מהמדפסת")
+        updateLines( "ביצעת את משימה" + " " + result.name, " כעת יש בחשבונך " + studentResult.points + " נקודות ","...לא לשכוח לקחת את האישור מהמדפסת") 
         if (systemConfig.hasPrint == 1)
           setTimeout(function () {
             toPrint();
