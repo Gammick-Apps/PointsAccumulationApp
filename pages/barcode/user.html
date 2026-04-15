@@ -109,6 +109,9 @@
       if (studentResult == "") {
         showAlert("הברקוד לא מופיע ברשימות. גשו למורה!")
         return;
+         }
+      document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step)
+      updateLines("(: שלום  " + studentResult.name, "יש לסרוק את הברקוד לעדכון משימה","עד כה צברת " + studentResult.points + " נקודות") 
     }
 
     function updateTask() {
