@@ -310,24 +310,12 @@
             document.getElementById("cards").style.display = "none"
             step = Steps.step3
             for (var i = 0; i < students.length; i++) {
-                if (students[i]["tz"] == searchVal) {
+                if (students[i]["tz"] == searchVal || students[i]["code"] == searchVal) {
                     studentResult = students[i];
                     break;
                 }
             }
-             if (studentResult == "") {
-      
-        for (var i = 0; i < students.length; i++) {
-            var code = students[i]["code"];
-            if (typeof code === "string") {
-                code = code.replace(/\*/g, "");
-            }
-            if (code == searchVal) {
-                studentResult = students[i];
-                break;
-            }
-        }
-    }
+            
             if (studentResult == "") {
                 showAlert("  קוד לא קיים. גשו למורה!")
                 return;
