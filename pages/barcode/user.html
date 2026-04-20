@@ -101,7 +101,7 @@
     function searchInExcel() {
       step = Steps.step2
       for (var i = 0; i < students.length; i++) {
-        if (students[i]["tz"] == searchVal) {
+        if (students[i]["tz"] == searchVal || students[i]["code"] == searchVal) {
           studentResult = students[i];
           break;
         }
