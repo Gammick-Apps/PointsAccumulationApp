@@ -34,7 +34,7 @@
 
     function onLoad() {
       step = Steps.step1;
-      updateLines("!...שלום", "יש לתקף את הכרטיס האישי בסורק הברקוד") 
+      updateLines("!...שלום", "יש להניח את הצ'יפ האישי על סורק הצ'יפים") 
       fileName = 'systemConfig'
       window.expose.SendExcel("sendReadExcel", fileName);
       window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
@@ -111,7 +111,7 @@
         return;
       }
       document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step)
-      updateLines("(: שלום  " + studentResult.name, "יש לסרוק את הברקוד לעדכון משימה","עד כה צברת " + studentResult.points + " נקודות") 
+      updateLines("(: שלום  " + studentResult.name, "לחצי על המקלדת לעדכון המשימה שביצעת","עד כה צברת " + studentResult.points + " נקודות") 
     }
 
     function updateTask() {
