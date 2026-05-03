@@ -59,7 +59,7 @@ function getBackground(device, color, step = "") {
                     case "3":
                         return "url('../../resources/magnetCard/ravKavBackground.png')";
                     case "4":
-                        return "url('../../personalBackground.png')";
+                        return getBackgroundUrl();
                      case "5":
                         return "url('../../resources/gammick/gammickBackground.png')";
                 };
