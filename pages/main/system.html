@@ -198,12 +198,29 @@
         });
 
         function checkFileName(fileName) {
+            const normalizedFileName = String(fileName || '').toLowerCase();
             for (let i = 0; i < excelFiles.length; i++) {
-                if (fileName.startsWith(excelFiles[i])) {
+                if (normalizedFileName.startsWith(String(excelFiles[i]).toLowerCase())) {
                     return excelFiles[i];
                 }
             }
             return "";
+        }
+
+        function resolveDatasetNameFromInput(inputId, selectedFileName) {
+            const inputMap = {
+                uploadStudents: 'students',
+                uploaduniqTasks: 'uniqTasks',
+                uploadProducts: 'products',
+                uploadParents: 'parents',
+                uploadTest: 'tests'
+            };
+
+            if (inputMap[inputId]) {
+                return inputMap[inputId];
+            }
+
+            return checkFileName(selectedFileName);
         }
 
         function handleFileSelect(event) {
@@ -214,7 +231,7 @@
                 const workbook = XLSX.read(data, { type: 'array' });
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
-                const name = checkFileName(file.name)
+                const name = resolveDatasetNameFromInput(event.target.id, file.name)
                 let json_object;
                 if (name == "tests") {
                     json_object = convertTestToJSON(XLSX.utils.sheet_to_json(sheet));

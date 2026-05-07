@@ -71,6 +71,7 @@ async function readData(datasetName) {
     case 'students':
       return readStudents();
     case 'uniqTasks':
+      return readActions('uniqTasks');
     case 'products':
     case 'parents':
     case 'tests':
@@ -93,6 +94,8 @@ async function writeData(datasetName, rawJson) {
       writeStudents(parsed);
       break;
     case 'uniqTasks':
+      writeActions('uniqTasks', parsed);
+      break;
     case 'products':
     case 'parents':
     case 'tests':
@@ -131,13 +134,14 @@ function createSchema() {
 
     CREATE TABLE IF NOT EXISTS uniqTasks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      code TEXT,
+      code TEXT UNIQUE,
       name TEXT,
       points REAL DEFAULT 0,
       multiple INTEGER DEFAULT 0,
-      type TEXT,
-      class TEXT,
-      position TEXT
+      type INTEGER DEFAULT 1,
+      class INTEGER DEFAULT 0,
+      show INTEGER DEFAULT 1,
+      position TEXT DEFAULT ''
     );
 
     CREATE TABLE IF NOT EXISTS products (
@@ -201,6 +205,57 @@ function ensureSchemaEvolution() {
   if (!studentsCols.has('raw_json')) {
     execute("ALTER TABLE students ADD COLUMN raw_json TEXT DEFAULT '{}';");
   }
+
+  // Enforce strict uniqTasks schema based on the new diagram
+  const uniqTasksCols = new Set(
+    selectAll("PRAGMA table_info(uniqTasks)").map((r) => r.name)
+  );
+  const expectedUniqTasksCols = ['id', 'code', 'name', 'points', 'multiple', 'type', 'class', 'show', 'position'];
+  const hasAllExpectedUniqTasksCols = expectedUniqTasksCols.every((col) => uniqTasksCols.has(col));
+  const hasUnexpectedUniqTasksCols = Array.from(uniqTasksCols).some((col) => !expectedUniqTasksCols.includes(col));
+
+  if (!hasAllExpectedUniqTasksCols || hasUnexpectedUniqTasksCols) {
+    const codeExpr = uniqTasksCols.has('code') ? 'code' : 'NULL';
+    const nameExpr = uniqTasksCols.has('name') ? 'name' : "''";
+    const pointsExpr = uniqTasksCols.has('points') ? 'points' : '0';
+    const multipleExpr = uniqTasksCols.has('multiple') ? 'multiple' : '0';
+    const typeExpr = uniqTasksCols.has('type') ? 'type' : '1';
+    const classExpr = uniqTasksCols.has('class') ? '"class"' : (uniqTasksCols.has('class_flag') ? 'class_flag' : '0');
+    const positionExpr = uniqTasksCols.has('position') ? 'position' : "''";
+
+    execute(`
+      CREATE TABLE uniqTasks_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code TEXT UNIQUE,
+        name TEXT,
+        points REAL DEFAULT 0,
+        multiple INTEGER DEFAULT 0,
+        type INTEGER DEFAULT 1,
+        class INTEGER DEFAULT 0,
+        show INTEGER DEFAULT 1,
+        position TEXT DEFAULT ''
+      );
+
+      INSERT INTO uniqTasks_new (code, name, points, multiple, type, class, show, position)
+      SELECT
+        CAST(${codeExpr} AS TEXT) AS code,
+        MAX(${nameExpr}) AS name,
+        MAX(${pointsExpr}) AS points,
+        MAX(${multipleExpr}) AS multiple,
+        MAX(${typeExpr}) AS type,
+        MAX(${classExpr}) AS class,
+        1 AS show,
+        MAX(${positionExpr}) AS position
+      FROM uniqTasks
+      WHERE ${codeExpr} IS NOT NULL AND TRIM(CAST(${codeExpr} AS TEXT)) <> ''
+      GROUP BY CAST(${codeExpr} AS TEXT);
+
+      DROP TABLE uniqTasks;
+      ALTER TABLE uniqTasks_new RENAME TO uniqTasks;
+    `);
+  }
+
+  execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_uniqTasks_code_unique ON uniqTasks(code);');
 }
 
 function logSchemaSummary(prefix) {
@@ -363,7 +418,7 @@ function writeStudents(students) {
 
 function readActions(tableName) {
   const rows = selectAll(`
-    SELECT code, barcode, name, points, position, multiple, type, class_flag, used, show_flag, raw_json
+    SELECT code, name, points, multiple, type, class, show, position
     FROM ${tableName}
     ORDER BY CAST(code AS INTEGER), code
   `);
@@ -379,8 +434,8 @@ function writeActions(tableName, actions) {
   const rows = ensureArray(actions, tableName);
 
   executeTransaction(() => {
-    const existingMap = new Map(
-      selectAll(`SELECT code, raw_json FROM ${tableName}`).map((row) => [String(row.code), row.raw_json])
+    const existingCodes = new Set(
+      selectAll(`SELECT code FROM ${tableName}`).map((row) => String(row.code))
     );
     const seenKeys = new Set();
 
@@ -392,39 +447,31 @@ function writeActions(tableName, actions) {
 
       seenKeys.add(normalized.code);
 
-      if (existingMap.get(normalized.code) !== normalized.raw_json) {
-        runStatement(
-          `INSERT INTO ${tableName} (code, barcode, name, points, position, multiple, type, class_flag, used, show_flag, raw_json)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-           ON CONFLICT(code) DO UPDATE SET
-             barcode = excluded.barcode,
-             name = excluded.name,
-             points = excluded.points,
-             position = excluded.position,
-             multiple = excluded.multiple,
-             type = excluded.type,
-             class_flag = excluded.class_flag,
-             used = excluded.used,
-             show_flag = excluded.show_flag,
-             raw_json = excluded.raw_json`,
-          [
-            normalized.code,
-            normalized.barcode,
-            normalized.name,
-            normalized.points,
-            normalized.position,
-            normalized.multiple,
-            normalized.type,
-            normalized.class_flag,
-            normalized.used,
-            normalized.show_flag,
-            normalized.raw_json
-          ]
-        );
-      }
+      runStatement(
+        `INSERT INTO ${tableName} (code, name, points, multiple, type, class, show, position)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(code) DO UPDATE SET
+           name = excluded.name,
+           points = excluded.points,
+           multiple = excluded.multiple,
+           type = excluded.type,
+           class = excluded.class,
+           show = excluded.show,
+           position = excluded.position`,
+        [
+          normalized.code,
+          normalized.name,
+          normalized.points,
+          normalized.multiple,
+          normalized.type,
+          normalized.class,
+          normalized.show,
+          normalized.position
+        ]
+      );
     });
 
-    existingMap.forEach((_, code) => {
+    existingCodes.forEach((code) => {
       if (!seenKeys.has(code)) {
         runStatement(`DELETE FROM ${tableName} WHERE code = ?`, [code]);
       }
@@ -584,19 +631,15 @@ function buildStudentResult(row) {
 }
 
 function buildActionResult(row) {
-  const parsed = safeJsonParse(row.raw_json, {});
   return {
-    ...parsed,
     code: coerceNumericOrKeep(row.code),
-    barcode: row.barcode || parsed.barcode || '',
     name: row.name,
     points: row.points,
-    position: row.position,
     multiple: Boolean(row.multiple),
     type: row.type,
-    class: Boolean(row.class_flag),
-    used: row.used,
-    show: Boolean(row.show_flag)
+    class: Boolean(row.class),
+    show: Boolean(row.show),
+    position: row.position || ''
   };
 }
 
@@ -631,7 +674,7 @@ function normalizeStudent(row) {
     points: toInteger(row.points || row.ניקוד || 0),
     position: row.position || row.מיקום || '',
     tasks: row.tasks || row.משימות || ',',
-    tasksNumber: row.tasksNumber || row.מספרמשימות || ','
+    tasksNumber: row.tasksNumber || row.tasks_number || row.מספרמשימות || ','
   };
 
   return {
@@ -661,29 +704,24 @@ function normalizeAction(row) {
   const normalized = {
     ...row,
     code: coerceNumericOrKeep(code),
-    barcode: row.barcode || row.ברקוד || '',
     name: row.name || row.שם || '',
     points: toInteger(row.points || row.ניקוד || 0),
     position: row.position || row.מיקום || '',
     multiple: toBoolean(row.multiple || row.מרובה || 0),
     type: toInteger(row.type || row.סוג || 1),
     class: toBoolean(row.class || row.כיתה || 0),
-    used: toInteger(row.used || row.בשימוש || 0),
-    show: row.show === undefined ? true : toBoolean(row.show || row.הצג || 1)
+    show: row.show === undefined ? true : toBoolean(row.show || row.הצג || 0)
   };
 
   return {
     code,
-    barcode: normalized.barcode,
     name: normalized.name,
     points: normalized.points,
-    position: normalized.position,
     multiple: normalized.multiple ? 1 : 0,
     type: normalized.type,
-    class_flag: normalized.class ? 1 : 0,
-    used: normalized.used,
-    show_flag: normalized.show ? 1 : 0,
-    raw_json: JSON.stringify(normalized)
+    class: normalized.class ? 1 : 0,
+    show: normalized.show ? 1 : 0,
+    position: normalized.position
   };
 }
 

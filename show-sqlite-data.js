@@ -105,6 +105,82 @@ async function main() {
     }
   }
 
+  const studentsTableExists = getSingleValueResult(
+    db,
+    "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'students';"
+  );
+
+  if (!studentsTableExists) {
+    console.log('Table students does not exist.');
+  } else {
+    const studentRows = db.exec(`
+      SELECT tz, code, barcode, name, grade, points, position, tasks, tasks_number
+      FROM students
+      ORDER BY grade, name, tz;
+    `);
+
+    if (!studentRows || studentRows.length === 0 || studentRows[0].values.length === 0) {
+      console.log('students is empty.');
+    } else {
+      const studentsData = studentRows[0].values.map((row) => ({
+        tz: row[0],
+        code: row[1],
+        barcode: row[2],
+        name: row[3],
+        grade: row[4],
+        points: row[5],
+        position: row[6],
+        tasks: row[7],
+        tasks_number: row[8]
+      }));
+
+      console.log('students rows:', studentRows[0].values.length);
+      console.log(JSON.stringify(studentsData, null, 2));
+    }
+  }
+
+  const uniqTasksTableExists = getSingleValueResult(
+    db,
+    "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'uniqTasks';"
+  );
+
+  if (!uniqTasksTableExists) {
+    console.log('Table uniqTasks does not exist.');
+  } else {
+    const uniqTasksColumns = new Set(db.exec('PRAGMA table_info(uniqTasks);')[0]?.values?.map((row) => String(row[1])) || []);
+    const expectedUniqTasksCols = ['id', 'code', 'name', 'points', 'multiple', 'type', 'class', 'show', 'position'];
+    const hasStrictUniqTasksSchema = expectedUniqTasksCols.every((col) => uniqTasksColumns.has(col));
+    const showColumn = uniqTasksColumns.has('show') ? 'show' : '1';
+
+    if (!hasStrictUniqTasksSchema) {
+      console.warn('uniqTasks schema is not fully migrated yet (missing show column). Run the app once to apply migration.');
+    }
+
+    const uniqTasksRows = db.exec(`
+      SELECT code, name, points, multiple, type, class, ${showColumn} AS show, position
+      FROM uniqTasks
+      ORDER BY CAST(code AS INTEGER), code;
+    `);
+
+    if (!uniqTasksRows || uniqTasksRows.length === 0 || uniqTasksRows[0].values.length === 0) {
+      console.log('uniqTasks is empty.');
+    } else {
+      const uniqTasksData = uniqTasksRows[0].values.map((row) => ({
+        code: row[0],
+        name: row[1],
+        points: row[2],
+        multiple: Boolean(row[3]),
+        type: row[4],
+        class: Boolean(row[5]),
+        show: Boolean(row[6]),
+        position: row[7]
+      }));
+
+      console.log('uniqTasks rows:', uniqTasksRows[0].values.length);
+      console.log(JSON.stringify(uniqTasksData, null, 2));
+    }
+  }
+
   const tablesResult = db.exec(`
     SELECT name
     FROM sqlite_master
