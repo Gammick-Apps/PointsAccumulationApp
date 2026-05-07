@@ -5,6 +5,7 @@ const path = require('path');
 const { initializeDatabase, readData, writeData, getDatabasePath } = require('./sqlite-storage');
 
 let useLegacyFiles = false;
+const allowLegacyFallback = process.env.ALLOW_LEGACY_TXT_FALLBACK === '1';
 
 function createWindow() {
   let ses = session.defaultSession
@@ -65,8 +66,12 @@ app.on('ready', async () => {
     const databasePath = await initializeDatabase(app);
     console.log('SQLite database ready at:', databasePath || getDatabasePath());
   } catch (error) {
-    useLegacyFiles = true;
-    console.error('SQLite initialization failed. Falling back to legacy txt storage.', error);
+    useLegacyFiles = allowLegacyFallback;
+    if (allowLegacyFallback) {
+      console.error('SQLite initialization failed. Falling back to legacy txt storage.', error);
+    } else {
+      console.error('SQLite initialization failed. Legacy txt fallback is disabled.', error);
+    }
   }
 
   createWindow();
@@ -92,7 +97,11 @@ ipcMain.on("sendReadExcel", async (event, args) => {
       mainWindow.webContents.send("receiveReadExcel" + args, data);
       return;
     } catch (error) {
-      console.error(`SQLite read failed for ${args}. Falling back to legacy txt storage.`, error);
+      console.error(`SQLite read failed for ${args}.`, error);
+      if (!allowLegacyFallback) {
+        mainWindow.webContents.send("receiveReadExcel" + args, 0);
+        return;
+      }
       useLegacyFiles = true;
     }
   }
@@ -137,7 +146,11 @@ ipcMain.on("sendWriteExcel", async (event, args) => {
           mainWindow.webContents.send("receiveWriteExcel" + args[0], 1);
           return;
         } catch (error) {
-          console.error(`SQLite write failed for ${args[0]}. Falling back to legacy txt storage.`, error);
+          console.error(`SQLite write failed for ${args[0]}.`, error);
+          if (!allowLegacyFallback) {
+            mainWindow.webContents.send("receiveWriteExcel" + args[0], 0);
+            return;
+          }
           useLegacyFiles = true;
         }
       }
