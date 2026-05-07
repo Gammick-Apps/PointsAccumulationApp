@@ -1,0 +1,13 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "sqlite-smoke-test",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"sqlite-smoke-test.js"
+			]
+		}
+	]
+}

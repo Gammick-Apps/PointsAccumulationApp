@@ -25,7 +25,7 @@
                     systemConfig = getDefaultConfig()
                 }
                 else {
-                    systemConfig = JSON.parse(data)
+                    systemConfig = { ...getDefaultConfig(), ...JSON.parse(data) }
                 }
                 document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color);
                 document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);

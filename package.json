@@ -8,7 +8,8 @@
     "start": "electron .",
     "watch": "nodemon --exec electron .",
     "reset": "git reset --hard",
-    "build": "electron-builder --help"
+    "build": "electron-builder --help",
+    "show:data": "node show-sqlite-data.js"
   },
   "repository": "https://github.com/EfratVardi/ElectronBarcode.git",
   "keywords": [
@@ -24,11 +25,15 @@
   },
   "dependencies": {
     "bootstrap": "^5.3.2",
-    "jquery": "^3.6.3"
+    "jquery": "^3.6.3",
+    "sql.js": "^1.8.0"
   },
   "build": {
     "extraResources": [
       "./extraResources/**"
-    ]
+    ],
+    "nsis": {
+      "include": "build/installer.nsh"
+    }
   }
 }

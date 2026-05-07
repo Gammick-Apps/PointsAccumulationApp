@@ -2,6 +2,10 @@ const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 let mainWindow
 const path = require('path');
+const { initializeDatabase, readData, writeData, getDatabasePath } = require('./sqlite-storage');
+
+let useLegacyFiles = false;
+const allowLegacyFallback = process.env.ALLOW_LEGACY_TXT_FALLBACK === '1';
 
 function createWindow() {
   let ses = session.defaultSession
@@ -57,7 +61,21 @@ function createWindow() {
   })
 }
 
-app.on('ready', createWindow)
+app.on('ready', async () => {
+  try {
+    const databasePath = await initializeDatabase(app);
+    console.log('SQLite database ready at:', databasePath || getDatabasePath());
+  } catch (error) {
+    useLegacyFiles = allowLegacyFallback;
+    if (allowLegacyFallback) {
+      console.error('SQLite initialization failed. Falling back to legacy txt storage.', error);
+    } else {
+      console.error('SQLite initialization failed. Legacy txt fallback is disabled.', error);
+    }
+  }
+
+  createWindow();
+})
 
 ipcMain.on("sendPrint", (event, args) => {
   let printWindow = new BrowserWindow({ show: false });
@@ -72,17 +90,34 @@ ipcMain.on("sendPrint", (event, args) => {
   });
 });
 
-ipcMain.on("sendReadExcel", (event, args) => {
-  fs.readFile(args + '.txt',
-    { encoding: 'utf8', flag: 'r' },
-    function (err, data) {
-      if (err) {
+ipcMain.on("sendReadExcel", async (event, args) => {
+  if (!useLegacyFiles) {
+    try {
+      const data = await readData(args);
+      mainWindow.webContents.send("receiveReadExcel" + args, data);
+      return;
+    } catch (error) {
+      console.error(`SQLite read failed for ${args}.`, error);
+      if (!allowLegacyFallback) {
         mainWindow.webContents.send("receiveReadExcel" + args, 0);
+        return;
       }
-      else {
-        mainWindow.webContents.send("receiveReadExcel" + args, data);
-      }
-    });
+      useLegacyFiles = true;
+    }
+  }
+
+  if (useLegacyFiles) {
+    fs.readFile(args + '.txt',
+      { encoding: 'utf8', flag: 'r' },
+      function (err, data) {
+        if (err) {
+          mainWindow.webContents.send("receiveReadExcel" + args, 0);
+        }
+        else {
+          mainWindow.webContents.send("receiveReadExcel" + args, data);
+        }
+      });
+  }
 });
 
 ipcMain.on("getBackground", (event, args) => {
@@ -100,10 +135,26 @@ ipcMain.on("getBackground", (event, args) => {
   });
 });
 
-ipcMain.on("sendWriteExcel", (event, args) => {
+ipcMain.on("sendWriteExcel", async (event, args) => {
   if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
     try {
       JSON.parse(args[1]);
+
+      if (!useLegacyFiles) {
+        try {
+          await writeData(args[0], args[1]);
+          mainWindow.webContents.send("receiveWriteExcel" + args[0], 1);
+          return;
+        } catch (error) {
+          console.error(`SQLite write failed for ${args[0]}.`, error);
+          if (!allowLegacyFallback) {
+            mainWindow.webContents.send("receiveWriteExcel" + args[0], 0);
+            return;
+          }
+          useLegacyFiles = true;
+        }
+      }
+
       fs.writeFile(args[0] + '.txt', args[1], err => {
         if (err) {
           console.error(err);

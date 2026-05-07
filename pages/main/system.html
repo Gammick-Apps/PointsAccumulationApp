@@ -58,7 +58,7 @@
                     systemConfig = getDefaultConfig()
                 }
                 else {
-                    systemConfig = JSON.parse(data)
+                    systemConfig = { ...getDefaultConfig(), ...JSON.parse(data) }
                 }
                 document.getElementById("background").style.backgroundImage = getBackground("1", "1");
 
