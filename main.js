@@ -57,7 +57,9 @@ function createWindow() {
   })
 }
 
-app.on('ready', createWindow)
+app.whenReady().then(() => {
+  createWindow()
+})
 
 ipcMain.on("sendPrint", (event, args) => {
   let printWindow = new BrowserWindow({ show: false });
