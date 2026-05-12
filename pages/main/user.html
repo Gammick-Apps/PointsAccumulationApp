@@ -14,7 +14,6 @@
         var fileName
 
         function onLoad() {
-            debugger
             fileName = 'systemConfig'
             window.expose.SendExcel("sendReadExcel", fileName);
             window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
@@ -22,7 +21,7 @@
                     systemConfig = getDefaultConfig()
                 }
                 else {
-                    systemConfig = JSON.parse(data)
+                    systemConfig = { ...getDefaultConfig(), ...JSON.parse(data) }
                 }
                 if (currentDate > systemConfig.date)
                     login('expired')
@@ -32,6 +31,8 @@
                     login("../barcode/user")
                 else if (systemConfig.device == 3)
                     login("../digitalCard/user")
+                else
+                    login('system')
             })
         }
     </script>

@@ -2,6 +2,93 @@ const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 let mainWindow
 const path = require('path');
+const { initializeDatabase, readData, writeData, getDatabasePath } = require('./sqlite-storage');
+
+const ERROR_DIALOG_COOLDOWN_MS = 5000;
+let lastErrorDialogAt = 0;
+
+function shouldShowUserErrorDialog() {
+  // In the installed app, avoid disruptive popups for transient/storage edge cases.
+  // Keep diagnostics in logs instead.
+  return !app.isPackaged;
+}
+
+function getTableName(datasetName) {
+  if (datasetName === 'systemConfig') {
+    return 'systemConfig';
+  }
+
+  return String(datasetName || 'unknown');
+}
+
+function notifySqliteTableFailure(operationLabel, datasetName, error) {
+  const tableName = getTableName(datasetName);
+  console.error(`SQLite ${operationLabel} failed for ${tableName}.`, error);
+
+  if (!shouldShowUserErrorDialog()) {
+    return;
+  }
+
+  // Read requests can happen frequently during startup/navigation.
+  // Avoid interrupting the user with popups for these recoverable cases.
+  if (operationLabel === 'העלאת') {
+    return;
+  }
+
+  const now = Date.now();
+  if (now - lastErrorDialogAt < ERROR_DIALOG_COOLDOWN_MS) {
+    return;
+  }
+  lastErrorDialogAt = now;
+
+  dialog.showErrorBox(
+    'הודעת מערכת',
+    'בעיה בשמירת נתונים במחשב. נא לבדוק הרשאות וגישה לתיקיית הנתונים ומקום פנוי בדיסק.'
+  );
+}
+
+function notifySqliteInitializationFailure(error) {
+  console.error('SQLite initialization failed.', error);
+
+  if (!shouldShowUserErrorDialog()) {
+    return;
+  }
+
+  const now = Date.now();
+  if (now - lastErrorDialogAt < ERROR_DIALOG_COOLDOWN_MS) {
+    return;
+  }
+  lastErrorDialogAt = now;
+
+  dialog.showErrorBox(
+    'הודעת מערכת',
+    'בעיה בשמירת נתונים במחשב. נא לבדוק הרשאות וגישה לתיקיית הנתונים ומקום פנוי בדיסק.'
+  );
+}
+
+function notifySchemaMismatch(datasetName, error) {
+  const tableName = getTableName(datasetName);
+  console.error(`Schema mismatch for ${tableName}.`, error);
+
+  if (!shouldShowUserErrorDialog()) {
+    return;
+  }
+
+  const now = Date.now();
+  if (now - lastErrorDialogAt < ERROR_DIALOG_COOLDOWN_MS) {
+    return;
+  }
+  lastErrorDialogAt = now;
+
+  dialog.showErrorBox(
+    'הודעת מערכת',
+    `בעיה בהעלאת נתונים בטבלת ${tableName}. מבנה הקובץ לא תואם לשדות הנדרשים. נא לבדוק את כותרות העמודות ולהעלות קובץ אחר.`
+  );
+}
+
+function isSchemaMismatchError(error) {
+  return Boolean(error && typeof error.message === 'string' && error.message.startsWith('DATA_SCHEMA_ERROR:'));
+}
 
 function createWindow() {
   let ses = session.defaultSession
@@ -57,7 +144,16 @@ function createWindow() {
   })
 }
 
-app.on('ready', createWindow)
+app.on('ready', async () => {
+  try {
+    const databasePath = await initializeDatabase(app);
+    console.log('SQLite database ready at:', databasePath || getDatabasePath());
+  } catch (error) {
+    notifySqliteInitializationFailure(error);
+  }
+
+  createWindow();
+})
 
 ipcMain.on("sendPrint", (event, args) => {
   let printWindow = new BrowserWindow({ show: false });
@@ -72,17 +168,14 @@ ipcMain.on("sendPrint", (event, args) => {
   });
 });
 
-ipcMain.on("sendReadExcel", (event, args) => {
-  fs.readFile(args + '.txt',
-    { encoding: 'utf8', flag: 'r' },
-    function (err, data) {
-      if (err) {
-        mainWindow.webContents.send("receiveReadExcel" + args, 0);
-      }
-      else {
-        mainWindow.webContents.send("receiveReadExcel" + args, data);
-      }
-    });
+ipcMain.on("sendReadExcel", async (event, args) => {
+  try {
+    const data = await readData(args);
+    mainWindow.webContents.send("receiveReadExcel" + args, data);
+  } catch (error) {
+    notifySqliteTableFailure('העלאת', args, error);
+    mainWindow.webContents.send("receiveReadExcel" + args, 0);
+  }
 });
 
 ipcMain.on("getBackground", (event, args) => {
@@ -100,19 +193,21 @@ ipcMain.on("getBackground", (event, args) => {
   });
 });
 
-ipcMain.on("sendWriteExcel", (event, args) => {
+ipcMain.on("sendWriteExcel", async (event, args) => {
   if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
     try {
       JSON.parse(args[1]);
-      fs.writeFile(args[0] + '.txt', args[1], err => {
-        if (err) {
-          console.error(err);
-        } else {
-          mainWindow.webContents.send("receiveWriteExcel" + args[0], 1);
-        }
-      });
+      await writeData(args[0], args[1]);
+      mainWindow.webContents.send("receiveWriteExcel" + args[0], 1);
     } catch (e) {
-      console.error("Invalid JSON data:", e);
+      if (e instanceof SyntaxError) {
+        console.error("Invalid JSON data:", e);
+        notifySchemaMismatch(args[0], e);
+      } else if (isSchemaMismatchError(e)) {
+        notifySchemaMismatch(args[0], e);
+      } else {
+        notifySqliteTableFailure('שמירת', args[0], e);
+      }
       mainWindow.webContents.send("receiveWriteExcel" + args[0], 0);
     }
   } else {
