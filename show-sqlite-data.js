@@ -10,6 +10,7 @@ function getCandidatePaths() {
   const productName = 'צבירת נקודות';
 
   const candidates = [
+    path.join(appData, productName, 'points-accumulation.dev.sqlite'),
     path.join(appData, productName, DB_FILE_NAME),
     path.join(appData, 'accumulatingpoints', DB_FILE_NAME)
   ];
@@ -81,27 +82,61 @@ async function main() {
   const fileBuffer = fs.readFileSync(dbPath);
   const db = new SQL.Database(new Uint8Array(fileBuffer));
 
-  const tableExists = getSingleValueResult(
+  const systemConfigExists = getSingleValueResult(
+    db,
+    "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'systemConfig';"
+  );
+  const systemConfigSnakeExists = getSingleValueResult(
     db,
     "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'system_config';"
   );
 
   console.log('DB path:', dbPath);
 
-  if (!tableExists) {
-    console.log('Table system_config does not exist.');
-  } else {
-    const rows = db.exec('SELECT config_key, config_value FROM system_config ORDER BY config_key;');
-    if (!rows || rows.length === 0 || rows[0].values.length === 0) {
-      console.log('system_config is empty.');
-    } else {
-      const config = {};
-      rows[0].values.forEach((row) => {
-        config[row[0]] = parseStoredValue(row[1]);
-      });
+  if (systemConfigExists && systemConfigSnakeExists) {
+    console.log('Warning: both systemConfig and system_config tables exist.');
+  }
 
-      console.log('system_config rows:', rows[0].values.length);
-      console.log(JSON.stringify(config, null, 2));
+  if (!systemConfigExists) {
+    console.log('Table systemConfig does not exist.');
+  } else {
+    const configColumns = db.exec("PRAGMA table_info(systemConfig);");
+    const columnNames = configColumns.length > 0
+      ? configColumns[0].values.map((row) => String(row[1]))
+      : [];
+    const hasKeyValueSchema = columnNames.includes('config_key') && columnNames.includes('config_value');
+
+    if (hasKeyValueSchema) {
+      const rows = db.exec('SELECT config_key, config_value FROM systemConfig ORDER BY config_key;');
+      if (!rows || rows.length === 0 || rows[0].values.length === 0) {
+        console.log('systemConfig is empty.');
+      } else {
+        const config = {};
+        rows[0].values.forEach((row) => {
+          config[row[0]] = parseStoredValue(row[1]);
+        });
+
+        console.log('systemConfig rows:', rows[0].values.length);
+        console.log(JSON.stringify(config, null, 2));
+      }
+    } else {
+      const legacyRows = db.exec('SELECT * FROM systemConfig LIMIT 1;');
+      if (!legacyRows || legacyRows.length === 0 || legacyRows[0].values.length === 0) {
+        console.log('systemConfig (legacy schema) is empty.');
+      } else {
+        const legacyConfig = {};
+        const fields = legacyRows[0].columns;
+        const values = legacyRows[0].values[0];
+        fields.forEach((field, index) => {
+          if (field === 'id') {
+            return;
+          }
+          legacyConfig[field] = parseStoredValue(values[index]);
+        });
+
+        console.log('systemConfig (legacy schema) row loaded.');
+        console.log(JSON.stringify(legacyConfig, null, 2));
+      }
     }
   }
 

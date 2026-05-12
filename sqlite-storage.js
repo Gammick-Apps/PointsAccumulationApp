@@ -9,6 +9,21 @@ let db;
 let dbPath;
 let initializationPromise;
 
+function resolveDatabaseLocation() {
+  const userDataPath = appInstance.getPath('userData');
+  if (appInstance.isPackaged) {
+    return {
+      userDataPath,
+      databaseFilePath: path.join(userDataPath, 'points-accumulation.sqlite')
+    };
+  }
+
+  return {
+    userDataPath,
+    databaseFilePath: path.join(userDataPath, 'points-accumulation.dev.sqlite')
+  };
+}
+
 async function initializeDatabase(electronApp) {
   if (db) {
     return dbPath;
@@ -23,10 +38,10 @@ async function initializeDatabase(electronApp) {
 
     const SQL = await initSqlJs();
 
-    const userDataPath = appInstance.getPath('userData');
+    const { userDataPath, databaseFilePath } = resolveDatabaseLocation();
     fs.mkdirSync(userDataPath, { recursive: true });
 
-    dbPath = path.join(userDataPath, 'points-accumulation.sqlite');
+    dbPath = databaseFilePath;
     const databaseExistedBeforeInit = fs.existsSync(dbPath);
 
     // The installer creates this flag on every install run.
@@ -110,7 +125,7 @@ function getDatabasePath() {
 
 function createSchema() {
   execute(`
-    CREATE TABLE IF NOT EXISTS system_config (
+    CREATE TABLE IF NOT EXISTS systemConfig (
       config_key TEXT PRIMARY KEY,
       config_value TEXT NOT NULL
     );
@@ -183,7 +198,8 @@ function createSchema() {
 }
 
 function ensureSchemaEvolution() {
-  execute('DROP TABLE IF EXISTS systemConfig;');
+  ensureConfigTableSchema();
+  migrateLegacyConfigTable('system_config');
 
   // Add missing columns to students table (for DBs created before these columns were added)
   const studentsCols = new Set(
@@ -201,6 +217,85 @@ function ensureSchemaEvolution() {
   if (!studentsCols.has('raw_json')) {
     execute("ALTER TABLE students ADD COLUMN raw_json TEXT DEFAULT '{}';");
   }
+}
+
+function ensureConfigTableSchema() {
+  if (!tableExists('systemConfig')) {
+    return;
+  }
+
+  const columns = getTableColumns('systemConfig');
+  const hasKeyValueSchema = columns.has('config_key') && columns.has('config_value');
+  if (hasKeyValueSchema) {
+    return;
+  }
+
+  const legacyTableName = 'systemConfig_legacy_backup';
+  execute(`DROP TABLE IF EXISTS ${legacyTableName};`);
+  execute(`ALTER TABLE systemConfig RENAME TO ${legacyTableName};`);
+  execute(`
+    CREATE TABLE IF NOT EXISTS systemConfig (
+      config_key TEXT PRIMARY KEY,
+      config_value TEXT NOT NULL
+    );
+  `);
+  migrateLegacyConfigTable(legacyTableName);
+  execute(`DROP TABLE IF EXISTS ${legacyTableName};`);
+}
+
+function migrateLegacyConfigTable(tableName) {
+  if (!tableExists(tableName)) {
+    return;
+  }
+
+  const columns = getTableColumns(tableName);
+  const hasKeyValueSchema = columns.has('config_key') && columns.has('config_value');
+  const escapedTableName = `"${String(tableName).replace(/"/g, '""')}"`;
+
+  if (hasKeyValueSchema) {
+    runStatement(
+      `INSERT OR REPLACE INTO systemConfig (config_key, config_value)
+       SELECT config_key, config_value
+       FROM ${escapedTableName}`
+    );
+    if (tableName !== 'systemConfig') {
+      execute(`DROP TABLE IF EXISTS ${escapedTableName};`);
+    }
+    return;
+  }
+
+  const rows = selectAll(`SELECT * FROM ${escapedTableName} LIMIT 1;`);
+  if (rows.length > 0) {
+    const row = rows[0];
+    Object.keys(row).forEach((key) => {
+      if (key === 'id') {
+        return;
+      }
+
+      const value = serializeSystemConfigValue(key, row[key]);
+      runStatement(
+        `INSERT OR REPLACE INTO systemConfig (config_key, config_value)
+         VALUES (?, ?)`,
+        [key, value]
+      );
+    });
+  }
+
+  if (tableName !== 'systemConfig') {
+    execute(`DROP TABLE IF EXISTS ${escapedTableName};`);
+  }
+}
+
+function tableExists(tableName) {
+  return selectAll(
+    "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1;",
+    [String(tableName)]
+  ).length > 0;
+}
+
+function getTableColumns(tableName) {
+  const escapedTableName = `"${String(tableName).replace(/"/g, '""')}"`;
+  return new Set(selectAll(`PRAGMA table_info(${escapedTableName});`).map((row) => row.name));
 }
 
 function logSchemaSummary(prefix) {
@@ -246,7 +341,7 @@ function logSchemaSummary(prefix) {
 }
 
 function readSystemConfig() {
-  const rows = selectAll('SELECT config_key, config_value FROM system_config ORDER BY config_key');
+  const rows = selectAll('SELECT config_key, config_value FROM systemConfig ORDER BY config_key');
   
   if (rows.length === 0) {
     return 0;
@@ -266,7 +361,7 @@ function writeSystemConfig(config) {
   }
 
   executeTransaction(() => {
-    const existingRows = selectAll('SELECT config_key, config_value FROM system_config');
+    const existingRows = selectAll('SELECT config_key, config_value FROM systemConfig');
     const existingMap = new Map(existingRows.map((row) => [row.config_key, row.config_value]));
     const seenKeys = new Set();
 
@@ -276,7 +371,7 @@ function writeSystemConfig(config) {
 
       if (existingMap.get(key) !== value) {
         runStatement(
-          `INSERT INTO system_config (config_key, config_value)
+          `INSERT INTO systemConfig (config_key, config_value)
            VALUES (?, ?)
            ON CONFLICT(config_key) DO UPDATE SET config_value = excluded.config_value`,
           [key, value]
@@ -286,7 +381,7 @@ function writeSystemConfig(config) {
 
     existingMap.forEach((_, key) => {
       if (!seenKeys.has(key)) {
-        runStatement('DELETE FROM system_config WHERE config_key = ?', [key]);
+        runStatement('DELETE FROM systemConfig WHERE config_key = ?', [key]);
       }
     });
   });
@@ -823,12 +918,7 @@ function executeTransaction(work) {
 
 function persistDatabase() {
   const data = Buffer.from(db.export());
-  const tempPath = `${dbPath}.tmp`;
-  fs.writeFileSync(tempPath, data);
-  if (fs.existsSync(dbPath)) {
-    fs.unlinkSync(dbPath);
-  }
-  fs.renameSync(tempPath, dbPath);
+  fs.writeFileSync(dbPath, data);
 }
 
 function ensureArray(value, name) {
