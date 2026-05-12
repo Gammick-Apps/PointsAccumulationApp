@@ -54,11 +54,19 @@
             fileName = 'systemConfig'
             window.expose.SendExcel("sendReadExcel", fileName);
             window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+                const defaults = getDefaultConfig();
                 if (data == 0) {
-                    systemConfig = getDefaultConfig()
+                    systemConfig = defaults
                 }
                 else {
-                    systemConfig = JSON.parse(data)
+                    const parsedConfig = JSON.parse(data);
+                    const normalizedConfig = Array.isArray(parsedConfig) ? (parsedConfig[0] || {}) : parsedConfig;
+                    systemConfig = { ...defaults, ...normalizedConfig }
+                    Object.keys(defaults).forEach((key) => {
+                        if (systemConfig[key] === "" || systemConfig[key] === null || systemConfig[key] === undefined) {
+                            systemConfig[key] = defaults[key];
+                        }
+                    });
                 }
                 document.getElementById("background").style.backgroundImage = getBackground("1", "1");
 
@@ -302,10 +310,11 @@
         }
 
         function update() {
+            const defaults = getDefaultConfig();
             Object.entries(systemConfig).forEach(x => {
                 var key = x[0]
                 if (key != 'buy')
-                    systemConfig[key] = document.getElementById(x[0]).value;
+                    systemConfig[key] = document.getElementById(x[0]).value === "" ? defaults[key] : document.getElementById(x[0]).value;
                 else {
                     systemConfig[key] = 0;
                 }
@@ -314,7 +323,12 @@
             fileName = "systemConfig"
             window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(systemConfig)]);
             window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                location.reload()
+                if (data == 1) {
+                    location.reload()
+                }
+                else {
+                    alert("שמירת ההגדרות נכשלה. יש לוודא שה-SQLite3 נטען בהצלחה.");
+                }
             });
         }
 
