@@ -266,6 +266,5 @@ module.exports = {
   initializeDatabase,
   writeData,
   readData,
-  closeDatabase,
-  getDatabasePath: () => dbPath
+  closeDatabase
 };
