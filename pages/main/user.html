@@ -15,6 +15,17 @@
 
         function onLoad() {
             debugger
+            let checkFlag = localStorage.getItem('flag');
+            if (checkFlag === null) {
+                localStorage.setItem('flag', 'false');     
+            }
+            window.expose.receive('setFlag', (value) => {
+                localStorage.setItem('flag', value);    
+            });
+            
+            const flag = localStorage.getItem('flag');
+            window.expose.send('rendererFlag', flag);
+
             fileName = 'systemConfig'
             window.expose.SendExcel("sendReadExcel", fileName);
             window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {

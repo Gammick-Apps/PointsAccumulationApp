@@ -103,6 +103,7 @@ function consumeInstallerResetFlag(primaryBasePath) {
 }
 
 async function initializeDatabase(electronApp) {
+
   if (db) {
     return dbPath;
   }
@@ -122,7 +123,6 @@ async function initializeDatabase(electronApp) {
 
     db = await openSqlite3Database(dbPath);
     await createSchema();
-    await seedDefaultSystemConfigIfEmpty();
 
     console.log('SQLite backend active: sqlite3');
     return dbPath;
@@ -183,20 +183,86 @@ function all(sql, params = []) {
 }
 
 async function createSchema() {
-  await run(`
-    CREATE TABLE IF NOT EXISTS systemConfig (
-      config_key TEXT PRIMARY KEY,
-      config_value TEXT NOT NULL
-    );
-  `);
-}
+  const schemaFilePath = path.join(__dirname, 'schema.txt');
+  const schemaRaw = fs.readFileSync(schemaFilePath, 'utf8');
+  const parsedSchema = JSON.parse(schemaRaw);
+  const tables = Array.isArray(parsedSchema.tables) ? parsedSchema.tables : [];
 
-async function seedDefaultSystemConfigIfEmpty() {
-  const row = await get('SELECT COUNT(1) AS count FROM systemConfig;');
-  if (row && Number(row.count) > 0) {
-    return;
+  if (tables.length === 0) {
+    throw new Error('schema.txt must include a non-empty tables array');
   }
-  await writeSystemConfig(getDefaultSystemConfig());
+
+  const quoteIdentifier = (identifier) => `"${String(identifier).replace(/"/g, '""')}"`;
+
+  const buildColumnSql = (column) => {
+    const parts = [quoteIdentifier(column.name), String(column.type || 'TEXT')];
+    if (column.primaryKey) {
+      parts.push('PRIMARY KEY');
+    }
+    if (column.nullable === false) {
+      parts.push('NOT NULL');
+    }
+    if (Object.prototype.hasOwnProperty.call(column, 'default')) {
+      parts.push(`DEFAULT ${column.default}`);
+    }
+    return parts.join(' ');
+  };
+
+  const buildForeignKeySql = (foreignKey) => {
+    const localColumns = (foreignKey.columns || []).map(quoteIdentifier).join(', ');
+    const referenceColumns = (foreignKey.referencesColumns || []).map(quoteIdentifier).join(', ');
+    const referenceTable = quoteIdentifier(foreignKey.referencesTable);
+    return `FOREIGN KEY (${localColumns}) REFERENCES ${referenceTable} (${referenceColumns})`;
+  };
+
+  await run('PRAGMA foreign_keys = OFF;');
+
+  try {
+    for (const table of tables) {
+      const columns = Array.isArray(table.columns) ? table.columns : [];
+      if (!table.name || columns.length === 0) {
+        continue;
+      }
+
+      const columnSql = columns.map(buildColumnSql);
+      const foreignKeys = Array.isArray(table.foreignKeys) ? table.foreignKeys : [];
+      const foreignKeySql = foreignKeys.map(buildForeignKeySql);
+      const definitions = [...columnSql, ...foreignKeySql].join(',\n      ');
+
+      const sql = `
+        CREATE TABLE IF NOT EXISTS ${quoteIdentifier(table.name)} (
+          ${definitions}
+        );
+      `;
+
+      await run(sql);
+    }
+
+    for (const table of tables) {
+      const columns = Array.isArray(table.columns) ? table.columns : [];
+      if (!table.name || columns.length === 0) {
+        continue;
+      }
+
+      const tableNameSql = quoteIdentifier(table.name);
+      const countRow = await get(`SELECT COUNT(1) AS count FROM ${tableNameSql};`);
+      if (countRow && Number(countRow.count) > 0) {
+        continue;
+      }
+
+      if (table.name === 'systemConfig') {
+        await run(
+          `INSERT INTO ${tableNameSql} (config_key, config_value) VALUES (?, ?);`,
+          ['date', getDefaultSystemConfig().date]
+        );
+        continue;
+      }
+
+      await run(`INSERT INTO ${tableNameSql} DEFAULT VALUES;`);
+    }
+  } finally {
+    await run('PRAGMA foreign_keys = ON;');
+  }
 }
 
 async function getLastSavedConfig() {
@@ -266,6 +332,5 @@ module.exports = {
   initializeDatabase,
   writeData,
   readData,
-  closeDatabase,
-  getDatabasePath: () => dbPath
+  closeDatabase
 };

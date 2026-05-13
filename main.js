@@ -1,11 +1,17 @@
 const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 let mainWindow
-const path = require('path');
-const { initializeDatabase, readData, writeData, getDatabasePath, closeDatabase } = require('./sqlite-storage');
+const { initializeDatabase, readData, writeData, closeDatabase } = require('./sqlite-storage');
 
 const ERROR_DIALOG_COOLDOWN_MS = 5000;
 let lastErrorDialogAt = 0;
+
+function notifyRendererFlagInitialized() {
+  if (!mainWindow || !mainWindow.webContents) {
+    return;
+  }
+  mainWindow.webContents.send('setFlag', 'true');
+}
 
 function shouldShowUserErrorDialog() {
   // In the installed app, avoid disruptive popups for transient/storage edge cases.
@@ -112,14 +118,21 @@ function createWindow() {
   })
 }
 
-app.on('ready', async () => {
-  try {
-    const databasePath = await initializeDatabase(app);
-    console.log('SQLite database ready at:', databasePath || getDatabasePath());
-  } catch (error) {
-    notifySqliteInitializationFailure(error);
+ipcMain.on('rendererFlag', async (_event, flag) => {
+  console.log('Received flag from Renderer:', flag);
+  if (flag === 'false') {
+    try {
+      const databasePath = await initializeDatabase(app);
+      console.log('SQLite database ready at:', databasePath);
+      notifyRendererFlagInitialized();
+    }
+    catch (error) {
+      notifySqliteInitializationFailure(error);
+    }
   }
+});
 
+app.on('ready', async () => {
   createWindow();
 })
 
@@ -138,6 +151,7 @@ ipcMain.on("sendPrint", (event, args) => {
 
 ipcMain.on("sendReadExcel", async (event, args) => {
   try {
+    await initializeDatabase(app);
     const data = await readData(args);
     mainWindow.webContents.send("receiveReadExcel" + args, data);
   } catch (error) {
@@ -164,6 +178,7 @@ ipcMain.on("getBackground", (event, args) => {
 ipcMain.on("sendWriteExcel", async (event, args) => {
   if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
     try {
+      await initializeDatabase(app);
       JSON.parse(args[1]);
       await writeData(args[0], args[1]);
       mainWindow.webContents.send("receiveWriteExcel" + args[0], 1);
