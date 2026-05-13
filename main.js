@@ -13,17 +13,8 @@ function shouldShowUserErrorDialog() {
   return !app.isPackaged;
 }
 
-function getTableName(datasetName) {
-  if (datasetName === 'systemConfig') {
-    return 'systemConfig';
-  }
-
-  return String(datasetName || 'unknown');
-}
-
 function notifySqliteTableFailure(operationLabel, datasetName, error) {
-  const tableName = getTableName(datasetName);
-  console.error(`SQLite ${operationLabel} failed for ${tableName}.`, error);
+  console.error(`SQLite ${operationLabel} failed for ${datasetName}.`, error);
 
   if (!shouldShowUserErrorDialog()) {
     return;
@@ -66,29 +57,6 @@ function notifySqliteInitializationFailure(error) {
   );
 }
 
-function notifySchemaMismatch(datasetName, error) {
-  const tableName = getTableName(datasetName);
-  console.error(`Schema mismatch for ${tableName}.`, error);
-
-  if (!shouldShowUserErrorDialog()) {
-    return;
-  }
-
-  const now = Date.now();
-  if (now - lastErrorDialogAt < ERROR_DIALOG_COOLDOWN_MS) {
-    return;
-  }
-  lastErrorDialogAt = now;
-
-  dialog.showErrorBox(
-    'הודעת מערכת',
-    `בעיה בהעלאת נתונים בטבלת ${tableName}. מבנה הקובץ לא תואם לשדות הנדרשים. נא לבדוק את כותרות העמודות ולהעלות קובץ אחר.`
-  );
-}
-
-function isSchemaMismatchError(error) {
-  return Boolean(error && typeof error.message === 'string' && error.message.startsWith('DATA_SCHEMA_ERROR:'));
-}
 
 function createWindow() {
   let ses = session.defaultSession
@@ -203,9 +171,6 @@ ipcMain.on("sendWriteExcel", async (event, args) => {
     } catch (e) {
       if (e instanceof SyntaxError) {
         console.error("Invalid JSON data:", e);
-        notifySchemaMismatch(args[0], e);
-      } else if (isSchemaMismatchError(e)) {
-        notifySchemaMismatch(args[0], e);
       } else {
         notifySqliteTableFailure('שמירת', args[0], e);
       }
