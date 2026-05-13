@@ -1,5 +1,7 @@
 systemConfig.txt
 node_modules
+package-lock.json
+show-sqlite-data.js
 dist/
 parents.txt
 products.txt
