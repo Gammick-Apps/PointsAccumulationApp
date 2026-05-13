@@ -122,7 +122,7 @@ async function initializeDatabase(electronApp) {
 
     db = await openSqlite3Database(dbPath);
     await createSchema();
-    await ensureSchemaEvolution();
+    await seedDefaultSystemConfigIfEmpty();
 
     console.log('SQLite backend active: sqlite3');
     return dbPath;
@@ -191,10 +191,6 @@ async function createSchema() {
   `);
 }
 
-async function ensureSchemaEvolution() {
-  await seedDefaultSystemConfigIfEmpty();
-}
-
 async function seedDefaultSystemConfigIfEmpty() {
   const row = await get('SELECT COUNT(1) AS count FROM systemConfig;');
   if (row && Number(row.count) > 0) {
@@ -203,14 +199,7 @@ async function seedDefaultSystemConfigIfEmpty() {
   await writeSystemConfig(getDefaultSystemConfig());
 }
 
-function ensureInitialized() {
-  if (!db) {
-    throw new Error('Database is not initialized. Call initializeDatabase(app) first.');
-  }
-}
-
 async function getLastSavedConfig() {
-  ensureInitialized();
   const config = {};
   const rows = await all('SELECT config_key, config_value FROM systemConfig ORDER BY config_key;');
   rows.forEach((row) => {
@@ -222,7 +211,6 @@ async function getLastSavedConfig() {
 }
 
 async function writeSystemConfig(parsed) {
-  ensureInitialized();
   const entries = Object.entries(parsed || {});
   await run('BEGIN TRANSACTION;');
 
@@ -279,7 +267,5 @@ module.exports = {
   writeData,
   readData,
   closeDatabase,
-  getLastSavedConfig,
-  getBackend: () => 'sqlite3',
   getDatabasePath: () => dbPath
 };

@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 let mainWindow
 const path = require('path');
-const { initializeDatabase, readData, writeData, getDatabasePath, closeDatabase, getBackend } = require('./sqlite-storage');
+const { initializeDatabase, readData, writeData, getDatabasePath, closeDatabase } = require('./sqlite-storage');
 
 const ERROR_DIALOG_COOLDOWN_MS = 5000;
 let lastErrorDialogAt = 0;
@@ -116,7 +116,6 @@ app.on('ready', async () => {
   try {
     const databasePath = await initializeDatabase(app);
     console.log('SQLite database ready at:', databasePath || getDatabasePath());
-    console.log('SQLite storage backend:', getBackend());
   } catch (error) {
     notifySqliteInitializationFailure(error);
   }
