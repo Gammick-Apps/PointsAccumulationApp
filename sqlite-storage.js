@@ -183,13 +183,32 @@ function all(sql, params = []) {
 }
 
 async function createSchema() {
-  const schemaFilePath = path.join(__dirname, 'schema.txt');
+  let schemaFilePath;
+  
+  if (appInstance.isPackaged) {
+    // In packaged app: use database directory
+    const location = resolveDatabaseLocation();
+    schemaFilePath = path.join(location.userDataPath, 'schema.json');
+    
+    // If schema doesn't exist in database dir, copy it from app resources
+    if (!fs.existsSync(schemaFilePath)) {
+      const appSchemaPath = path.join(__dirname, 'schema.json');
+      if (!fs.existsSync(appSchemaPath)) {
+        throw new Error('schema.json not found in application resources');
+      }
+      fs.copyFileSync(appSchemaPath, schemaFilePath);
+    }
+  } else {
+    // In development: read from app directory
+    schemaFilePath = path.join(__dirname, 'schema.json');
+  }
+  
   const schemaRaw = fs.readFileSync(schemaFilePath, 'utf8');
   const parsedSchema = JSON.parse(schemaRaw);
   const tables = Array.isArray(parsedSchema.tables) ? parsedSchema.tables : [];
 
   if (tables.length === 0) {
-    throw new Error('schema.txt must include a non-empty tables array');
+    throw new Error('schema.json must include a non-empty tables array');
   }
 
   const quoteIdentifier = (identifier) => `"${String(identifier).replace(/"/g, '""')}"`;
