@@ -51,13 +51,12 @@
             const uploadPollsWrapper = document.getElementById('uploadPollsWrapper');
             const uploadPolls = document.getElementById('uploadPolls');
 
-
             fileName = 'systemConfig'
             window.expose.SendSystem("sendReadSystem", fileName);
             window.expose.ReceiveSystem("receiveReadSystem" + fileName, (data) => {               
                 systemConfig = JSON.parse(data)
                 document.getElementById("background").style.backgroundImage = getBackground("1", "1");
-                
+  
                 Object.entries(systemConfig).forEach(x => {
                     if (x[0] != 'buy')
                         document.getElementById(x[0]).value = x[1]
@@ -310,7 +309,7 @@
             fileName = "systemConfig"
             window.expose.SendSystem("sendWriteSystem", [fileName, JSON.stringify(systemConfig)]);
             window.expose.ReceiveSystem("receiveWriteSystem" + fileName, (data) => {
-                    location.reload()
+                location.reload()
             });
         }
 

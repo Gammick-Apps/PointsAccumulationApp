@@ -149,7 +149,6 @@ ipcMain.on("sendPrint", (event, args) => {
   });
 });
 
-
 ipcMain.on("sendReadExcel", (event, args) => {
   fs.readFile(args + '.txt',
     { encoding: 'utf8', flag: 'r' },
@@ -191,7 +190,7 @@ ipcMain.on("getBackground", (event, args) => {
   });
 });
 
-ipcMain.on("sendWriteExcel",(event, args) => {
+ipcMain.on("sendWriteExcel", (event, args) => {
   if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
     try {
       JSON.parse(args[1]);
@@ -203,6 +202,7 @@ ipcMain.on("sendWriteExcel",(event, args) => {
         }
       });
     } catch (e) {
+      console.error("Invalid JSON data:", e);
       mainWindow.webContents.send("receiveWriteExcel" + args[0], 0);
     }
   } else {
