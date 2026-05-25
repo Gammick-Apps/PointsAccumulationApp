@@ -211,7 +211,6 @@ ipcMain.on("sendWriteExcel", (event, args) => {
   }
 });
 
-///////////////////////////////////
 
 ipcMain.on("sendWriteSystem", async (event, args) => {
   if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
@@ -230,7 +229,6 @@ ipcMain.on("sendWriteSystem", async (event, args) => {
   }
 });
 
-//////////////////////////////////
 
 ipcMain.on("sendUploadBackground", (event, args) => {
   const fileData = args;
