@@ -29,13 +29,11 @@
             fileName = 'systemConfig'
             window.expose.SendExcel("sendReadExcel", fileName);
             window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                const defaults = getDefaultConfig();
                 if (data == 0) {
-                    systemConfig = defaults
+                    systemConfig = getDefaultConfig()
                 }
                 else {
-                    const parsedConfig = JSON.parse(data);
-                    systemConfig = { ...defaults, ...(parsedConfig || {}) };
+                    systemConfig = JSON.parse(data)
                 }
                 if (currentDate > systemConfig.date)
                     login('expired')

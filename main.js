@@ -149,16 +149,32 @@ ipcMain.on("sendPrint", (event, args) => {
   });
 });
 
-ipcMain.on("sendReadExcel", async (event, args) => {
+
+ipcMain.on("sendReadExcel", (event, args) => {
+  fs.readFile(args + '.txt',
+    { encoding: 'utf8', flag: 'r' },
+    function (err, data) {
+      if (err) {
+        mainWindow.webContents.send("receiveReadExcel" + args, 0);
+      }
+      else {
+        mainWindow.webContents.send("receiveReadExcel" + args, data);
+      }
+    });
+});
+
+ipcMain.on("sendReadSystem", async (event, args) => {
   try {
     await initializeDatabase(app);
     const data = await readData(args);
-    mainWindow.webContents.send("receiveReadExcel" + args, data);
+    mainWindow.webContents.send("receiveReadSystem" + args, data);
+    console.log("data: ", data);
   } catch (error) {
     notifySqliteTableFailure('העלאת', args, error);
-    mainWindow.webContents.send("receiveReadExcel" + args, 0);
+    mainWindow.webContents.send("receiveReadSystem" + args, 0);
   }
 });
+
 
 ipcMain.on("getBackground", (event, args) => {
   fs.readFile(args + '.png', { encoding: 'base64', flag: 'r' }, function (err, data) {
@@ -175,19 +191,18 @@ ipcMain.on("getBackground", (event, args) => {
   });
 });
 
-ipcMain.on("sendWriteExcel", async (event, args) => {
+ipcMain.on("sendWriteExcel",(event, args) => {
   if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
     try {
-      await initializeDatabase(app);
       JSON.parse(args[1]);
-      await writeData(args[0], args[1]);
-      mainWindow.webContents.send("receiveWriteExcel" + args[0], 1);
+      fs.writeFile(args[0] + '.txt', args[1], err => {
+        if (err) {
+          console.error(err);
+        } else {
+          mainWindow.webContents.send("receiveWriteExcel" + args[0], 1);
+        }
+      });
     } catch (e) {
-      if (e instanceof SyntaxError) {
-        console.error("Invalid JSON data:", e);
-      } else {
-        notifySqliteTableFailure('שמירת', args[0], e);
-      }
       mainWindow.webContents.send("receiveWriteExcel" + args[0], 0);
     }
   } else {
@@ -195,6 +210,27 @@ ipcMain.on("sendWriteExcel", async (event, args) => {
     mainWindow.webContents.send("receiveWriteExcel" + args[0], 0);
   }
 });
+
+///////////////////////////////////
+
+ipcMain.on("sendWriteSystem", async (event, args) => {
+  if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
+    try {
+      await initializeDatabase(app);
+      JSON.parse(args[1]);
+      await writeData(args[0], args[1]);
+      mainWindow.webContents.send("receiveWriteSystem" + args[0], 1);
+    } catch (e) {
+      console.error(e instanceof SyntaxError ? "Invalid JSON data:" : "Save failed:", e);
+      mainWindow.webContents.send("receiveWriteSystem" + args[0], 0);
+    }
+  } else {
+    console.error("Empty or invalid data.");
+    mainWindow.webContents.send("receiveWriteSystem" + args[0], 0);
+  }
+});
+
+//////////////////////////////////
 
 ipcMain.on("sendUploadBackground", (event, args) => {
   const fileData = args;
