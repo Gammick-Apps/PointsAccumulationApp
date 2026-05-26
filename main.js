@@ -123,7 +123,6 @@ ipcMain.on('rendererFlag', async (_event, flag) => {
   if (flag === 'false') {
     try {
       const databasePath = await initializeDatabase(app);
-      console.log('SQLite database ready at:', databasePath);
       notifyRendererFlagInitialized();
     }
     catch (error) {
@@ -164,7 +163,6 @@ ipcMain.on("sendReadExcel", (event, args) => {
 
 ipcMain.on("sendReadSystem", async (event, args) => {
   try {
-    await initializeDatabase(app);
     const data = await readData(args);
     mainWindow.webContents.send("receiveReadSystem" + args, data);
     console.log("data: ", data);
@@ -215,7 +213,6 @@ ipcMain.on("sendWriteExcel", (event, args) => {
 ipcMain.on("sendWriteSystem", async (event, args) => {
   if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
     try {
-      await initializeDatabase(app);
       JSON.parse(args[1]);
       await writeData(args[0], args[1]);
       mainWindow.webContents.send("receiveWriteSystem" + args[0], 1);

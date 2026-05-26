@@ -15,6 +15,7 @@ function getYesterdayDateIso() {
 
 function getDefaultSystemConfig() {
   return {
+    id:1,
     date: getYesterdayDateIso(),
     numPosition: '',
     hasPrint: '1',
@@ -105,10 +106,11 @@ function consumeInstallerResetFlag(primaryBasePath) {
 async function initializeDatabase(electronApp) {
 
   if (db) {
-    return dbPath;
+    return true;
   }
   if (initializationPromise) {
-    return initializationPromise;
+    await initializationPromise;
+    return true;
   }
 
   initializationPromise = (async () => {
@@ -125,13 +127,14 @@ async function initializeDatabase(electronApp) {
     await createSchema();
 
     console.log('SQLite backend active: sqlite3');
-    return dbPath;
+    return true;
   })().catch((error) => {
     initializationPromise = undefined;
     throw error;
   });
 
-  return initializationPromise;
+  await initializationPromise;
+  return true;
 }
 
 function openSqlite3Database(filePath) {
@@ -270,9 +273,10 @@ async function createSchema() {
       }
 
       if (table.name === 'systemConfig') {
+        const defaults = getDefaultSystemConfig();
         await run(
-          `INSERT INTO ${tableNameSql} (config_key, config_value) VALUES (?, ?);`,
-          ['date', getDefaultSystemConfig().date]
+          `INSERT INTO ${tableNameSql} (id, device, color, textColor, date, numPosition, type, hasPrint, hasBuy, hasParents, hasTests, buy, timer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+          [1, defaults.device, defaults.color, defaults.textColor, defaults.date, defaults.numPosition, defaults.type, defaults.hasPrint, defaults.hasBuy, defaults.hasParents, defaults.hasTests, defaults.buy, defaults.timer]
         );
         continue;
       }
@@ -286,34 +290,45 @@ async function createSchema() {
 
 async function getLastSavedConfig() {
   const config = {};
-  const rows = await all('SELECT config_key, config_value FROM systemConfig ORDER BY config_key;');
-  rows.forEach((row) => {
-    if (row && row.config_key != null) {
-      config[String(row.config_key)] = row.config_value == null ? '' : String(row.config_value);
-    }
-  });
+  const rows = await all('SELECT id, device, color, textColor, date, numPosition, type, hasPrint, hasBuy, hasParents, hasTests, buy, timer FROM systemConfig WHERE id = 1 LIMIT 1;');
+  if (rows.length > 0) {
+    Object.assign(config, rows[0]);
+  }
   return config;
 }
 
 async function writeSystemConfig(parsed) {
-  const entries = Object.entries(parsed || {});
+  const config = parsed || {};
   await run('BEGIN TRANSACTION;');
 
   try {
-    for (const [key, value] of entries) {
-      await run(
-        `INSERT OR REPLACE INTO systemConfig (config_key, config_value)
-         VALUES (?, ?)`,
-        [String(key), value == null ? '' : String(value)]
-      );
-    }
+    await run(
+      `INSERT OR REPLACE INTO systemConfig
+       (id, device, color, textColor, date, numPosition, type, hasPrint, hasBuy, hasParents, hasTests, buy, timer)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+      [
+        1,
+        config.device,
+        config.color,
+        config.textColor,
+        config.date,
+        config.numPosition,
+        config.type,
+        config.hasPrint,
+        config.hasBuy,
+        config.hasParents,
+        config.hasTests,
+        config.buy,
+        config.timer
+      ]
+    );
     await run('COMMIT;');
   } catch (error) {
     await run('ROLLBACK;');
     throw error;
   }
 
-  return entries.length;
+  return 1;
 }
 
 async function writeData(datasetName, payload) {

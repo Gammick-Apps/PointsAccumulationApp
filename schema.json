@@ -3,8 +3,19 @@
     {
       "name": "systemConfig",
       "columns": [
-        { "name": "config_key", "type": "TEXT", "primaryKey": true, "nullable": false },
-        { "name": "config_value", "type": "TEXT", "nullable": false }
+        { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
+        { "name": "device", "type": "INTEGER", "nullable": false },
+        { "name": "color", "type": "INTEGER", "nullable": false },
+        { "name": "textColor", "type": "INTEGER", "nullable": false },
+        { "name": "date", "type": "DATE", "nullable": false },
+        { "name": "numPosition", "type": "INTEGER", "nullable": false },
+        { "name": "type", "type": "INTEGER", "nullable": false },
+        { "name": "hasPrint", "type": "INTEGER", "nullable": false },
+        { "name": "hasBuy", "type": "INTEGER", "nullable": false },
+        { "name": "hasParents", "type": "INTEGER", "nullable": false },
+        { "name": "hasTests", "type": "INTEGER", "nullable": false },
+        { "name": "buy", "type": "INTEGER", "nullable": false },
+        { "name": "timer", "type": "INTEGER", "nullable": false }
       ],
       "foreignKeys": []
     },

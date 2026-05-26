@@ -51,14 +51,14 @@
             const uploadPollsWrapper = document.getElementById('uploadPollsWrapper');
             const uploadPolls = document.getElementById('uploadPolls');
 
-            fileName = 'systemConfig'
-            window.expose.SendSystem("sendReadSystem", fileName);
-            window.expose.ReceiveSystem("receiveReadSystem" + fileName, (data) => {               
+            tableName = 'systemConfig'
+            window.expose.SendSystem("sendReadSystem", tableName);
+            window.expose.ReceiveSystem("receiveReadSystem" + tableName, (data) => {               
                 systemConfig = JSON.parse(data)
                 document.getElementById("background").style.backgroundImage = getBackground("1", "1");
   
                 Object.entries(systemConfig).forEach(x => {
-                    if (x[0] != 'buy')
+                    if (x[0] != 'buy' && x[0] != 'id')
                         document.getElementById(x[0]).value = x[1]
                 })
                 const changeEvent = new Event('change');
@@ -299,9 +299,9 @@
         function updateSystem() {
             Object.entries(systemConfig).forEach(x => {
                 var key = x[0]
-                if (key != 'buy')
+                if (key != 'buy' && key != 'id')
                     systemConfig[key] = document.getElementById(x[0]).value;
-                else {
+                else if (key == 'buy') {
                     systemConfig[key] = 0;
                 }
             })

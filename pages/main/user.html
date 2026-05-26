@@ -26,9 +26,9 @@
             const flag = localStorage.getItem('flag');
             window.expose.send('rendererFlag', flag);
 
-            fileName = 'systemConfig'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+            tableName = 'systemConfig'
+            window.expose.SendExcel("sendReadExcel", tableName);
+            window.expose.ReceiveExcel("receiveReadExcel" + tableName, (data) => {
                 if (data == 0) {
                     systemConfig = getDefaultConfig()
                 }
