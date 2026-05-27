@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 let mainWindow
-const { initializeDatabase, readData, writeData, closeDatabase } = require('./sqlite-storage');
+const { initDatabase, waitDB, readData, writeData, closeDatabase } = require('./sqlite-storage');
 
 const ERROR_DIALOG_COOLDOWN_MS = 5000;
 let lastErrorDialogAt = 0;
@@ -122,7 +122,7 @@ ipcMain.on('rendererFlag', async (_event, flag) => {
   console.log('Received flag from Renderer:', flag);
   if (flag === 'false') {
     try {
-      const databasePath = await initializeDatabase(app);
+      const databasePath = await waitDB();
       notifyRendererFlagInitialized();
     }
     catch (error) {
@@ -133,6 +133,7 @@ ipcMain.on('rendererFlag', async (_event, flag) => {
 
 app.on('ready', async () => {
   createWindow();
+  initDatabase(app);
 })
 
 ipcMain.on("sendPrint", (event, args) => {

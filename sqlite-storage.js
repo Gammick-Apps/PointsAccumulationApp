@@ -1,154 +1,59 @@
 const fs = require('fs');
 const path = require('path');
+const sqlite3 = require('sqlite3').verbose();
 
 let appInstance;
 let db;
 let dbPath;
-let sqlite3;
-let initializationPromise;
+let initPromise;
 
-function getYesterdayDateIso() {
-  const date = new Date();
-  date.setDate(date.getDate() - 1);
-  return date.toISOString().split('T')[0];
-}
 
-function getDefaultSystemConfig() {
-  return {
-    id:1,
-    date: getYesterdayDateIso(),
-    numPosition: '',
-    hasPrint: '1',
-    hasBuy: '0',
-    device: '0',
-    color: '0',
-    type: '0',
-    hasParents: '0',
-    hasTests: '0',
-    timer: '10',
-    buy: 'false',
-    textColor: '0'
-  };
-}
+async function initDatabase(electronApp) {
 
-function resolveInstalledProgramPath() {
-  const localAppDataPath = process.env.LOCALAPPDATA;
-  if (!localAppDataPath) {
-    return null;
-  }
+  // פונקציה ליצירת מסד הנתונים
+  initPromise = (async () => {
+    const openDatabase = (filePath) => new Promise((resolve, reject) => {
+      const connection = new sqlite3.Database(filePath, (error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve(connection);
+      });
+    });
 
-  return path.join(localAppDataPath, 'Programs', 'accumulatingpoints');
-}
+    //שומר את המסד נתונים בתיקיה 
+    const userDataPath = electronApp.getPath('userData');    
+    dbPath= path.join(userDataPath, 'points-accumulation.sqlite')
+    fs.mkdirSync(userDataPath, { recursive: true });
 
-function resolveDatabaseLocation() {
-  const userDataPath = appInstance.getPath('userData');
-  if (appInstance.isPackaged) {
-    const installedProgramPath = resolveInstalledProgramPath();
-    const basePath = installedProgramPath || userDataPath;
-    return {
-      userDataPath: basePath,
-      databaseFilePath: path.join(basePath, 'points-accumulation.sqlite')
-    };
-  }
-
-  return {
-    userDataPath,
-    databaseFilePath: path.join(userDataPath, 'points-accumulation.dev.sqlite')
-  };
-}
-
-function collectResetFlagPaths(primaryBasePath) {
-  const flagFileName = 'reset-sqlite-on-next-launch.flag';
-  const flagPaths = [path.join(primaryBasePath, flagFileName)];
-  const appDataPath = appInstance.getPath('appData');
-
-  try {
-    const appDataEntries = fs.readdirSync(appDataPath, { withFileTypes: true });
-    for (const entry of appDataEntries) {
-      if (!entry.isDirectory()) {
-        continue;
-      }
-      flagPaths.push(path.join(appDataPath, entry.name, flagFileName));
-    }
-  } catch (error) {
-    // Ignore path scan issues and rely on the primary path.
-  }
-
-  return Array.from(new Set(flagPaths));
-}
-
-function consumeInstallerResetFlag(primaryBasePath) {
-  if (!appInstance.isPackaged) {
-    return false;
-  }
-
-  const flagPaths = collectResetFlagPaths(primaryBasePath);
-  const existingFlagPaths = flagPaths.filter((flagPath) => fs.existsSync(flagPath));
-  if (existingFlagPaths.length === 0) {
-    return false;
-  }
-
-  if (fs.existsSync(dbPath)) {
-    fs.unlinkSync(dbPath);
-  }
-
-  existingFlagPaths.forEach((flagPath) => {
-    try {
-      fs.unlinkSync(flagPath);
-    } catch (error) {
-      // Best effort cleanup.
-    }
-  });
-
-  return true;
-}
-
-async function initializeDatabase(electronApp) {
-
-  if (db) {
-    return true;
-  }
-  if (initializationPromise) {
-    await initializationPromise;
-    return true;
-  }
-
-  initializationPromise = (async () => {
-    appInstance = electronApp;
-    sqlite3 = sqlite3 || require('sqlite3').verbose();
-
-    const location = resolveDatabaseLocation();
-    fs.mkdirSync(location.userDataPath, { recursive: true });
-    dbPath = location.databaseFilePath;
-
-    consumeInstallerResetFlag(location.userDataPath);
-
-    db = await openSqlite3Database(dbPath);
+    //פותח בפועל את מסד הנתונים
+   // ואז יוצר את הטבלאות על פי הסכמה
+    db = await openDatabase(dbPath);
     await createSchema();
-
     console.log('SQLite backend active: sqlite3');
     return true;
+
   })().catch((error) => {
-    initializationPromise = undefined;
+    initPromise = undefined;
     throw error;
   });
 
-  await initializationPromise;
+  await initPromise;
   return true;
 }
 
-function openSqlite3Database(filePath) {
-  return new Promise((resolve, reject) => {
-    const connection = new sqlite3.Database(filePath, (error) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve(connection);
-    });
-  });
+//בודק שנוצר מסד נתונים
+//לפני שניגש אליו מהקוד
+async function waitDB() {
+  if (db) return true;
+  if (initPromise) await initPromise;
+  if (!db) throw new Error('Database not available');
+  return true;
 }
 
+// מתקשר עם המסד נתונים
+//לבצע שם שינויים
 function run(sql, params = []) {
   return new Promise((resolve, reject) => {
     db.run(sql, params, function onRun(error) {
@@ -161,6 +66,8 @@ function run(sql, params = []) {
   });
 }
 
+//מתקשר עם המסד נתונים
+//עבור קבלת נתונים 
 function get(sql, params = []) {
   return new Promise((resolve, reject) => {
     db.get(sql, params, (error, row) => {
@@ -173,41 +80,9 @@ function get(sql, params = []) {
   });
 }
 
-function all(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.all(sql, params, (error, rows) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve(rows || []);
-    });
-  });
-}
-
 async function createSchema() {
-  let schemaFilePath;
-  
-  if (appInstance.isPackaged) {
-    // In packaged app: use database directory
-    const location = resolveDatabaseLocation();
-    schemaFilePath = path.join(location.userDataPath, 'schema.json');
-    
-    // If schema doesn't exist in database dir, copy it from app resources
-    if (!fs.existsSync(schemaFilePath)) {
-      const appSchemaPath = path.join(__dirname, 'schema.json');
-      if (!fs.existsSync(appSchemaPath)) {
-        throw new Error('schema.json not found in application resources');
-      }
-      fs.copyFileSync(appSchemaPath, schemaFilePath);
-    }
-  } else {
-    // In development: read from app directory
-    schemaFilePath = path.join(__dirname, 'schema.json');
-  }
-  
-  const schemaRaw = fs.readFileSync(schemaFilePath, 'utf8');
-  const parsedSchema = JSON.parse(schemaRaw);
+  const schemaFilePath = path.join(__dirname, 'schema.json');
+  const parsedSchema = JSON.parse(fs.readFileSync(schemaFilePath, 'utf8'));
   const tables = Array.isArray(parsedSchema.tables) ? parsedSchema.tables : [];
 
   if (tables.length === 0) {
@@ -237,7 +112,22 @@ async function createSchema() {
     return `FOREIGN KEY (${localColumns}) REFERENCES ${referenceTable} (${referenceColumns})`;
   };
 
-  await run('PRAGMA foreign_keys = OFF;');
+  const ensureSystemConfigRow = async () => {
+    const systemConfigTable = tables.find((table) => table && table.name === 'systemConfig');
+    if (!systemConfigTable || !Array.isArray(systemConfigTable.columns) || systemConfigTable.columns.length === 0) {
+      return;
+    }
+
+    const countRow = await get('SELECT COUNT(1) AS count FROM "systemConfig";');
+    if (Number(countRow?.count || 0) > 0) {
+      return;
+    }
+
+    await run('INSERT INTO "systemConfig" ("id") VALUES (1);');
+  };
+
+  await run('PRAGMA foreign_keys = ON;');
+  await run('BEGIN TRANSACTION;');
 
   try {
     for (const table of tables) {
@@ -260,110 +150,54 @@ async function createSchema() {
       await run(sql);
     }
 
-    for (const table of tables) {
-      const columns = Array.isArray(table.columns) ? table.columns : [];
-      if (!table.name || columns.length === 0) {
-        continue;
-      }
-
-      const tableNameSql = quoteIdentifier(table.name);
-      const countRow = await get(`SELECT COUNT(1) AS count FROM ${tableNameSql};`);
-      if (countRow && Number(countRow.count) > 0) {
-        continue;
-      }
-
-      if (table.name === 'systemConfig') {
-        const defaults = getDefaultSystemConfig();
-        await run(
-          `INSERT INTO ${tableNameSql} (id, device, color, textColor, date, numPosition, type, hasPrint, hasBuy, hasParents, hasTests, buy, timer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-          [1, defaults.device, defaults.color, defaults.textColor, defaults.date, defaults.numPosition, defaults.type, defaults.hasPrint, defaults.hasBuy, defaults.hasParents, defaults.hasTests, defaults.buy, defaults.timer]
-        );
-        continue;
-      }
-
-      await run(`INSERT INTO ${tableNameSql} DEFAULT VALUES;`);
-    }
-  } finally {
-    await run('PRAGMA foreign_keys = ON;');
-  }
-}
-
-async function getLastSavedConfig() {
-  const config = {};
-  const rows = await all('SELECT id, device, color, textColor, date, numPosition, type, hasPrint, hasBuy, hasParents, hasTests, buy, timer FROM systemConfig WHERE id = 1 LIMIT 1;');
-  if (rows.length > 0) {
-    Object.assign(config, rows[0]);
-  }
-  return config;
-}
-
-async function writeSystemConfig(parsed) {
-  const config = parsed || {};
-  await run('BEGIN TRANSACTION;');
-
-  try {
-    await run(
-      `INSERT OR REPLACE INTO systemConfig
-       (id, device, color, textColor, date, numPosition, type, hasPrint, hasBuy, hasParents, hasTests, buy, timer)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-      [
-        1,
-        config.device,
-        config.color,
-        config.textColor,
-        config.date,
-        config.numPosition,
-        config.type,
-        config.hasPrint,
-        config.hasBuy,
-        config.hasParents,
-        config.hasTests,
-        config.buy,
-        config.timer
-      ]
-    );
+    await ensureSystemConfigRow();
     await run('COMMIT;');
   } catch (error) {
     await run('ROLLBACK;');
     throw error;
   }
+}
 
+
+
+async function writeData(datasetName, payload) {
+  await waitDB();
+  if (datasetName !== 'systemConfig') return 0;
+  const config = JSON.parse(payload) || {};
+  await run('BEGIN TRANSACTION;');
+  try {
+    await run(`INSERT OR REPLACE INTO systemConfig (id, device, color, textColor, date, numPosition, type, hasPrint, hasBuy, hasParents, hasTests, buy, timer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+      [1, config.device, config.color, config.textColor, config.date, config.numPosition, config.type, config.hasPrint, config.hasBuy, config.hasParents, config.hasTests, config.buy, config.timer]);
+    await run('COMMIT;');
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
   return 1;
 }
 
-async function writeData(datasetName, payload) {
-  if (datasetName !== 'systemConfig') {
-    return 0;
-  }
-
-  const parsed = JSON.parse(payload);
-  const mergedConfig = { ...getDefaultSystemConfig(), ...(parsed || {}) };
-  return writeSystemConfig(mergedConfig);
-}
-
 async function readData(datasetName) {
+  await waitDB();
   if (datasetName !== 'systemConfig') {
     return '[]';
   }
-
-  const config = await getLastSavedConfig();
-  const mergedConfig = { ...getDefaultSystemConfig(), ...(config || {}) };
-  return JSON.stringify(mergedConfig);
+  const row = await get('SELECT * FROM systemConfig WHERE id = 1 LIMIT 1;');
+  return JSON.stringify(row || {});
 }
 
 function closeDatabase() {
   if (!db) {
     return;
   }
-
   db.close();
   db = undefined;
   dbPath = undefined;
-  initializationPromise = undefined;
+  initPromise = undefined;
 }
 
 module.exports = {
-  initializeDatabase,
+  initDatabase,
+  waitDB,
   writeData,
   readData,
   closeDatabase
