@@ -133,7 +133,11 @@ ipcMain.on('rendererFlag', async (_event, flag) => {
 
 app.on('ready', async () => {
   createWindow();
-  initDatabase(app);
+  try {
+    await initDatabase(app);
+  } catch (error) {
+    notifySqliteInitializationFailure(error);
+  }
 })
 
 ipcMain.on("sendPrint", (event, args) => {

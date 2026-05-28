@@ -7,6 +7,10 @@ let db;
 let dbPath;
 let initPromise;
 
+function quoteIdentifier(identifier) {
+  return `"${String(identifier).replace(/"/g, '""')}"`;
+}
+
 
 async function initDatabase(electronApp) {
 
@@ -108,15 +112,13 @@ async function createSchema() {
   const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
   const tables = schema.tables;
 
-  const quoteIdentifier = (identifier) => `"${String(identifier).replace(/"/g, '""')}"`;
-
   await run('PRAGMA foreign_keys = ON;');
   await run('BEGIN TRANSACTION;');
 
   try {
     for (const table of tables) {
       const columns = table.columns;
-      const foreignKeys = table.foreignKeys;
+      const foreignKeys = table.foreignKeys || [];
 
       const columnSql = columns.map(buildColumnSql);
       const foreignKeySql = foreignKeys.map(buildFKSql);

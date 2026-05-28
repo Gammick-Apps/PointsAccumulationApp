@@ -27,14 +27,10 @@
             window.expose.send('rendererFlag', flag);
 
             tableName = 'systemConfig'
-            window.expose.SendExcel("sendReadExcel", tableName);
-            window.expose.ReceiveExcel("receiveReadExcel" + tableName, (data) => {
-                if (data == 0) {
-                    systemConfig = getDefaultConfig()
-                }
-                else {
-                    systemConfig = JSON.parse(data)
-                }
+            window.expose.SendSystem("sendReadSystem", tableName);
+            window.expose.ReceiveSystem("receiveReadSystem" + tableName, (data) => {
+                const parsedConfig = (data && data != 0) ? JSON.parse(data) : {};
+                systemConfig = Object.keys(parsedConfig).length ? parsedConfig : getDefaultConfig();
                 if (currentDate > systemConfig.date)
                     login('expired')
                 else if (systemConfig.device == 2 || systemConfig.device == 4 || systemConfig.device == "1" && (systemConfig.type == "2" || systemConfig.buy == "1"))

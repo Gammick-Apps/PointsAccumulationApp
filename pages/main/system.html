@@ -58,7 +58,10 @@
                 document.getElementById("background").style.backgroundImage = getBackground("1", "1");
   
                 Object.entries(systemConfig).forEach(x => {
-                        document.getElementById(x[0]).value = x[1]
+                    const element = document.getElementById(x[0]);
+                    if (element) {
+                        element.value = x[1];
+                    }
                 })
                 const changeEvent = new Event('change');
                 device.dispatchEvent(changeEvent);
@@ -298,13 +301,21 @@
         function updateSystem() {
             Object.entries(systemConfig).forEach(x => {
                 var key = x[0]
-                    systemConfig[key] = document.getElementById(x[0]).value;
+                    const element = document.getElementById(x[0]);
+                    if (element) {
+                        systemConfig[key] = element.value;
+                    }
             })
 
             fileName = "systemConfig"
             window.expose.SendSystem("sendWriteSystem", [fileName, JSON.stringify(systemConfig)]);
             window.expose.ReceiveSystem("receiveWriteSystem" + fileName, (data) => {
-                location.reload()
+                if (data == 1) {
+                    location.reload()
+                }
+                else {
+                    alert("שמירת ההגדרות נכשלה");
+                }
             });
         }
 
