@@ -7,7 +7,7 @@
         { "name": "device", "type": "INTEGER", "nullable": false , "default": "0" },
         { "name": "color", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "textColor", "type": "INTEGER", "nullable": false, "default": "0" },
-{ "name": "date", "type": "DATE", "nullable": false, "default": "(date('now','-1 day'))" },        { "name": "numPosition", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "date", "type": "DATE", "nullable": false, "default": "(date('now','-1 day'))" },        { "name": "numPosition", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "type", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "hasPrint", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "hasBuy", "type": "INTEGER", "nullable": false, "default": "0" },

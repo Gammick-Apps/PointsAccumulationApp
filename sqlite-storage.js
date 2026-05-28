@@ -81,13 +81,9 @@ function get(sql, params = []) {
 }
 
 async function createSchema() {
-  const schemaFilePath = path.join(__dirname, 'schema.json');
-  const parsedSchema = JSON.parse(fs.readFileSync(schemaFilePath, 'utf8'));
-  const tables = Array.isArray(parsedSchema.tables) ? parsedSchema.tables : [];
-
-  if (tables.length === 0) {
-    throw new Error('schema.json must include a non-empty tables array');
-  }
+  const schemaPath = path.join(__dirname, 'schema.json');
+  const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
+  const tables = schema.tables;
 
   const quoteIdentifier = (identifier) => `"${String(identifier).replace(/"/g, '""')}"`;
 
@@ -105,25 +101,11 @@ async function createSchema() {
     return parts.join(' ');
   };
 
-  const buildForeignKeySql = (foreignKey) => {
-    const localColumns = (foreignKey.columns || []).map(quoteIdentifier).join(', ');
-    const referenceColumns = (foreignKey.referencesColumns || []).map(quoteIdentifier).join(', ');
+  const buildFKSql = (foreignKey) => {
+    const localColumns = foreignKey.columns.map(quoteIdentifier).join(', ');
+    const referenceColumns = foreignKey.referencesColumns.map(quoteIdentifier).join(', ');
     const referenceTable = quoteIdentifier(foreignKey.referencesTable);
     return `FOREIGN KEY (${localColumns}) REFERENCES ${referenceTable} (${referenceColumns})`;
-  };
-
-  const ensureSystemConfigRow = async () => {
-    const systemConfigTable = tables.find((table) => table && table.name === 'systemConfig');
-    if (!systemConfigTable || !Array.isArray(systemConfigTable.columns) || systemConfigTable.columns.length === 0) {
-      return;
-    }
-
-    const countRow = await get('SELECT COUNT(1) AS count FROM "systemConfig";');
-    if (Number(countRow?.count || 0) > 0) {
-      return;
-    }
-
-    await run('INSERT INTO "systemConfig" ("id") VALUES (1);');
   };
 
   await run('PRAGMA foreign_keys = ON;');
@@ -131,26 +113,24 @@ async function createSchema() {
 
   try {
     for (const table of tables) {
-      const columns = Array.isArray(table.columns) ? table.columns : [];
-      if (!table.name || columns.length === 0) {
-        continue;
-      }
+      const columns = table.columns;
+      const foreignKeys = table.foreignKeys;
 
       const columnSql = columns.map(buildColumnSql);
-      const foreignKeys = Array.isArray(table.foreignKeys) ? table.foreignKeys : [];
-      const foreignKeySql = foreignKeys.map(buildForeignKeySql);
+      const foreignKeySql = foreignKeys.map(buildFKSql);
       const definitions = [...columnSql, ...foreignKeySql].join(',\n      ');
 
-      const sql = `
+      const createTableSql = `
         CREATE TABLE IF NOT EXISTS ${quoteIdentifier(table.name)} (
           ${definitions}
         );
       `;
 
-      await run(sql);
+      await run(createTableSql);
     }
 
-    await ensureSystemConfigRow();
+    await run('INSERT OR IGNORE INTO "systemConfig" ("id") VALUES (1);');
+    
     await run('COMMIT;');
   } catch (error) {
     await run('ROLLBACK;');
