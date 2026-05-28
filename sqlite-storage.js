@@ -162,7 +162,7 @@ async function readData(datasetName) {
     return '[]';
   }
   const row = await get('SELECT * FROM systemConfig WHERE id = 1 LIMIT 1;');
-  return JSON.stringify(row || {});
+  return JSON.stringify((({ id, ...response }) => response)(row || {}));
 }
 
 function closeDatabase() {

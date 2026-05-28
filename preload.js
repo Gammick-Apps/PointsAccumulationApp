@@ -26,7 +26,12 @@ contextBridge.exposeInMainWorld('expose', {
     },
     ReceiveSystem: (channel, func) => {
         ipcRenderer.on(channel, (event, ...args) => func(...args));
-    }
+    },
+
+});
+
+ipcRenderer.on('setFlag', (_event, value) => {
+    window.localStorage.setItem('flag', value);
 });
 
 

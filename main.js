@@ -122,7 +122,7 @@ ipcMain.on('rendererFlag', async (_event, flag) => {
   console.log('Received flag from Renderer:', flag);
   if (flag === 'false') {
     try {
-      const databasePath = await waitDB();
+      await waitDB();
       notifyRendererFlagInitialized();
     }
     catch (error) {

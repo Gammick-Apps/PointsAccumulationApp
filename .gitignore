@@ -1,6 +1,5 @@
 systemConfig.txt
 node_modules
-show-sqlite-data.js
 dist/
 parents.txt
 products.txt
