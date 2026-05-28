@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 let mainWindow
-const { initDatabase, waitDB, readData, writeData, closeDatabase } = require('./sqlite-storage');
+const { initDatabase, waitDB, readData, writeSystem, closeDatabase } = require('./sqlite-storage');
 
 const ERROR_DIALOG_COOLDOWN_MS = 5000;
 let lastErrorDialogAt = 0;
@@ -215,7 +215,7 @@ ipcMain.on("sendWriteSystem", async (event, args) => {
   if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
     try {
       JSON.parse(args[1]);
-      await writeData(args[0], args[1]);
+      await writeSystem(args[1]);
       mainWindow.webContents.send("receiveWriteSystem" + args[0], 1);
     } catch (e) {
       console.error(e instanceof SyntaxError ? "Invalid JSON data:" : "Save failed:", e);

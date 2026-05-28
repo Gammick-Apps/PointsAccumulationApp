@@ -80,14 +80,8 @@ function get(sql, params = []) {
   });
 }
 
-async function createSchema() {
-  const schemaPath = path.join(__dirname, 'schema.json');
-  const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
-  const tables = schema.tables;
-
-  const quoteIdentifier = (identifier) => `"${String(identifier).replace(/"/g, '""')}"`;
-
-  const buildColumnSql = (column) => {
+//בונה מהנתונים שאילתה לבנות שדות במסד נתונים
+function buildColumnSql (column) {
     const parts = [quoteIdentifier(column.name), String(column.type || 'TEXT')];
     if (column.primaryKey) {
       parts.push('PRIMARY KEY');
@@ -101,12 +95,20 @@ async function createSchema() {
     return parts.join(' ');
   };
 
-  const buildFKSql = (foreignKey) => {
+  //בונה מהנתונים שאילתה לבנות מפתחות זרים במסד נתונים
+   function buildFKSql (foreignKey) {
     const localColumns = foreignKey.columns.map(quoteIdentifier).join(', ');
     const referenceColumns = foreignKey.referencesColumns.map(quoteIdentifier).join(', ');
     const referenceTable = quoteIdentifier(foreignKey.referencesTable);
     return `FOREIGN KEY (${localColumns}) REFERENCES ${referenceTable} (${referenceColumns})`;
   };
+
+async function createSchema() {
+  const schemaPath = path.join(__dirname, 'schema.json');
+  const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
+  const tables = schema.tables;
+
+  const quoteIdentifier = (identifier) => `"${String(identifier).replace(/"/g, '""')}"`;
 
   await run('PRAGMA foreign_keys = ON;');
   await run('BEGIN TRANSACTION;');
@@ -125,7 +127,6 @@ async function createSchema() {
           ${definitions}
         );
       `;
-
       await run(createTableSql);
     }
 
@@ -140,9 +141,8 @@ async function createSchema() {
 
 
 
-async function writeData(datasetName, payload) {
+async function writeSystem(payload) {
   await waitDB();
-  if (datasetName !== 'systemConfig') return 0;
   const config = JSON.parse(payload) || {};
   await run('BEGIN TRANSACTION;');
   try {
@@ -156,9 +156,9 @@ async function writeData(datasetName, payload) {
   return 1;
 }
 
-async function readData(datasetName) {
+async function readData(dataName) {
   await waitDB();
-  if (datasetName !== 'systemConfig') {
+  if (dataName !== 'systemConfig') {
     return '[]';
   }
   const row = await get('SELECT * FROM systemConfig WHERE id = 1 LIMIT 1;');
@@ -178,7 +178,7 @@ function closeDatabase() {
 module.exports = {
   initDatabase,
   waitDB,
-  writeData,
+  writeSystem,
   readData,
   closeDatabase
 };
