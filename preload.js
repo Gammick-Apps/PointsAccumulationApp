@@ -30,9 +30,7 @@ contextBridge.exposeInMainWorld('expose', {
 
 });
 
-ipcRenderer.on('setFlag', (_event, value) => {
-    window.localStorage.setItem('flag', value);
-});
+
 
 
 

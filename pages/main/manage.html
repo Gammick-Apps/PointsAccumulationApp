@@ -14,14 +14,9 @@
 
         function onLoad() {
             fileName = 'systemConfig'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                if (data == 0) {
-                    systemConfig = getDefaultConfig()
-                }
-                else {
-                    systemConfig = JSON.parse(data)
-                }
+            window.expose.SendExcel("sendReadSystem", fileName);
+            window.expose.ReceiveExcel("receiveReadSystem" + fileName, (data) => {
+                systemConfig = JSON.parse(data)
                 if (systemConfig.device == 2 || systemConfig.device == 4 || systemConfig.device == 1 && (systemConfig.hasBuy == "1" || systemConfig.type=="2" ))
                     login("../magnetCard/manage")
                 else if (systemConfig.device == 1)
