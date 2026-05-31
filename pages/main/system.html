@@ -56,7 +56,7 @@
             window.expose.ReceiveSystem("receiveReadSystem" + tableName, (data) => {               
                 systemConfig = JSON.parse(data)
                 document.getElementById("background").style.backgroundImage = getBackground("1", "1");
-  
+
                 Object.entries(systemConfig).forEach(x => {
                     const element = document.getElementById(x[0]);
                     if (element) {
