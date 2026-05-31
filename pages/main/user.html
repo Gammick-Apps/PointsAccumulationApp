@@ -14,16 +14,7 @@
         var fileName
 
         function onLoad() {
-            let checkFlag = localStorage.getItem('flag');
-            if (checkFlag === null) {
-                localStorage.setItem('flag', 'false');     
-            }
-            window.expose.receive('setFlag', (value) => {
-                localStorage.setItem('flag', value);    
-            });
-
-            const flag = localStorage.getItem('flag');
-            window.expose.send('rendererFlag', flag);
+            // removed legacy renderer-side flag handling; backend now manages DB initialization
 
             tableName = 'systemConfig'
             window.expose.SendSystem("sendReadSystem", tableName);

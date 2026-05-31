@@ -10,7 +10,6 @@ function notifyRendererFlagInitialized() {
   if (!mainWindow || !mainWindow.webContents) {
     return;
   }
-  mainWindow.webContents.send('setFlag', 'true');
 }
 
 function shouldShowUserErrorDialog() {
@@ -118,18 +117,7 @@ function createWindow() {
   })
 }
 
-ipcMain.on('rendererFlag', async (_event, flag) => {
-  console.log('Received flag from Renderer:', flag);
-  if (flag === 'false') {
-    try {
-      await waitDB();
-      notifyRendererFlagInitialized();
-    }
-    catch (error) {
-      notifySqliteInitializationFailure(error);
-    }
-  }
-});
+// legacy renderer handshake removed: DB initialization is handled in initDatabase at startup
 
 app.on('ready', async () => {
   createWindow();
