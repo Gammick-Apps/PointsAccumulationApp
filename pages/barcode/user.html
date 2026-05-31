@@ -35,9 +35,9 @@
     function onLoad() {
       step = Steps.step1;
       updateLines("!...שלום", "יש לתקף את הכרטיס האישי בסורק הברקוד") 
-      fileName = 'systemConfig'
-      window.expose.SendExcel("sendReadSystem", fileName);
-      window.expose.ReceiveExcel("receiveReadSystem" + fileName, (data) => {
+      tableName = 'systemConfig'
+      window.expose.SendExcel("sendReadSystem", tableName);
+      window.expose.ReceiveExcel("receiveReadSystem" + tableName, (data) => {
           systemConfig = JSON.parse(data)
         document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
         document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
@@ -52,12 +52,14 @@
           document.getElementById("position").style.display = "none";
         }
       })
+
       fileName = 'students'
       window.expose.SendExcel("sendReadExcel", fileName);
       window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
         if (data != 0) {
           students = JSON.parse(data)
-          fileName = 'uniqTasks'
+          
+      fileName = 'uniqTasks'
           window.expose.SendExcel("sendReadExcel", fileName);
           window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
             if (data != 0) {

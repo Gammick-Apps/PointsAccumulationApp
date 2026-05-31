@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 let mainWindow
-const { initDatabase, waitDB, readData, writeSystem, closeDatabase } = require('./sqlite-storage');
+const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB } = require('./sqlite-storage');
 
 const ERROR_DIALOG_COOLDOWN_MS = 5000;
 let lastErrorDialogAt = 0;
@@ -153,24 +153,20 @@ ipcMain.on("sendPrint", (event, args) => {
   });
 });
 
-ipcMain.on("sendReadExcel", (event, args) => {
-  fs.readFile(args + '.txt',
-    { encoding: 'utf8', flag: 'r' },
-    function (err, data) {
-      if (err) {
-        mainWindow.webContents.send("receiveReadExcel" + args, 0);
-      }
-      else {
-        mainWindow.webContents.send("receiveReadExcel" + args, data);
-      }
-    });
+ipcMain.on("sendReadExcel", async (event, args) => {
+  try {
+    const data = await readData(args);
+    mainWindow.webContents.send("receiveReadExcel" + args, data);
+  } catch (error) {
+    notifySqliteTableFailure('העלאת', args, error);
+    mainWindow.webContents.send("receiveReadExcel" + args, '[]');
+  }
 });
 
 ipcMain.on("sendReadSystem", async (event, args) => {
   try {
-    const data = await readData(args);
+    const data = await readSystem(args);
     mainWindow.webContents.send("receiveReadSystem" + args, data);
-    console.log("data: ", data);
   } catch (error) {
     notifySqliteTableFailure('העלאת', args, error);
     mainWindow.webContents.send("receiveReadSystem" + args, 0);
@@ -193,17 +189,12 @@ ipcMain.on("getBackground", (event, args) => {
   });
 });
 
-ipcMain.on("sendWriteExcel", (event, args) => {
+ipcMain.on("sendWriteExcel", async (event, args) => {
   if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
     try {
       JSON.parse(args[1]);
-      fs.writeFile(args[0] + '.txt', args[1], err => {
-        if (err) {
-          console.error(err);
-        } else {
-          mainWindow.webContents.send("receiveWriteExcel" + args[0], 1);
-        }
-      });
+      await insertExcelToDB(args[0], args[1]);
+      mainWindow.webContents.send("receiveWriteExcel" + args[0], 1);
     } catch (e) {
       console.error("Invalid JSON data:", e);
       mainWindow.webContents.send("receiveWriteExcel" + args[0], 0);

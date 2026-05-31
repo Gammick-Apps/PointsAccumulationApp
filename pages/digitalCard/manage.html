@@ -35,9 +35,9 @@
         ];
 
         function onLoad() {
-            fileName = 'systemConfig'
-            window.expose.SendExcel("sendReadSystem", fileName);
-            window.expose.ReceiveExcel("receiveReadSystem" + fileName, (data) => {
+            tableName = 'systemConfig'
+            window.expose.SendExcel("sendReadSystem", tableName);
+            window.expose.ReceiveExcel("receiveReadSystem" + tableName, (data) => {
                 systemConfig = JSON.parse(data)
                 document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color);
             });

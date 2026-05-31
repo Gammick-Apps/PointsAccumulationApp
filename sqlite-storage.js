@@ -84,28 +84,42 @@ function get(sql, params = []) {
   });
 }
 
-//בונה מהנתונים שאילתה לבנות שדות במסד נתונים
-function buildColumnSql (column) {
-    const parts = [quoteIdentifier(column.name), String(column.type || 'TEXT')];
-    if (column.primaryKey) {
-      parts.push('PRIMARY KEY');
-    }
-    if (column.nullable === false) {
-      parts.push('NOT NULL');
-    }
-    if (Object.prototype.hasOwnProperty.call(column, 'default')) {
-      parts.push(`DEFAULT ${column.default}`);
-    }
-    return parts.join(' ');
-  };
+//מתקשר עם המסד נתונים
+//עבור קבלת נתונים כמערך
+function all(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.all(sql, params, (error, rows) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(rows);
+    });
+  });
+}
 
-  //בונה מהנתונים שאילתה לבנות מפתחות זרים במסד נתונים
-   function buildFKSql (foreignKey) {
-    const localColumns = foreignKey.columns.map(quoteIdentifier).join(', ');
-    const referenceColumns = foreignKey.referencesColumns.map(quoteIdentifier).join(', ');
-    const referenceTable = quoteIdentifier(foreignKey.referencesTable);
-    return `FOREIGN KEY (${localColumns}) REFERENCES ${referenceTable} (${referenceColumns})`;
-  };
+//בונה מהנתונים שאילתה לבנות שדות במסד נתונים
+function buildColumnSql(column) {
+  const parts = [quoteIdentifier(column.name), String(column.type || 'TEXT')];
+  if (column.primaryKey) {
+    parts.push('PRIMARY KEY');
+  }
+  if (column.nullable === false) {
+    parts.push('NOT NULL');
+  }
+  if (Object.prototype.hasOwnProperty.call(column, 'default')) {
+    parts.push(`DEFAULT ${column.default}`);
+  }
+  return parts.join(' ');
+};
+
+//בונה מהנתונים שאילתה לבנות מפתחות זרים במסד נתונים
+function buildFKSql(foreignKey) {
+  const localColumns = foreignKey.columns.map(quoteIdentifier).join(', ');
+  const referenceColumns = foreignKey.referencesColumns.map(quoteIdentifier).join(', ');
+  const referenceTable = quoteIdentifier(foreignKey.referencesTable);
+  return `FOREIGN KEY (${localColumns}) REFERENCES ${referenceTable} (${referenceColumns})`;
+};
 
 async function createSchema() {
   const schemaPath = path.join(__dirname, 'schema.json');
@@ -142,6 +156,40 @@ async function createSchema() {
 }
 
 
+async function insertExcelToDB(tableName, payload) {
+  await waitDB();
+  const parsedPayload = JSON.parse(payload);
+  const rows = Array.isArray(parsedPayload) ? parsedPayload : [];
+
+  await run('BEGIN TRANSACTION;');
+  try {
+    await run(`DELETE FROM ${quoteIdentifier(tableName)};`);
+    for (const row of rows) {
+      switch (tableName) {
+        case 'students':
+          await run(
+            'INSERT OR REPLACE INTO students (tz, code, grade, name, points, position) VALUES (?, ?, ?, ?, ?, ?);',
+            [row.tz, row.code, row.grade, row.name, row.points, row.position]
+          );
+          break;
+        case 'uniqTasks':
+          await run(
+            'INSERT OR REPLACE INTO uniqtasks (code, name, points, multiple, type, class, position) VALUES ( ?, ?, ?, ?, ?, ?, ?);',
+            [row.code, row.name, row.points, row.multiple, row.type, row.class, row.position]
+          );
+          break;
+        default:
+          throw new Error(`Unsupported table name for Excel import: ${tableName}`);
+      }
+
+    }
+    await run('COMMIT;');
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
+  return 1;
+}
 
 async function writeSystem(payload) {
   await waitDB();
@@ -159,6 +207,12 @@ async function writeSystem(payload) {
 }
 
 async function readData(dataName) {
+  await waitDB();
+  const rows = await all(`SELECT * FROM ${quoteIdentifier(dataName)};`);
+  return JSON.stringify(rows);
+}
+
+async function readSystem(dataName) {
   await waitDB();
   const row = await get('SELECT * FROM systemConfig WHERE id = 1 LIMIT 1;');
   return JSON.stringify((({ id, ...response }) => response)(row || {}));
@@ -178,6 +232,8 @@ module.exports = {
   initDatabase,
   waitDB,
   writeSystem,
+  readSystem,
   readData,
-  closeDatabase
+  closeDatabase,
+  insertExcelToDB
 };

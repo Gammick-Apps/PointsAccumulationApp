@@ -60,9 +60,9 @@
 
     function onLoad() {
       step = Steps.step1;
-      fileName = 'systemConfig'
-      window.expose.SendExcel("sendReadSystem", fileName);
-      window.expose.ReceiveExcel("receiveReadSystem" + fileName, (data) => {
+      tableName = 'systemConfig'
+      window.expose.SendExcel("sendReadSystem", tableName);
+      window.expose.ReceiveExcel("receiveReadSystem" + tableName, (data) => {
         systemConfig = JSON.parse(data)
         document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
         document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
