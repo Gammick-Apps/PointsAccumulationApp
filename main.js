@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 let mainWindow
-const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB } = require('./sqlite-storage');
+const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB, DB_FLAG_INCONSISTENT_ERROR_CODE} = require('./sqlite-storage');
 
 const ERROR_DIALOG_COOLDOWN_MS = 5000;
 let lastErrorDialogAt = 0;
@@ -10,7 +10,6 @@ function notifyRendererFlagInitialized() {
   if (!mainWindow || !mainWindow.webContents) {
     return;
   }
-  mainWindow.webContents.send('setFlag', 'true');
 }
 
 function shouldShowUserErrorDialog() {
@@ -118,24 +117,18 @@ function createWindow() {
   })
 }
 
-ipcMain.on('rendererFlag', async (_event, flag) => {
-  console.log('Received flag from Renderer:', flag);
-  if (flag === 'false') {
-    try {
-      await waitDB();
-      notifyRendererFlagInitialized();
-    }
-    catch (error) {
-      notifySqliteInitializationFailure(error);
-    }
-  }
-});
 
 app.on('ready', async () => {
   createWindow();
   try {
     await initDatabase(app);
   } catch (error) {
+    if (error && error.code === DB_FLAG_INCONSISTENT_ERROR_CODE) {
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.loadFile('pages/main/dbError.html');
+      }
+      return;
+    }
     notifySqliteInitializationFailure(error);
   }
 })

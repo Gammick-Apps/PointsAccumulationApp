@@ -6,6 +6,7 @@ let appInstance;
 let db;
 let dbPath;
 let initPromise;
+const DB_FLAG_INCONSISTENT_ERROR_CODE = 'SQLITE_DB_FLAG_INCONSISTENT';
 
 function quoteIdentifier(identifier) {
   return `"${String(identifier).replace(/"/g, '""')}"`;
@@ -32,7 +33,22 @@ async function initDatabase(electronApp) {
     fs.mkdirSync(userDataPath, { recursive: true });
 
     //פותח בפועל את מסד הנתונים
-   // ואז יוצר את הטבלאות על פי הסכמה
+    // ואז יוצר את הטבלאות על פי הסכמה רק בהפעלה הראשונה
+    const flagPath = path.join(userDataPath, 'db_created.json');
+
+    if (fs.existsSync(dbPath)) {
+      db = await openDatabase(dbPath);
+      return true;
+    }
+
+    if (fs.existsSync(flagPath)) {
+      const inconsistentDbError = new Error('Database flag exists but the SQLite file is missing or inaccessible.');
+      inconsistentDbError.code = DB_FLAG_INCONSISTENT_ERROR_CODE;
+      throw inconsistentDbError;
+    }
+
+    fs.writeFileSync(flagPath, JSON.stringify({ dbCreated: true }),
+      { encoding: 'utf8', flag: 'wx' });
     db = await openDatabase(dbPath);
     await createSchema();
     console.log('SQLite backend active: sqlite3');
@@ -178,6 +194,18 @@ async function insertExcelToDB(tableName, payload) {
             [row.code, row.name, row.points, row.multiple, row.type, row.class, row.position]
           );
           break;
+        case 'products':
+          await run(
+            'INSERT OR REPLACE INTO products (code, name, points, multiple) VALUES (?, ?, ?, ?);',
+            [row.code, row.name, row.points, row.multiple]
+          );
+          break;
+        case 'parents':
+          await run(
+            'INSERT OR REPLACE INTO parents (tz, idStudent, text) VALUES (?, ?, ?);',
+            [row.tz, row.idStudent, row.text]
+          );
+          break;
         default:
           throw new Error(`Unsupported table name for Excel import: ${tableName}`);
       }
@@ -235,5 +263,6 @@ module.exports = {
   readSystem,
   readData,
   closeDatabase,
-  insertExcelToDB
+  insertExcelToDB,
+  DB_FLAG_INCONSISTENT_ERROR_CODE
 };

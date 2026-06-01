@@ -75,9 +75,9 @@
         else {
           document.getElementById("position").style.display = "none";
         }
-        fileName = 'parents'
-        window.expose.SendExcel("sendReadExcel", fileName);
-        window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+        tableName = 'parents'
+        window.expose.SendExcel("sendReadExcel", tableName);
+        window.expose.ReceiveExcel("receiveReadExcel" + tableName, (data) => {
           if (data != 0) {
             parents = JSON.parse(data)
           }
@@ -104,7 +104,7 @@
 
     function searchInExcel() {
       for (var i = 0; i < parents.length; i++) {
-        if (parents[i]["tz"] == searchVal || parents[i]["tzParent"] == searchVal) {
+        if (parents[i]["tz"] == searchVal || parents[i]["idStudent"] == searchVal) {
           result = parents[i];
           break;
         }
@@ -115,7 +115,7 @@
       }
       if (result.tz == searchVal)
         studentStart()
-      else if (result.tzParent == searchVal)
+      else if (result.idStudent == searchVal)
         paretntStart()
     }
 
@@ -139,14 +139,14 @@
     function saveData() {
       result.text = document.getElementById("content").value;
       for (var i = 0; i < parents.length; i++) {
-        if (parents[i]["tzParent"] == result.tzParent) {
+        if (parents[i]["idStudent"] == result.idStudent) {
           parents[i] = result;
           break;
         }
       }
-      fileName = 'parents'
-      window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(parents)]);
-      window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+      tableName = 'parents'
+      window.expose.SendExcel("sendWriteExcel", [tableName, JSON.stringify(parents)]);
+      window.expose.ReceiveExcel("receiveWriteExcel" + tableName, (data) => {
         document.getElementById("form").style.display = "none"
         document.getElementById("text").style.top = "30%";
         updateLines("", "!המכתב נשמר", "...תודה רבה על שיתוף הפעולה")

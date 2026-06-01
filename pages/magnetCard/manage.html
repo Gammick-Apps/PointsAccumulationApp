@@ -20,7 +20,7 @@
         var systemConfig = ""
         var products = ""
         var students = "";
-        var fileName
+        var tableName
         var searchVal = ""
         var currentDate = getTodayDate();
         var swich
@@ -95,18 +95,18 @@
                 printSwitch.checked = systemConfig.hasPrint == "1" ? true : false;
                 showLabel();
                 showPrintLabel();
-                fileName = 'uniqTasks'
-                window.expose.SendExcel("sendReadExcel", fileName);
-                window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+                tableName = 'uniqTasks'
+                window.expose.SendExcel("sendReadExcel", tableName);
+                window.expose.ReceiveExcel("receiveReadExcel" + tableName, (data) => {
                     if (data != 0) {
                         if (systemConfig.device != "1" || (systemConfig.device == "1" && systemConfig.type =="2") ) {
                             uniqTasks = JSON.parse(data)
                             createTasksGrid()
                         }
                         if (systemConfig.hasBuy == 1) {
-                            fileName = 'products'
-                            window.expose.SendExcel("sendReadExcel", fileName);
-                            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+                            tableName = 'products'
+                            window.expose.SendExcel("sendReadExcel", tableName);
+                            window.expose.ReceiveExcel("receiveReadExcel" + tableName, (data) => {
                                 if (data != 0) {
                                     products = JSON.parse(data)
                                     createProductsGrid()
@@ -116,9 +116,9 @@
                     }
                 })
             });
-            fileName = 'students'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+            tableName = 'students'
+            window.expose.SendExcel("sendReadExcel", tableName);
+            window.expose.ReceiveExcel("receiveReadExcel" + tableName, (data) => {
                 if (data != 0) {
                     students = JSON.parse(data)
                     createStudentsGrid()
@@ -243,32 +243,32 @@
         }
 
         function editTask(params) {
-            fileName = 'uniqTasks'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(uniqTasks)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+            tableName = 'uniqTasks'
+            window.expose.SendExcel("sendWriteExcel", [tableName, JSON.stringify(uniqTasks)]);
+            window.expose.ReceiveExcel("receiveWriteExcel" + tableName, (data) => {
             });
         }
 
         function editProduct(params) {
-            fileName = 'products'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(products)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+            tableName = 'products'
+            window.expose.SendExcel("sendWriteExcel", [tableName, JSON.stringify(products)]);
+            window.expose.ReceiveExcel("receiveWriteExcel" + tableName, (data) => {
             });
         }
 
         function editStudent(params) {
-            fileName = 'students'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+            tableName = 'students'
+            window.expose.SendExcel("sendWriteExcel", [tableName, JSON.stringify(students)]);
+            window.expose.ReceiveExcel("receiveWriteExcel" + tableName, (data) => {
             });
         }
 
         function onTaskRowSelected(event) {
             if (!isInitialLoadTasks) {
                 event.node.data.show = event.node.isSelected();
-                fileName = 'uniqTasks'
-                window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(uniqTasks)]);
-                window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+                tableName = 'uniqTasks'
+                window.expose.SendExcel("sendWriteExcel", [tableName, JSON.stringify(uniqTasks)]);
+                window.expose.ReceiveExcel("receiveWriteExcel" + tableName, (data) => {
                 });
             }
         }
@@ -276,9 +276,9 @@
         function onProductsRowSelected(event) {
             if (!isInitialLoadProducts) {
                 event.node.data.show = event.node.isSelected();
-                fileName = 'products'
-                window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(products)]);
-                window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+                tableName = 'products'
+                window.expose.SendExcel("sendWriteExcel", [tableName, JSON.stringify(products)]);
+                window.expose.ReceiveExcel("receiveWriteExcel" + tableName, (data) => {
                 });
             }
         }
@@ -288,9 +288,9 @@
             uniqTasks.push({
                 name: '------', code: code, points: 0, multiple: true, type: 1
             })
-            fileName = 'uniqTasks'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(uniqTasks)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+            tableName = 'uniqTasks'
+            window.expose.SendExcel("sendWriteExcel", [tableName, JSON.stringify(uniqTasks)]);
+            window.expose.ReceiveExcel("receiveWriteExcel" + tableName, (data) => {
                 location.reload()
             });
         }
@@ -300,9 +300,9 @@
             products.push({
                 name: '------', code: code, points: 0, multiple: false, type: 1
             })
-            fileName = 'products'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(products)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+            tableName = 'products'
+            window.expose.SendExcel("sendWriteExcel", [tableName, JSON.stringify(products)]);
+            window.expose.ReceiveExcel("receiveWriteExcel" + tableName, (data) => {
                 location.reload()
             });
         }
@@ -320,9 +320,9 @@
                     grade: '------', name: '------', tz: tz, barcode: '',
                     points: 0, tasks: ",", tasksNumber: ","
                 })
-                fileName = 'students'
-                window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
-                window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+                tableName = 'students'
+                window.expose.SendExcel("sendWriteExcel", [tableName, JSON.stringify(students)]);
+                window.expose.ReceiveExcel("receiveWriteExcel" + tableName, (data) => {
                     location.reload()
                 });
             }
@@ -330,7 +330,7 @@
 
         function exportToExcel(name) {
             var params = {
-                fileName: currentDate + ' ' + name,
+                tableName: currentDate + ' ' + name,
             };
             gridOptions.api.exportDataAsCsv(params);
         }

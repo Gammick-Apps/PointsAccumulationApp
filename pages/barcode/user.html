@@ -25,7 +25,7 @@
     var step
     var studentResult = ""
     var result = "";
-    var fileName
+    var tableName
     const Steps = {
       step1: "1",
       step2: "2",
@@ -53,15 +53,15 @@
         }
       })
 
-      fileName = 'students'
-      window.expose.SendExcel("sendReadExcel", fileName);
-      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+      tableName = 'students'
+      window.expose.SendExcel("sendReadExcel", tableName);
+      window.expose.ReceiveExcel("receiveReadExcel" + tableName, (data) => {
         if (data != 0) {
           students = JSON.parse(data)
           
-      fileName = 'uniqTasks'
-          window.expose.SendExcel("sendReadExcel", fileName);
-          window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+      tableName = 'uniqTasks'
+          window.expose.SendExcel("sendReadExcel", tableName);
+          window.expose.ReceiveExcel("receiveReadExcel" + tableName, (data) => {
             if (data != 0) {
               uniqTasks = JSON.parse(data)
             }
@@ -152,9 +152,9 @@
           break;
         }
       }
-      fileName = 'students'
-      window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
-      window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+      tableName = 'students'
+      window.expose.SendExcel("sendWriteExcel", [tableName, JSON.stringify(students)]);
+      window.expose.ReceiveExcel("receiveWriteExcel" + tableName, (data) => {
         if (systemConfig.type == 1) {
           for (var i = 0; i < uniqTasks.length; i++) {
             if (uniqTasks[i]["code"] == result.code) {
@@ -162,9 +162,9 @@
               break;
             }
           }
-          fileName = 'uniqTasks'
-          window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(uniqTasks)]);
-          window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => { });
+          tableName = 'uniqTasks'
+          window.expose.SendExcel("sendWriteExcel", [tableName, JSON.stringify(uniqTasks)]);
+          window.expose.ReceiveExcel("receiveWriteExcel" + tableName, (data) => { });
         }
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
         updateLines( "ביצעת את משימה" + " " + result.name, " כעת יש בחשבונך " + studentResult.points + " נקודות ","...לא לשכוח לקחת את האישור מהמדפסת") 
