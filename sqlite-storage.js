@@ -50,24 +50,7 @@ async function initDatabase(electronApp) {
     fs.writeFileSync(flagPath, JSON.stringify({ dbCreated: true }),
       { encoding: 'utf8', flag: 'wx' });
     db = await openDatabase(dbPath);
-
-    // לוגיקה: אם הדגל אמת -> לא ליצור את ה-schema;
-    // אחרת אם הדגל שקר -> אם הקובץ לא קיים, נוצר ה-schema ואז נשמור את הדגל כאמת
-    if (flagDbCreated) {
-      console.log('DB creation flag present - skipping createSchema()');
-    } else {
-      if (!dbFileExists) {
-        await createSchema();
-        try {
-          fs.writeFileSync(flagPath, JSON.stringify({ dbCreated: true }), { encoding: 'utf8' });
-        } catch (e) {
-          console.warn('Failed to write db-created flag:', e && e.message);
-        }
-      } else {
-        // קובץ קיים אבל הדגל לא סומן - לא נריץ יצירה מלאה, פשוט נניח שה-schema כבר בסדר
-        console.log('DB file exists and db_created flag not set - skipping createSchema()');
-      }
-    }
+    await createSchema();
     console.log('SQLite backend active: sqlite3');
     return true;
 
