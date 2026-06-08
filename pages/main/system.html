@@ -222,8 +222,8 @@
                 }
                 if (name != "") {
                     fileName = name;
-                    window.expose.SendExcel("sendWriteExcel", [fileName, json_object]);
-                    window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+                    window.expose.sendDbData("sendWriteDbData", [fileName, json_object]);
+                    window.expose.receiveDbData("receiveWriteDbData" + fileName, (data) => {
                         location.reload()
                     });
                 }
@@ -266,15 +266,15 @@
                         students[i].tasks = ','
                     }
                     fileName = "students"
-                    window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
-                    window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+                    window.expose.SendExcel("sendWriteDbData", [fileName, JSON.stringify(students)]);
+                    window.expose.ReceiveExcel("receiveWriteDbData" + fileName, (data) => {
                         if (systemConfig.type == 1) {
                             for (var i = 0; i < uniqTasks.length; i++) {
                                 uniqTasks[i].used = 0
                             }
                             fileName = "uniqTasks"
-                            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(uniqTasks)]);
-                            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+                            window.expose.SendExcel("sendWriteDbData", [fileName, JSON.stringify(uniqTasks)]);
+                            window.expose.ReceiveExcel("receiveWriteDbData" + fileName, (data) => {
                                 // alert("!הקבצים אופסו בהצלחה")
                                 location.reload()
                             });
@@ -291,8 +291,8 @@
                     products[i].used = 0
                 }
                 fileName = "products"
-                window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(products)]);
-                window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+                window.expose.SendExcel("sendWriteDbData", [fileName, JSON.stringify(products)]);
+                window.expose.ReceiveExcel("receiveWriteDbData" + fileName, (data) => {
                     // alert("!הקבצים אופסו בהצלחה")
                     location.reload()
                 });

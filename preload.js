@@ -27,6 +27,12 @@ contextBridge.exposeInMainWorld('expose', {
     ReceiveSystem: (channel, func) => {
         ipcRenderer.on(channel, (event, ...args) => func(...args));
     },
+    sendDbData: (channel, data) => {
+        ipcRenderer.send(channel, data);
+    },
+    receiveDbData: (channel, func) => {
+        ipcRenderer.on(channel, (event, ...args) => func(...args));
+    },
 });
 
 
