@@ -24,6 +24,7 @@
         var tasks = ""
         var systemConfig = ""
         var excelFiles = getExcelFiles();
+        var fileName
         var tableName
         var searchVal = ""
 
@@ -72,25 +73,25 @@
                 textColor.dispatchEvent(changeEvent);
             })
 
-            tableName = 'students'
-            window.expose.SendExcel("sendReadExcel", tableName);
-            window.expose.ReceiveExcel("receiveReadExcel" + tableName, (data) => {
+            fileName = 'students'
+            window.expose.SendExcel("sendReadExcel", fileName);
+            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
                 if (data != 0) {
                     students = JSON.parse(data);
                 }
             })
 
-            tableName = 'uniqTasks'
-            window.expose.SendExcel("sendReadExcel", tableName);
-            window.expose.ReceiveExcel("receiveReadExcel" + tableName, (data) => {
+            fileName = 'uniqTasks'
+            window.expose.SendExcel("sendReadExcel", fileName);
+            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
                 if (data != 0) {
                     uniqTasks = JSON.parse(data)
                 }
             })
 
-            tableName = 'products'
-            window.expose.SendExcel("sendReadExcel", tableName);
-            window.expose.ReceiveExcel("receiveReadExcel" + tableName, (data) => {
+            fileName = 'products'
+            window.expose.SendExcel("sendReadExcel", fileName);
+            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
                 if (data != 0) {
                     products = JSON.parse(data)
                 }
@@ -194,9 +195,9 @@
             }
         });
 
-        function checktableName(tableName) {
+        function checkFileName(fileName) {
             for (let i = 0; i < excelFiles.length; i++) {
-                if (tableName.startsWith(excelFiles[i])) {
+                if (fileName.startsWith(excelFiles[i])) {
                     return excelFiles[i];
                 }
             }
@@ -211,7 +212,7 @@
                 const workbook = XLSX.read(data, { type: 'array' });
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
-                const name = checktableName(file.name)
+                const name = checkFileName(file.name)
                 let json_object;
                 if (name == "tests") {
                     json_object = convertTestToJSON(XLSX.utils.sheet_to_json(sheet));
@@ -220,9 +221,9 @@
                     json_object = JSON.stringify(XLSX.utils.sheet_to_json(sheet));
                 }
                 if (name != "") {
-                    tableName = name;
-                    window.expose.SendExcel("sendWriteExcel", [tableName, json_object]);
-                    window.expose.ReceiveExcel("receiveWriteExcel" + tableName, (data) => {
+                    fileName = name;
+                    window.expose.SendExcel("sendWriteExcel", [fileName, json_object]);
+                    window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
                         location.reload()
                     });
                 }
@@ -264,16 +265,16 @@
                         students[i].tasksNumber = ','
                         students[i].tasks = ','
                     }
-                    tableName = "students"
-                    window.expose.SendExcel("sendWriteExcel", [tableName, JSON.stringify(students)]);
-                    window.expose.ReceiveExcel("receiveWriteExcel" + tableName, (data) => {
+                    fileName = "students"
+                    window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
+                    window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
                         if (systemConfig.type == 1) {
                             for (var i = 0; i < uniqTasks.length; i++) {
                                 uniqTasks[i].used = 0
                             }
-                            tableName = "uniqTasks"
-                            window.expose.SendExcel("sendWriteExcel", [tableName, JSON.stringify(uniqTasks)]);
-                            window.expose.ReceiveExcel("receiveWriteExcel" + tableName, (data) => {
+                            fileName = "uniqTasks"
+                            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(uniqTasks)]);
+                            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
                                 // alert("!הקבצים אופסו בהצלחה")
                                 location.reload()
                             });
@@ -289,9 +290,9 @@
                 for (var i = 0; i < products.length; i++) {
                     products[i].used = 0
                 }
-                tableName = "products"
-                window.expose.SendExcel("sendWriteExcel", [tableName, JSON.stringify(products)]);
-                window.expose.ReceiveExcel("receiveWriteExcel" + tableName, (data) => {
+                fileName = "products"
+                window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(products)]);
+                window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
                     // alert("!הקבצים אופסו בהצלחה")
                     location.reload()
                 });
