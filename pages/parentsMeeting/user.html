@@ -52,6 +52,7 @@
     var parents = ""
     var searchVal = ""
     var step
+    var tableName
     const Steps = {
       step1: "1",
       step2: "2",
@@ -114,9 +115,9 @@
         return;
       }
       if (result.tz == searchVal)
-        studentStart()
-      else if (result.idStudent == searchVal)
         paretntStart()
+      else if (result.idStudent == searchVal)
+        studentStart()
     }
 
     function paretntStart() {
@@ -139,7 +140,7 @@
     function saveData() {
       result.text = document.getElementById("content").value;
       for (var i = 0; i < parents.length; i++) {
-        if (parents[i]["idStudent"] == result.idStudent) {
+        if (parents[i]["tz"] == result.tz) {
           parents[i] = result;
           break;
         }

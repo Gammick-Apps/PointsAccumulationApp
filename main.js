@@ -3,65 +3,6 @@ const fs = require('fs')
 let mainWindow
 const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB, DB_FLAG_INCONSISTENT_ERROR_CODE} = require('./sqlite-storage');
 
-const ERROR_DIALOG_COOLDOWN_MS = 5000;
-let lastErrorDialogAt = 0;
-
-function notifyRendererFlagInitialized() {
-  if (!mainWindow || !mainWindow.webContents) {
-    return;
-  }
-}
-
-function shouldShowUserErrorDialog() {
-  // In the installed app, avoid disruptive popups for transient/storage edge cases.
-  // Keep diagnostics in logs instead.
-  return !app.isPackaged;
-}
-
-function notifySqliteTableFailure(operationLabel, datasetName, error) {
-  console.error(`SQLite ${operationLabel} failed for ${datasetName}.`, error);
-
-  if (!shouldShowUserErrorDialog()) {
-    return;
-  }
-
-  // Read requests can happen frequently during startup/navigation.
-  // Avoid interrupting the user with popups for these recoverable cases.
-  if (operationLabel === 'העלאת') {
-    return;
-  }
-
-  const now = Date.now();
-  if (now - lastErrorDialogAt < ERROR_DIALOG_COOLDOWN_MS) {
-    return;
-  }
-  lastErrorDialogAt = now;
-
-  dialog.showErrorBox(
-    'הודעת מערכת',
-    'בעיה בשמירת נתונים במחשב. נא לבדוק הרשאות וגישה לתיקיית הנתונים ומקום פנוי בדיסק.'
-  );
-}
-
-function notifySqliteInitializationFailure(error) {
-  console.error('SQLite initialization failed.', error);
-
-  if (!shouldShowUserErrorDialog()) {
-    return;
-  }
-
-  const now = Date.now();
-  if (now - lastErrorDialogAt < ERROR_DIALOG_COOLDOWN_MS) {
-    return;
-  }
-  lastErrorDialogAt = now;
-
-  dialog.showErrorBox(
-    'הודעת מערכת',
-    'בעיה בשמירת נתונים במחשב. נא לבדוק הרשאות וגישה לתיקיית הנתונים ומקום פנוי בדיסק.'
-  );
-}
-
 function createWindow() {
   let ses = session.defaultSession
 
@@ -127,7 +68,6 @@ app.on('ready', async () => {
       }
       return;
     }
-    notifySqliteInitializationFailure(error);
   }
 })
 
@@ -149,7 +89,6 @@ ipcMain.on("sendReadExcel", async (event, args) => {
     const data = await readData(args);
     mainWindow.webContents.send("receiveReadExcel" + args, data);
   } catch (error) {
-    notifySqliteTableFailure('העלאת', args, error);
     mainWindow.webContents.send("receiveReadExcel" + args, '[]');
   }
 });
@@ -159,7 +98,6 @@ ipcMain.on("sendReadSystem", async (event, args) => {
     const data = await readSystem(args);
     mainWindow.webContents.send("receiveReadSystem" + args, data);
   } catch (error) {
-    notifySqliteTableFailure('העלאת', args, error);
     mainWindow.webContents.send("receiveReadSystem" + args, 0);
   }
 });
