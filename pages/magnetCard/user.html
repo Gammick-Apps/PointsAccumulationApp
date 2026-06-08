@@ -65,6 +65,7 @@
         var result = "";
         var searchVal = ""
         var buffer = "";
+        var fileName = "";
         var tableName
         var isModalOpen = false;
         var questions
@@ -107,15 +108,15 @@
                 else {
                     updateLines(" שלום...! ", "יש לבחור משימה לתיקוף ")
                 }
-                tableName = 'students'
-                window.expose.SendExcel("sendReadExcel", tableName);
-                window.expose.ReceiveExcel("receiveReadExcel" + tableName, (data) => {
+                fileName = 'students'
+                window.expose.SendExcel("sendReadExcel", fileName);
+                window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
                     if (data != 0) {
                         students = JSON.parse(data)
                         systemConfig.buy ?
-                            tableName = 'products' : tableName = 'uniqTasks';
-                        window.expose.SendExcel("sendReadExcel", tableName);
-                        window.expose.ReceiveExcel("receiveReadExcel" + tableName, (data) => {
+                            fileName = 'products' : fileName = 'uniqTasks';
+                        window.expose.SendExcel("sendReadExcel", fileName);
+                        window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
                             if (data != 0) {
                                 actions = JSON.parse(data)
                                 createCards()
@@ -123,9 +124,9 @@
                         })
 
                         if (systemConfig.hasTests == "1") {
-                            tableName = 'tests';
-                            window.expose.SendExcel("sendReadExcel", tableName);
-                            window.expose.ReceiveExcel("receiveReadExcel" + tableName, (data) => {
+                            fileName = 'tests';
+                            window.expose.SendExcel("sendReadExcel", fileName);
+                            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
                                 if (data != 0) {
                                     tests = JSON.parse(data)
                                 }
@@ -344,9 +345,9 @@
                     break;
                 }
             }
-            tableName = 'students'
-            window.expose.SendExcel("sendWriteExcel", [tableName, JSON.stringify(students)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + tableName, (data) => {
+            fileName = 'students'
+            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
+            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
                 updateLines("תודה רבה " + studentResult.name, " כעת יש בחשבונך " + studentResult.points + " נקודות", "בהצלחה!")
                 if (systemConfig.hasPrint == 1)
                     setTimeout(function () {

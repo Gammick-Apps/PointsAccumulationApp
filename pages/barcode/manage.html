@@ -18,6 +18,7 @@
     <script>
         var systemConfig = "";
         var students = "";
+        var fileName = "";
         var tableName
         var searchVal=""
         var currentDate = getTodayDate();
@@ -38,9 +39,9 @@
                 document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color);
                 document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
             });
-            tableName = 'students'
-            window.expose.SendExcel("sendReadExcel", tableName);
-            window.expose.ReceiveExcel("receiveReadExcel" + tableName, (data) => {
+            fileName = 'students'
+            window.expose.SendExcel("sendReadExcel", fileName);
+            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
                 if (data != 0) {
                     students = JSON.parse(data)
                     gridOptions = {
@@ -90,9 +91,9 @@
                     grade: '------', name: '------', tz: tz, barcode: '',
                     points: 0, tasks: ",", tasksNumber: ","
                 })
-                tableName = 'students'
-                window.expose.SendExcel("sendWriteExcel", [tableName, JSON.stringify(students)]);
-                window.expose.ReceiveExcel("receiveWriteExcel" + tableName, (data) => {
+                fileName = 'students'
+                window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
+                window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
                     location.reload()
                 });
             }
@@ -106,16 +107,16 @@
         }
 
         function onCellEditingStopped(params) {
-            tableName = 'students'
-            window.expose.SendExcel("sendWriteExcel", [tableName, JSON.stringify(students)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + tableName, (data) => {
+            fileName = 'students'
+            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
+            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
                 location.reload()
             });
         }
 
         function exportToExcel(name) {
             var params = {
-                tableName: currentDate + ' ' + name,
+                fileName: currentDate + ' ' + name,
             };
             gridOptions.api.exportDataAsCsv(params);
         }

@@ -62,7 +62,6 @@ function notifySqliteInitializationFailure(error) {
   );
 }
 
-
 function createWindow() {
   let ses = session.defaultSession
 
@@ -117,7 +116,6 @@ function createWindow() {
   })
 }
 
-
 app.on('ready', async () => {
   createWindow();
   try {
@@ -166,7 +164,6 @@ ipcMain.on("sendReadSystem", async (event, args) => {
   }
 });
 
-
 ipcMain.on("getBackground", (event, args) => {
   fs.readFile(args + '.png', { encoding: 'base64', flag: 'r' }, function (err, data) {
     if (err) {
@@ -198,7 +195,6 @@ ipcMain.on("sendWriteExcel", async (event, args) => {
   }
 });
 
-
 ipcMain.on("sendWriteSystem", async (event, args) => {
   if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
     try {
@@ -214,7 +210,6 @@ ipcMain.on("sendWriteSystem", async (event, args) => {
     mainWindow.webContents.send("receiveWriteSystem" + args[0], 0);
   }
 });
-
 
 ipcMain.on("sendUploadBackground", (event, args) => {
   const fileData = args;

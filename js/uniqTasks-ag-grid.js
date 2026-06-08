@@ -11,15 +11,15 @@ var columnDefs = [
 
 function ExportUniqTasks() {
     var params = {
-        tableName: new Date().toISOString().split('T')[0] + ' uniqTasks',
+        fileName: new Date().toISOString().split('T')[0] + ' uniqTasks',
     };
     gridOptions.api.exportDataAsCsv(params);
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    tableName = 'uniqTasks'
-    window.expose.SendExcel("sendReadExcel", tableName);
-    window.expose.ReceiveExcel("receiveReadExcel" + tableName, (data) => {
+    fileName = 'uniqTasks'
+    window.expose.SendExcel("sendReadExcel", fileName);
+    window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
         if (data != 0) {
             gridOptions = {
                 columnDefs: columnDefs,

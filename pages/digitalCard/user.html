@@ -21,6 +21,7 @@
     var products = ""
     var searchVal = ""
     var result = "";
+    var fileNme = "";
     var tableName
     const Steps = {
       step1: "1",
@@ -37,9 +38,9 @@
           systemConfig = JSON.parse(data)
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, 0, step)
       })
-      tableName = 'products'
-      window.expose.SendExcel("sendReadExcel", tableName);
-      window.expose.ReceiveExcel("receiveReadExcel" + tableName, (data) => {
+      fileName = 'products'
+      window.expose.SendExcel("sendReadExcel", fileName);
+      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
         if (data != 0) {
           products = JSON.parse(data)
         };
@@ -99,9 +100,9 @@
           break;
         }
       }
-      tableName = 'products'
-      window.expose.SendExcel("sendWriteExcel", [tableName, JSON.stringify(products)]);
-      window.expose.ReceiveExcel("receiveWriteExcel" + tableName, (data) => {
+      fileName = 'products'
+      window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(products)]);
+      window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
         setTimeout(function () {
           toPrint();
         }, 2000);

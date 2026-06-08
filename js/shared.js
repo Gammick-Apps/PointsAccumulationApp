@@ -22,9 +22,9 @@ function login(page) {
 }
 
 function getBackgroundUrl() {
-     tableName = 'personalBackground';
-                window.expose.SendImage("getBackground", tableName);
-                window.expose.receive("receiveGetBackground" + tableName, (data) => {
+     fileName = 'personalBackground';
+                window.expose.SendImage("getBackground", fileName);
+                window.expose.receive("receiveGetBackground" + fileName, (data) => {
                     if (data && data != 0) {
                         document.getElementById("background").style.backgroundImage = 'url("data:image/png;base64,' + data + '")';
                     }
