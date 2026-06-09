@@ -40,8 +40,8 @@
                 document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
             });
             fileName = 'students'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+            window.expose.sendDbData("sendReadDbData", fileName);
+            window.expose.receiveDbData("receiveReadDbData" + fileName, (data) => {
                 if (data != 0) {
                     students = JSON.parse(data)
                     gridOptions = {
@@ -79,24 +79,20 @@
         });
 
         function newStudent() {
-            if (students.length > 0) {
-                var tz = Math.floor(Math.random() * (399999999 - 200000000 + 1) + 200000000)
-                for (var i = 0; i < students.length; i++) {
-                    while (students[i]["tz"] == tz) {
-                        tz = Math.floor(Math.random() * (399999999 - 200000000 + 1) + 200000000)
-                        i = 0
-                    }
+            var student = {
+                grade: '------',
+                name: '------',
+                code: 0,
+                points: 0,
+                position: ''
+            };
+
+            window.expose.sendDbData("sendAddStudents", JSON.stringify(student));
+            window.expose.receiveDbData("receiveAddStudents", (data) => {
+                if (data != 0) {
+                    location.reload();
                 }
-                students.unshift({
-                    grade: '------', name: '------', tz: tz, barcode: '',
-                    points: 0, tasks: ",", tasksNumber: ","
-                })
-                fileName = 'students'
-                window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
-                window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                    location.reload()
-                });
-            }
+            });
         }
 
         function onFirstDataRendered(params) {
@@ -108,8 +104,8 @@
 
         function onCellEditingStopped(params) {
             fileName = 'students'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+            window.expose.sendDbData("sendWriteDbData", [fileName, JSON.stringify(students)]);
+            window.expose.receiveDbData("receiveWriteDbData" + fileName, (data) => {
                 location.reload()
             });
         }

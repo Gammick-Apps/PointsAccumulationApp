@@ -209,7 +209,6 @@ async function insertExcelToDB(tableName, payload) {
         default:
           throw new Error(`Unsupported table name for Excel import: ${tableName}`);
       }
-
     }
     await run('COMMIT;');
   } catch (error) {
@@ -217,6 +216,40 @@ async function insertExcelToDB(tableName, payload) {
     throw error;
   }
   return 1;
+}
+
+async function generateUniqueStudentTz() {
+  while (true) {
+    const tz = Math.floor(Math.random() * (399999999 - 200000000 + 1) + 200000000);
+    const existingStudent = await get('SELECT 1 FROM students WHERE tz = ? LIMIT 1;', [tz]);
+    if (!existingStudent) {
+      return tz;
+    }
+  }
+}
+
+async function addStudents(student) {
+  await waitDB();
+
+  const tz = await generateUniqueStudentTz();
+  const code = student && student.code !== undefined ? student.code : 0;
+  const grade = student && student.grade !== undefined ? student.grade : '------';
+  const name = student && student.name !== undefined ? student.name : '------';
+  const points = student && student.points !== undefined ? student.points : 0;
+  const position = student && student.position !== undefined ? student.position : '';
+
+  await run('BEGIN TRANSACTION;');
+  try {
+    const result = await run(
+      'INSERT INTO students (tz, code, grade, name, points, position) VALUES (?, ?, ?, ?, ?, ?);',
+      [tz, code, grade, name, points, position]
+    );
+    await run('COMMIT;');
+    return JSON.stringify({ ok: true, lastID: result.lastID, tz });
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
 }
 
 async function writeSystem(payload) {
@@ -264,5 +297,6 @@ module.exports = {
   readData,
   closeDatabase,
   insertExcelToDB,
+  addStudents,
   DB_FLAG_INCONSISTENT_ERROR_CODE
 };

@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 let mainWindow
-const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./sqlite-storage');
+const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB, addStudents, DB_FLAG_INCONSISTENT_ERROR_CODE} = require('./sqlite-storage');
 
 function createWindow() {
   let ses = session.defaultSession
@@ -84,7 +84,6 @@ ipcMain.on("sendPrint", (event, args) => {
   });
 });
 
-
 ipcMain.on("sendReadExcel", (event, args) => {
   fs.readFile(args + '.txt',
     { encoding: 'utf8', flag: 'r' },
@@ -165,6 +164,16 @@ ipcMain.on("sendWriteDbData", async (event, args) => {
   } else {
     console.error("Empty or invalid data.");
     mainWindow.webContents.send("receiveWriteDbData" + args[0], 0);
+  }
+});
+
+ipcMain.on("sendAddStudents", async (event, args) => {
+  try {
+    const data = await addStudents(JSON.parse(args));
+    mainWindow.webContents.send("receiveAddStudents", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveAddStudents", 0);
   }
 });
 
