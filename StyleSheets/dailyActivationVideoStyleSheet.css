@@ -1,0 +1,134 @@
+.text {
+    position: absolute;
+    left: 10%;
+    top: 10%;
+    bottom: 10%;
+    width: 80%;
+    text-align: center;
+    margin-right: auto;
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    line-height: 1.2;
+}
+
+#line1 {
+    font-size: 6vw;
+    font-weight: 800;
+    line-height: 1.2;
+    direction: rtl;
+    animation: blink 1s infinite;
+}
+
+#line2 {
+    font-size: 3vw;
+    margin-top: 2vh;
+}
+
+#line3 {
+    font-size: 2.5vw;
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* פופאפ ההסרטה - שכבת רקע כהה על כל המסך */
+#videoWrapper {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+#videoWrapper.show {
+    display: flex;
+}
+
+#videoClose {
+    position: fixed;
+    top: 3vh;
+    right: 3vw;
+    width: 4vw;
+    height: 4vw;
+    min-width: 36px;
+    min-height: 36px;
+    cursor: pointer;
+    z-index: 1001;
+}
+
+#quizVideo {
+    width: 90vw;
+    max-width: 1600px;
+    max-height: 85vh;
+    background: #000;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px #00000088;
+    display: block;
+}
+
+/* שכבת משוב - הצלחה / כישלון */
+#feedbackOverlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1100;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    background-color: #f3722c;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+#feedbackOverlay.show {
+    display: flex;
+}
+
+#feedbackText {
+    font-family: "mainFont";
+    font-size: 8vw;
+    font-weight: 900;
+    color: #fff;
+    text-align: center;
+    text-shadow: 0 4px 16px #00000055;
+    animation: feedbackPop 0.5s ease;
+    z-index: 1101;
+    padding: 0 5vw;
+}
+
+@keyframes feedbackPop {
+    0% {
+        transform: scale(0.3);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+    }
+}

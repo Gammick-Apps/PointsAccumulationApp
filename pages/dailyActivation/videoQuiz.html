@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>הסרטות</title>
+</head>
+
+<body onload="onLoad()">
+  <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
+  <link href="../../styleSheets/dailyActivationVideoStyleSheet.css" rel="stylesheet" />
+  <link href="../../styleSheets/mainStyleSheet.css" rel="stylesheet" />
+  <script src="../../js/jquery.min.js"></script>
+  <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+  <script src="../../js/shared.js"></script>
+
+  <script>
+    // קובץ אקסל "videoQuiz" - כל שורה: question (השאלה), tz (ברקוד התלמידה הנכונה), video (שם ההסרטה הנכונה ללא סיומת - מניחים mp4)
+    var students = ""
+    var systemConfig = ""
+    var searchVal = ""
+    var buffer = "";
+    var questions = ""
+    var fileName
+    var currentIndex = 0
+    // הסרטונים השגויים ממוספרים 0 עד 4
+    const wrongVideos = ["0", "1", "2", "3", "4"]
+    var wrongPool = []
+    var lastWrong = ""
+
+    const correctPath = "../../resources/dailyActivity/correct/"
+    const wrongPath = "../../resources/dailyActivity/wrong/"
+
+    function onLoad() {
+      fileName = 'systemConfig';
+      window.expose.SendExcel("sendReadExcel", fileName);
+      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+        if (data == 0) {
+          systemConfig = getDefaultConfig()
+        }
+        else {
+          systemConfig = JSON.parse(data)
+        }
+        document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
+        document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
+        document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color)
+        document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
+
+        if (systemConfig.numPosition.length > 0) {
+          document.getElementById("position").innerHTML += ' ' + systemConfig.numPosition
+        }
+        else {
+          document.getElementById("position").style.display = "none";
+        }
+      })
+
+      fileName = 'students'
+      window.expose.SendExcel("sendReadExcel", fileName);
+      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+        if (data != 0) {
+          students = JSON.parse(data)
+        }
+      })
+
+      fileName = 'videoQuiz'
+      window.expose.SendExcel("sendReadExcel", fileName);
+      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+        if (data != 0) {
+          questions = JSON.parse(data)
+          showQuestion()
+        }
+      })
+
+      // כשההסרטה מסתיימת - סוגרים אותה וחוזרים לשאלה
+      document.getElementById("quizVideo").addEventListener("ended", function () {
+        closeVideo();
+      });
+    }
+
+    document.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        if (buffer.length > 0) {
+          searchVal = buffer;
+          buffer = "";
+          if (searchVal == '999999999')
+            login('../main/manage')
+          else if (searchVal == '011429519')
+            login('../main/system')
+          else
+            handleScan();//בת
+        }
+      } else {
+        buffer += e.key;
+      }
+    });
+
+    function showQuestion() {
+      if (questions == "" || questions.length == 0) {
+        showAlert("אין שאלות. גשו למורה!");
+        return;
+      }
+      if (currentIndex >= questions.length) {
+        currentIndex = 0;
+      }
+      closeVideo();
+      updateLines(questions[currentIndex].question + "?", "!חושבת שזה את? אם יש לך אומץ עלי לבמה");
+    }
+
+    function handleScan() {
+      if (questions == "" || questions.length == 0) {
+        return;
+      }
+      var current = questions[currentIndex];
+      // תמיכה במספר תשובות נכונות: tz ו-video מופרדים בפסיק ומיושרים לפי סדר
+      var correctBarcodes = String(current.tz).split(",").map(b => b.trim());
+      var correctVideos = String(current.video).split(",").map(v => v.trim());
+      var matchIndex = correctBarcodes.indexOf(searchVal);
+      // אם נסרק ברקוד של אחת התלמידות הנכונות - מציג הודעת הצלחה עם קונפטי ואז מנגן את ההסרטה התואמת; אחרת מגריל סרטון שגוי
+      if (matchIndex != -1) {
+        showFeedback(true, function () {
+          playVideo(correctPath + correctVideos[matchIndex] + ".mp4");
+        });
+      } else {
+        var wrong = pickWrongVideo();
+        if (wrong != "") {
+          showFeedback(false, function () {
+            playVideo(wrongPath + wrong + ".mp4");
+          });
+        }
+      }
+    }
+
+    // מציג הודעת משוב גדולה (הצלחה עם קונפטי / כישלון) ואז ממשיך לפופאפ ההסרטה
+    function showFeedback(isCorrect, onDone) {
+      var overlay = document.getElementById("feedbackOverlay");
+      var text = document.getElementById("feedbackText");
+      if (isCorrect) {
+        text.innerHTML = "!כן, זה את";
+        overlay.classList.add("correct");
+        overlay.classList.remove("wrong");
+        launchConfetti();
+      } else {
+        text.innerHTML = "אופס, תשובה שגויה";
+        overlay.classList.add("wrong");
+        overlay.classList.remove("correct");
+      }
+      overlay.classList.add("show");
+      setTimeout(function () {
+        overlay.classList.remove("show");
+        stopConfetti();
+        if (typeof onDone === "function") {
+          onDone();
+        }
+      }, 2200);
+    }
+
+    function playVideo(src) {
+      document.getElementById("videoWrapper").classList.add("show");
+      var video = document.getElementById("quizVideo");
+      video.src = src;
+      video.load();
+      video.play();
+    }
+
+    // סוגר את פופאפ ההסרטה וחוזר לשאלה
+    function closeVideo() {
+      stopVideo();
+      document.getElementById("videoWrapper").classList.remove("show");
+    }
+
+    function stopVideo() {
+      var video = document.getElementById("quizVideo");
+      video.pause();
+      video.removeAttribute("src");
+      video.load();
+    }
+
+    // מגריל סרטון שגוי ללא חזרה ברצף עד שכל הסרטונים הוצגו
+    function pickWrongVideo() {
+      if (wrongVideos.length == 0) {
+        return "";
+      }
+      if (wrongPool.length == 0) {
+        wrongPool = wrongVideos.slice();
+        for (var i = wrongPool.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var tmp = wrongPool[i];
+          wrongPool[i] = wrongPool[j];
+          wrongPool[j] = tmp;
+        }
+        if (wrongPool.length > 1 && wrongPool[0] == lastWrong) {
+          var t = wrongPool[0];
+          wrongPool[0] = wrongPool[1];
+          wrongPool[1] = t;
+        }
+      }
+      var v = wrongPool.shift();
+      lastWrong = v;
+      return v;
+    }
+
+    function nextQuestion() {
+      currentIndex++;
+      showQuestion();
+    }
+
+    function prevQuestion() {
+      if (currentIndex > 0) {
+        currentIndex--;
+      } else {
+        currentIndex = questions.length - 1;
+      }
+      showQuestion();
+    }
+
+    function updateLines(line1Text, line2Text, line3Text = "") {
+      document.getElementById("line1").innerHTML = line1Text;
+      document.getElementById("line2").innerHTML = line2Text;
+      document.getElementById("line3").innerHTML = line3Text;
+    }
+
+    function showAlert(message) {
+      document.querySelector(".modal-body").innerHTML = message;
+      $(document).ready(function () {
+        $('#modal').modal('show')
+      });
+      setTimeout(function () {
+        $(document).ready(function () {
+          $('#modal').modal('hide')
+        });
+      }, 2500);
+    }
+  </script>
+
+  <div class="background" id="background">
+    <div class="closeBtn">
+      <img onclick="expose.appClose()" src="../../resources/barcode/x-light.svg" />
+    </div>
+    <div class="text">
+      <div id="line1"></div>
+      <div id="line2"></div>
+      <div id="line3"></div>
+      <div id="quizButtons" class="bottom-actions d-flex flex-row justify-content-center" style="gap: 24px;">
+        <button id="prevBtn" onclick="prevQuestion()" class="action-btn">שאלה קודמת</button>
+        <button id="nextBtn" onclick="nextQuestion()" class="action-btn">שאלה הבאה</button>
+      </div>
+    </div>
+    <div id="position">עמדה</div>
+  </div>
+
+  <!-- פופאפ ההסרטה -->
+  <div id="videoWrapper">
+    <img id="videoClose" onclick="closeVideo()" src="../../resources/barcode/x-light.svg" />
+    <video id="quizVideo" controls></video>
+  </div>
+
+  <!-- שכבת משוב: הצלחה עם קונפטי / כישלון -->
+  <div id="feedbackOverlay">
+    <div id="feedbackText"></div>
+  </div>
+
+  <div class="modal fade" style="direction: rtl" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalLabel">הודעת מערכת</h5>
+        </div>
+        <div class="modal-body"></div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title> גרפולוגיה</title>   
+</head>
+
+<body onload="onLoad()">
+  <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
+  <link href="../../styleSheets/dailyActivationUserStyleSheet.css" rel="stylesheet" />
+  <link href="../../styleSheets/mainStyleSheet.css" rel="stylesheet" />
+  <link href="../../styleSheets/graphologyStyleSheet.css" rel="stylesheet" />
+  <script src="../../js/jquery.min.js"></script>
+  <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+  <script src="../../js/shared.js"></script>
+
+  <script>
+    var systemConfig = ""
+    var students = ""
+    var searchVal = ""
+    var result = "";
+    var step
+    const Steps = {
+      step1: "1",
+      step2: "2",
+      step3: "3"
+    }; 
+    
+
+    function onLoad() {
+      step = Steps.step1;
+      updateLines("ברוכות הבאות!", "מה הגרפולוגית רשמה על...?");
+      fileName = 'systemConfig'
+      window.expose.SendExcel("sendReadExcel", fileName);
+      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+        if (data == 0) {
+          systemConfig = getDefaultConfig()
+        }
+        else {
+          systemConfig = JSON.parse(data)
+        }
+        document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
+        document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
+        document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color)
+        document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
+
+        if (systemConfig.numPosition.length > 0) {
+          document.getElementById("position").innerHTML += ' ' + systemConfig.numPosition
+        }
+        else {
+          document.getElementById("position").style.display = "none";
+        }
+        fileName = 'students'
+        window.expose.SendExcel("sendReadExcel", fileName);
+        window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+          if (data != 0) {
+            students = JSON.parse(data)
+          }
+        })
+      })
+    }
+
+    document.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        if (searchVal.length > 0) {
+          if (step == Steps.step1) {
+            if (searchVal == '011429519')
+              login('../main/system')
+            else if (searchVal == '207594581')
+              login('../main/user')
+            else if (searchVal == '999999999')
+              login('./manage')
+            else //כיתה או בת
+              searchInExcel();
+          }
+        }
+      } else {
+        searchVal += e.key;
+      }
+    });
+
+    function searchInExcel() {
+      for (var i = 0; i < students.length; i++) {
+        if (students[i]["tz"] == searchVal) {
+          result = students[i];
+          break;
+        }
+      }
+      if (result == "") {
+        showAlert(" הברקוד לא מופיע ברשימות. גשו למורה!")
+        return;
+      }
+      showResult()
+    }
+
+    function showResult() {
+      step = Steps.step2;
+      updateLines(
+        result.name + " " + result.grade,
+        result.text ? result.text : "לצערנו אין גרפולוגיה זמינה עבורך. יכול להיות שלא הבאת כתב יד לפענוח? ממש סליחה!"
+      );
+      if (result.text) {
+        setTimeout(function () {
+          toPrint();
+        }, 2500);
+      }
+    }
+
+    function toPrint() {
+      const dynamicHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Print</title>
+        <style>
+          body {
+            font-family: 'Arial', sans-serif;
+            direction: rtl;
+            margin: 0;
+            padding: 0;
+          }
+          #title {
+            font-size: 40px;
+            text-align: center;
+          }
+          #content div {
+            font-size: 20px;
+            margin: 10px 0;
+          }
+          #footer {
+            font-size: 10px;
+            text-align: center;
+            margin-top: 20px;
+          }
+        </style>
+      </head>
+      <body>
+        <div id="title"><b>במיוחד בשבילך</b></div>
+        <br>
+        <div id="content">
+          <div>${result.name}</div>
+          <div>${result.grade}</div>
+          <br>
+          <div><b>ניתוח מהגרפולוגית:</b></div>
+          <div>${result.text}</div>
+        </div>
+        <br>
+        <div id="footer">להזמנות: אפרת מלכה 0504167969 office@gammick.co.il</div>
+      </body>
+      </html>
+      `;
+
+      window.expose.send("sendPrint", dynamicHTML);
+      window.expose.receive("receivePrint", () => {
+        reset(8000);
+      });
+    }
+
+    function updateLines(line1Text, line2Text, line3Text = "") {
+      if (line1Text != "*")
+        document.getElementById("line1").innerHTML = line1Text;
+      document.getElementById("line2").innerHTML = line2Text;
+      document.getElementById("line3").innerHTML = line3Text;
+    }
+
+    function reset(time = 0) {
+      setTimeout(function () {
+        location.reload();
+      }, time);
+    }
+
+    function showAlert(message) {
+      document.querySelector(".modal-body").innerHTML = message;
+      $(document).ready(function () {
+        $('#modal').modal('show')
+      });
+      setTimeout(function () {
+        $(document).ready(function () {
+          $('#modal').modal('hide')
+        });
+      }, 2500);
+      reset(2500)
+    }
+  </script>
+
+  <div class="background" id="background">
+     <div class="closeBtn">
+      <img onclick="expose.appClose()" src="../../resources/barcode/x-light.svg" />
+    </div>
+    <div class="text">
+      <div id="line1"> </div>
+      <div id="line2"> </div>
+      <div id="line3"> </div>
+
+    </div>
+    <div id="position">עמדה</div>
+  </div>
+
+  <div class="modal fade" style="direction: rtl" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalLabel">הודעת מערכת</h5>
+        </div>
+        <div class="modal-body"></div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>
