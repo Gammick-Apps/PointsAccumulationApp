@@ -115,43 +115,15 @@
       var correctBarcodes = String(current.tz).split(",").map(b => b.trim());
       var correctVideos = String(current.video).split(",").map(v => v.trim());
       var matchIndex = correctBarcodes.indexOf(searchVal);
-      // אם נסרק ברקוד של אחת התלמידות הנכונות - מציג הודעת הצלחה עם קונפטי ואז מנגן את ההסרטה התואמת; אחרת מגריל סרטון שגוי
+      // אם נסרק ברקוד של אחת התלמידות הנכונות - מנגן ישירות את ההסרטה התואמת; אחרת מגריל סרטון שגוי
       if (matchIndex != -1) {
-        showFeedback(true, function () {
-          playVideo(correctPath + correctVideos[matchIndex] + ".mp4");
-        });
+        playVideo(correctPath + correctVideos[matchIndex] + ".mp4");
       } else {
         var wrong = pickWrongVideo();
         if (wrong != "") {
-          showFeedback(false, function () {
-            playVideo(wrongPath + wrong + ".mp4");
-          });
+          playVideo(wrongPath + wrong + ".mp4");
         }
       }
-    }
-
-    // מציג הודעת משוב גדולה (הצלחה עם קונפטי / כישלון) ואז ממשיך לפופאפ ההסרטה
-    function showFeedback(isCorrect, onDone) {
-      var overlay = document.getElementById("feedbackOverlay");
-      var text = document.getElementById("feedbackText");
-      if (isCorrect) {
-        text.innerHTML = "!כן, זה את";
-        overlay.classList.add("correct");
-        overlay.classList.remove("wrong");
-        launchConfetti();
-      } else {
-        text.innerHTML = "אופס, תשובה שגויה";
-        overlay.classList.add("wrong");
-        overlay.classList.remove("correct");
-      }
-      overlay.classList.add("show");
-      setTimeout(function () {
-        overlay.classList.remove("show");
-        stopConfetti();
-        if (typeof onDone === "function") {
-          onDone();
-        }
-      }, 2200);
     }
 
     function playVideo(src) {
@@ -252,11 +224,6 @@
   <div id="videoWrapper">
     <img id="videoClose" onclick="closeVideo()" src="../../resources/barcode/x-light.svg" />
     <video id="quizVideo" controls></video>
-  </div>
-
-  <!-- שכבת משוב: הצלחה עם קונפטי / כישלון -->
-  <div id="feedbackOverlay">
-    <div id="feedbackText"></div>
   </div>
 
   <div class="modal fade" style="direction: rtl" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel"

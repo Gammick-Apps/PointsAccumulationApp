@@ -115,29 +115,3 @@ function getLossTexts() {
     return ["...לא זכית, אוי לא", "!!חבל--- לא זכית הפעם", "!אופס... הכרטיס לא שווה ", "...לא זכית! לא נורא"];
 }
 
-// יצירת אפקט קונפטי גנרי - יוצר מיכל משלו ולא תלוי באלמנט קיים בדף
-function launchConfetti(count = 120) {
-    stopConfetti();
-    var container = document.createElement("div");
-    container.id = "sharedConfetti";
-    document.body.appendChild(container);
-    var colors = ["#f94144", "#f3722c", "#f8961e", "#f9c74f", "#90be6d", "#43aa8b", "#577590", "#ff6fb5"];
-    for (var i = 0; i < count; i++) {
-        var piece = document.createElement("div");
-        piece.className = "confetti-piece";
-        piece.style.left = Math.random() * 100 + "vw";
-        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
-        piece.style.animationDelay = (Math.random() * 0.8) + "s";
-        piece.style.animationDuration = (1.8 + Math.random() * 1.2) + "s";
-        piece.style.width = (6 + Math.random() * 8) + "px";
-        piece.style.height = (8 + Math.random() * 10) + "px";
-        container.appendChild(piece);
-    }
-}
-
-function stopConfetti() {
-    var container = document.getElementById("sharedConfetti");
-    if (container) {
-        container.remove();
-    }
-}
