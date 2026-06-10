@@ -73,41 +73,28 @@ app.on('ready', async () => {
 
 // -------------- general ---------------- //
 
-ipcMain.on("sendPrint", (event, args) => {
-  let printWindow = new BrowserWindow({ show: false });
-  printWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(args));
-  printWindow.webContents.once('did-finish-load', () => {
-    printWindow.webContents.print(
-      { silent: true, printBackground: true },
-      (success, errorType) => {
-        mainWindow.webContents.send("receivePrint", success);
-      }
-    );
-  });
-});
-
-ipcMain.on("sendReadDbData", async (event, args) => {
+ipcMain.on("sendGetDataByTable", async (event, args) => {
   try {
     const data = await readData(args);
-    mainWindow.webContents.send("receiveReadDbData" + args, data);
+    mainWindow.webContents.send("receiveGetDataByTable" + args, data);
   } catch (error) {
-    mainWindow.webContents.send("receiveReadDbData" + args, '[]');
+    mainWindow.webContents.send("receiveGetDataByTable" + args, '[]');
   }
 });
 
-ipcMain.on("sendWriteDbData", async (event, args) => {
+ipcMain.on("sendInsertExcelToDB", async (event, args) => {
   if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
     try {
       JSON.parse(args[1]);
       await insertExcelToDB(args[0], args[1]);
-      mainWindow.webContents.send("receiveWriteDbData" + args[0], 1);
+      mainWindow.webContents.send("receiveInsertExcelToDB" + args[0], 1);
     } catch (e) {
       console.error("Invalid JSON data:", e);
-      mainWindow.webContents.send("receiveWriteDbData" + args[0], 0);
+      mainWindow.webContents.send("receiveInsertExcelToDB" + args[0], 0);
     }
   } else {
     console.error("Empty or invalid data.");
-    mainWindow.webContents.send("receiveWriteDbData" + args[0], 0);
+    mainWindow.webContents.send("receiveInsertExcelToDB" + args[0], 0);
   }
 });
 
@@ -122,19 +109,19 @@ ipcMain.on("sendReadSystem", async (event, args) => {
   }
 });
 
-ipcMain.on("sendWriteSystem", async (event, args) => {
+ipcMain.on("sendUpdateSystem", async (event, args) => {
   if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
     try {
       JSON.parse(args[1]);
       await writeSystem(args[1]);
-      mainWindow.webContents.send("receiveWriteSystem" + args[0], 1);
+      mainWindow.webContents.send("receiveUpdateSystem" + args[0], 1);
     } catch (e) {
       console.error(e instanceof SyntaxError ? "Invalid JSON data:" : "Save failed:", e);
-      mainWindow.webContents.send("receiveWriteSystem" + args[0], 0);
+      mainWindow.webContents.send("receiveUpdateSystem" + args[0], 0);
     }
   } else {
     console.error("Empty or invalid data.");
-    mainWindow.webContents.send("receiveWriteSystem" + args[0], 0);
+    mainWindow.webContents.send("receiveUpdateSystem" + args[0], 0);
   }
 });
 
@@ -146,7 +133,7 @@ ipcMain.on("sendInsertStudent", async () => {
     mainWindow.webContents.send("receiveInsertStudent", data);
   } catch (error) {
     console.error(error);
-    mainWindow.webContents.send("receiveInsertStudent", 0);
+    mainWindow.webContents.send("receiveInsertStudent", false);
   }
 });
 
@@ -157,9 +144,73 @@ ipcMain.on("sendUpdateStudent", async (event, args) => {
     mainWindow.webContents.send("receiveUpdateStudent", data);
   } catch (error) {
     console.error(error);
-    mainWindow.webContents.send("receiveUpdateStudent", 0);
+    mainWindow.webContents.send("receiveUpdateStudent", false);
   }
 });
+
+// -------------- utils ---------------- //
+
+ipcMain.on("getBackground", (event, args) => {
+  fs.readFile(args + '.png', { encoding: 'base64', flag: 'r' }, function (err, data) {
+    if (err) {
+      console.log("background read error", err);
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.send("receiveGetBackground" + args, 0);
+      }
+    } else {
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.send("receiveGetBackground" + args, data);
+      }
+    }
+  });
+});
+
+ipcMain.on("sendUploadBackground", (event, args) => {
+  const fileData = args;
+  const buffer = Buffer.from(fileData, "base64");
+  fs.writeFile("personalBackground.png", buffer, (err) => {
+    if (err) {
+      console.log(err)
+    }
+    mainWindow.webContents.send("recieveUploadBackground", 1);
+  });
+});
+
+ipcMain.on("sendPrint", (event, args) => {
+  let printWindow = new BrowserWindow({ show: false });
+  printWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(args));
+  printWindow.webContents.once('did-finish-load', () => {
+    printWindow.webContents.print(
+      { silent: true, printBackground: true },
+      (success, errorType) => {
+        mainWindow.webContents.send("receivePrint", success);
+      }
+    );
+  });
+});
+
+// -------------- electron ---------------- //
+
+ipcMain.on('close', () => {
+  app.quit()
+})
+
+app.on('window-all-closed', () => {
+  app.quit()
+})
+
+app.on('before-quit', () => {
+  try {
+    closeDatabase();
+  } catch (error) {
+    console.error('Failed to close SQLite database cleanly.', error);
+  }
+})
+
+// When app icon is clicked and app is running, (macOS) recreate the BrowserWindow
+app.on('activate', () => {
+  if (mainWindow === null) createWindow()
+})
 
 //-----------------------//
 
@@ -196,50 +247,3 @@ ipcMain.on("sendWriteExcel", (event, args) => {
     mainWindow.webContents.send("receiveWriteExcel" + args[0], 0);
   }
 });
-
-ipcMain.on("getBackground", (event, args) => {
-  fs.readFile(args + '.png', { encoding: 'base64', flag: 'r' }, function (err, data) {
-    if (err) {
-      console.log("background read error", err);
-      if (mainWindow && mainWindow.webContents) {
-        mainWindow.webContents.send("receiveGetBackground" + args, 0);
-      }
-    } else {
-      if (mainWindow && mainWindow.webContents) {
-        mainWindow.webContents.send("receiveGetBackground" + args, data);
-      }
-    }
-  });
-});
-
-ipcMain.on("sendUploadBackground", (event, args) => {
-  const fileData = args;
-  const buffer = Buffer.from(fileData, "base64");
-  fs.writeFile("personalBackground.png", buffer, (err) => {
-    if (err) {
-      console.log(err)
-    }
-    mainWindow.webContents.send("recieveUploadBackground", 1);
-  });
-});
-
-ipcMain.on('close', () => {
-  app.quit()
-})
-
-app.on('window-all-closed', () => {
-  app.quit()
-})
-
-app.on('before-quit', () => {
-  try {
-    closeDatabase();
-  } catch (error) {
-    console.error('Failed to close SQLite database cleanly.', error);
-  }
-})
-
-// When app icon is clicked and app is running, (macOS) recreate the BrowserWindow
-app.on('activate', () => {
-  if (mainWindow === null) createWindow()
-})

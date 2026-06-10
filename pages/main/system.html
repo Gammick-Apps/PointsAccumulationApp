@@ -204,7 +204,7 @@
             return "";
         }
 
-        function insertexcelToDB(event) {
+        function insertExcelToDB(event) {
             var file = event.target.files[0];
             var reader = new FileReader();
             reader.onload = function (e) {
@@ -222,8 +222,8 @@
                 }
                 if (name != "") {
                     tableName = name;
-                    window.expose.sendDbData("sendWriteDbData", [tableName, json_object]);
-                    window.expose.receiveDbData("receiveWriteDbData" + tableName, (data) => {
+                    window.expose.sendDbData("sendInsertExcelToDB", [tableName, json_object]);
+                    window.expose.receiveDbData("receiveInsertExcelToDB" + tableName, (data) => {
                         location.reload()
                     });
                 }
@@ -309,8 +309,8 @@
             })
 
             tableName = "systemConfig"
-            window.expose.SendSystem("sendWriteSystem", [tableName, JSON.stringify(systemConfig)]);
-            window.expose.ReceiveSystem("receiveWriteSystem" + tableName, (data) => {
+            window.expose.SendSystem("sendUpdateSystem", [tableName, JSON.stringify(systemConfig)]);
+            window.expose.ReceiveSystem("receiveUpdateSystem" + tableName, (data) => {
                 if (data == 1) {
                     location.reload()
                 }

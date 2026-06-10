@@ -40,8 +40,8 @@
                 document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
             });
             tableName = 'students'
-            window.expose.sendDbData("sendReadDbData", tableName);
-            window.expose.receiveDbData("receiveReadDbData" + tableName, (data) => {
+            window.expose.sendDbData("sendGetDataByTable", tableName);
+            window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
                 if (data != 0) {
                     students = JSON.parse(data)
                     gridOptions = {
@@ -79,10 +79,9 @@
         });
 
         function newStudent() {
-            tableName = 'students'
             window.expose.sendDbData("sendInsertStudent");
             window.expose.receiveDbData("receiveInsertStudent", (data) => {
-                if (data == 1) {
+                if (data === true) {
                     location.reload();
                 }
             });
@@ -96,7 +95,6 @@
         }
 
         function updateStudent(params) {
-            tableName = 'students'
             const payload = {
                 tz: params.data.tz,
                 field: params.colDef.field,
@@ -104,7 +102,7 @@
             };
             window.expose.sendDbData("sendUpdateStudent", JSON.stringify(payload));
             window.expose.receiveDbData("receiveUpdateStudent", (data) => {
-                if (data == 1) {
+                if (data === true) {
                     location.reload()
                 }
             });

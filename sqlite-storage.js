@@ -8,7 +8,7 @@ let dbPath;
 let initPromise;
 const DB_FLAG_INCONSISTENT_ERROR_CODE = 'SQLITE_DB_FLAG_INCONSISTENT';
 
-// -------------- פונקציות בסיס ---------------- //
+// -------------- basic functions ---------------- //
 
 function quoteIdentifier(identifier) {
   return `"${String(identifier).replace(/"/g, '""')}"`;
@@ -51,11 +51,11 @@ function all(sql, params = []) {
 }
 
 
-// -------------- יצירת מסד נתונים ---------------- //
+// -------------- create database ---------------- //
 
 async function initDatabase(electronApp) {
 
-  // פונקציה ליצירת מסד הנתונים
+  // function to create the DB
   initPromise = (async () => {
     const openDatabase = (filePath) => new Promise((resolve, reject) => {
       const connection = new sqlite3.Database(filePath, (error) => {
@@ -67,13 +67,13 @@ async function initDatabase(electronApp) {
       });
     });
 
-    //שומר את המסד נתונים בתיקיה 
+    // save the DB in folder   
     const userDataPath = electronApp.getPath('userData');
     dbPath = path.join(userDataPath, 'points-accumulation.sqlite');
     fs.mkdirSync(userDataPath, { recursive: true });
 
-    //פותח בפועל את מסד הנתונים
-    // ואז יוצר את הטבלאות על פי הסכמה רק בהפעלה הראשונה
+    //open the DB 
+    // then create the tables according to the schema
     const flagPath = path.join(userDataPath, 'db_created.json');
 
     if (fs.existsSync(dbPath)) {
@@ -103,7 +103,7 @@ async function initDatabase(electronApp) {
   return true;
 }
 
-//בודק שנוצר מסד נתונים
+// check if DB exists
 async function waitDB() {
   if (db) return true;
   if (initPromise) await initPromise;
@@ -111,7 +111,7 @@ async function waitDB() {
   return true;
 }
 
-//בונה מהנתונים שאילתה לבנות שדות במסד נתונים
+//build SQL query for build the columns 
 function buildColumnSql(column) {
   const parts = [quoteIdentifier(column.name), String(column.type || 'TEXT')];
   if (column.primaryKey) {
@@ -126,7 +126,7 @@ function buildColumnSql(column) {
   return parts.join(' ');
 };
 
-//בונה מהנתונים שאילתה לבנות מפתחות זרים במסד נתונים
+//build SQL query for build the foreign keys
 function buildFKSql(foreignKey) {
   const localColumns = foreignKey.columns.map(quoteIdentifier).join(', ');
   const referenceColumns = foreignKey.referencesColumns.map(quoteIdentifier).join(', ');
@@ -146,7 +146,6 @@ async function createSchema() {
     for (const table of tables) {
       const columns = table.columns;
       const foreignKeys = table.foreignKeys || [];
-
       const columnSql = columns.map(buildColumnSql);
       const foreignKeySql = foreignKeys.map(buildFKSql);
       const definitions = [...columnSql, ...foreignKeySql].join(',\n      ');
@@ -168,9 +167,17 @@ async function createSchema() {
   }
 }
 
+function closeDatabase() {
+  if (!db) {
+    return;
+  }
+  db.close();
+  db = undefined;
+  dbPath = undefined;
+  initPromise = undefined;
+}
 
 // -------------- system ---------------- //
-
 
 async function writeSystem(payload) {
   await waitDB();
@@ -187,15 +194,13 @@ async function writeSystem(payload) {
   return 1;
 }
 
-
 async function readSystem() {
   await waitDB();
   const row = await get('SELECT * FROM systemConfig WHERE id = 1 LIMIT 1;');
   return JSON.stringify((({ id, ...response }) => response)(row || {}));
 }
 
-
-// -------------- allTables ---------------- //
+// -------------- general ---------------- //
 
 async function insertExcelToDB(tableName, payload) {
   await waitDB();
@@ -249,9 +254,7 @@ async function readData(tableName) {
   return JSON.stringify(rows);
 }
 
-
 // -------------- students ---------------- //
-
 
 async function generateUniqueStudentTz() {
   while (true) {
@@ -273,7 +276,7 @@ async function addStudents() {
       [tz]
     );
     await run('COMMIT;');
-    return 1;
+    return true;
   } catch (error) {
     await run('ROLLBACK;');
     throw error;
@@ -290,7 +293,7 @@ async function updateStudents(tz, field, value){
       [correctValue, tz]
     );
     await run('COMMIT;');
-    return 1;
+    return true;
   } catch (error) {
     await run('ROLLBACK;');
     throw error;
@@ -299,15 +302,6 @@ async function updateStudents(tz, field, value){
 
 //----------------------------------------------------//
 
-function closeDatabase() {
-  if (!db) {
-    return;
-  }
-  db.close();
-  db = undefined;
-  dbPath = undefined;
-  initPromise = undefined;
-}
 
 module.exports = {
   initDatabase,
