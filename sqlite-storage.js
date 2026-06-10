@@ -8,10 +8,50 @@ let dbPath;
 let initPromise;
 const DB_FLAG_INCONSISTENT_ERROR_CODE = 'SQLITE_DB_FLAG_INCONSISTENT';
 
+// -------------- פונקציות בסיס ---------------- //
+
 function quoteIdentifier(identifier) {
   return `"${String(identifier).replace(/"/g, '""')}"`;
 }
 
+function run(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function onRun(error) {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(this);
+    });
+  });
+}
+
+function get(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params, (error, row) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(row);
+    });
+  });
+}
+
+function all(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.all(sql, params, (error, rows) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(rows);
+    });
+  });
+}
+
+
+// -------------- יצירת מסד נתונים ---------------- //
 
 async function initDatabase(electronApp) {
 
@@ -64,54 +104,11 @@ async function initDatabase(electronApp) {
 }
 
 //בודק שנוצר מסד נתונים
-//לפני שניגש אליו מהקוד
 async function waitDB() {
   if (db) return true;
   if (initPromise) await initPromise;
   if (!db) throw new Error('Database not available');
   return true;
-}
-
-// מתקשר עם המסד נתונים
-//לבצע שם שינויים
-function run(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function onRun(error) {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve(this);
-    });
-  });
-}
-
-//מתקשר עם המסד נתונים
-//עבור קבלת נתונים 
-function get(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (error, row) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve(row);
-    });
-  });
-}
-
-//מתקשר עם המסד נתונים
-//עבור קבלת נתונים כמערך
-function all(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.all(sql, params, (error, rows) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve(rows);
-    });
-  });
 }
 
 //בונה מהנתונים שאילתה לבנות שדות במסד נתונים
@@ -163,7 +160,7 @@ async function createSchema() {
     }
 
     await run('INSERT OR IGNORE INTO "systemConfig" ("id") VALUES (1);');
-    
+
     await run('COMMIT;');
   } catch (error) {
     await run('ROLLBACK;');
@@ -171,6 +168,34 @@ async function createSchema() {
   }
 }
 
+
+// -------------- system ---------------- //
+
+
+async function writeSystem(payload) {
+  await waitDB();
+  const config = JSON.parse(payload) || {};
+  await run('BEGIN TRANSACTION;');
+  try {
+    await run(`INSERT OR REPLACE INTO systemConfig (id, device, color, textColor, date, numPosition, type, hasPrint, hasBuy, hasParents, hasTests, buy, timer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+      [1, config.device, config.color, config.textColor, config.date, config.numPosition, config.type, config.hasPrint, config.hasBuy, config.hasParents, config.hasTests, config.buy, config.timer]);
+    await run('COMMIT;');
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
+  return 1;
+}
+
+
+async function readSystem() {
+  await waitDB();
+  const row = await get('SELECT * FROM systemConfig WHERE id = 1 LIMIT 1;');
+  return JSON.stringify((({ id, ...response }) => response)(row || {}));
+}
+
+
+// -------------- allTables ---------------- //
 
 async function insertExcelToDB(tableName, payload) {
   await waitDB();
@@ -218,6 +243,16 @@ async function insertExcelToDB(tableName, payload) {
   return 1;
 }
 
+async function readData(tableName) {
+  await waitDB();
+  const rows = await all(`SELECT * FROM ${quoteIdentifier(tableName)};`);
+  return JSON.stringify(rows);
+}
+
+
+// -------------- students ---------------- //
+
+
 async function generateUniqueStudentTz() {
   while (true) {
     const tz = Math.floor(Math.random() * (399999999 - 200000000 + 1) + 200000000);
@@ -228,56 +263,41 @@ async function generateUniqueStudentTz() {
   }
 }
 
-async function addStudents(student) {
+async function addStudents() {
   await waitDB();
-
   const tz = await generateUniqueStudentTz();
-  const code = student && student.code !== undefined ? student.code : 0;
-  const grade = student && student.grade !== undefined ? student.grade : '------';
-  const name = student && student.name !== undefined ? student.name : '------';
-  const points = student && student.points !== undefined ? student.points : 0;
-  const position = student && student.position !== undefined ? student.position : '';
-
   await run('BEGIN TRANSACTION;');
   try {
-    const result = await run(
-      'INSERT INTO students (tz, code, grade, name, points, position) VALUES (?, ?, ?, ?, ?, ?);',
-      [tz, code, grade, name, points, position]
+    await run(
+      'INSERT INTO students (tz) VALUES (?);',
+      [tz]
     );
     await run('COMMIT;');
-    return JSON.stringify({ ok: true, lastID: result.lastID, tz });
+    return 1;
   } catch (error) {
     await run('ROLLBACK;');
     throw error;
   }
 }
 
-async function writeSystem(payload) {
+async function updateStudents(tz, field, value){
   await waitDB();
-  const config = JSON.parse(payload) || {};
+  const correctValue = field === 'points' ? Number(value) : value;
   await run('BEGIN TRANSACTION;');
   try {
-    await run(`INSERT OR REPLACE INTO systemConfig (id, device, color, textColor, date, numPosition, type, hasPrint, hasBuy, hasParents, hasTests, buy, timer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-      [1, config.device, config.color, config.textColor, config.date, config.numPosition, config.type, config.hasPrint, config.hasBuy, config.hasParents, config.hasTests, config.buy, config.timer]);
+    await run(
+      `UPDATE students SET ${quoteIdentifier(field)} = ? WHERE tz = ?;`,
+      [correctValue, tz]
+    );
     await run('COMMIT;');
+    return 1;
   } catch (error) {
     await run('ROLLBACK;');
     throw error;
   }
-  return 1;
 }
 
-async function readData(dataName) {
-  await waitDB();
-  const rows = await all(`SELECT * FROM ${quoteIdentifier(dataName)};`);
-  return JSON.stringify(rows);
-}
-
-async function readSystem(dataName) {
-  await waitDB();
-  const row = await get('SELECT * FROM systemConfig WHERE id = 1 LIMIT 1;');
-  return JSON.stringify((({ id, ...response }) => response)(row || {}));
-}
+//----------------------------------------------------//
 
 function closeDatabase() {
   if (!db) {
@@ -298,5 +318,6 @@ module.exports = {
   closeDatabase,
   insertExcelToDB,
   addStudents,
+  updateStudents,
   DB_FLAG_INCONSISTENT_ERROR_CODE
 };

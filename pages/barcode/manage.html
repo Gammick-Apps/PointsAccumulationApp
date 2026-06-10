@@ -39,9 +39,9 @@
                 document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color);
                 document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
             });
-            fileName = 'students'
-            window.expose.sendDbData("sendReadDbData", fileName);
-            window.expose.receiveDbData("receiveReadDbData" + fileName, (data) => {
+            tableName = 'students'
+            window.expose.sendDbData("sendReadDbData", tableName);
+            window.expose.receiveDbData("receiveReadDbData" + tableName, (data) => {
                 if (data != 0) {
                     students = JSON.parse(data)
                     gridOptions = {
@@ -57,7 +57,7 @@
                             resizable: true,
                         },
                         onFirstDataRendered: onFirstDataRendered,
-                        onCellEditingStopped: onCellEditingStopped
+                        onCellEditingStopped: updateStudent
                     };
                     var gridDiv = document.querySelector('#studentsGrid');
                     new agGrid.Grid(gridDiv, gridOptions);
@@ -79,17 +79,10 @@
         });
 
         function newStudent() {
-            var student = {
-                grade: '------',
-                name: '------',
-                code: 0,
-                points: 0,
-                position: ''
-            };
-
-            window.expose.sendDbData("sendAddStudents", JSON.stringify(student));
-            window.expose.receiveDbData("receiveAddStudents", (data) => {
-                if (data != 0) {
+            tableName = 'students'
+            window.expose.sendDbData("sendInsertStudent");
+            window.expose.receiveDbData("receiveInsertStudent", (data) => {
+                if (data == 1) {
                     location.reload();
                 }
             });
@@ -102,11 +95,18 @@
             });
         }
 
-        function onCellEditingStopped(params) {
-            fileName = 'students'
-            window.expose.sendDbData("sendWriteDbData", [fileName, JSON.stringify(students)]);
-            window.expose.receiveDbData("receiveWriteDbData" + fileName, (data) => {
-                location.reload()
+        function updateStudent(params) {
+            tableName = 'students'
+            const payload = {
+                tz: params.data.tz,
+                field: params.colDef.field,
+                value: params.newValue
+            };
+            window.expose.sendDbData("sendUpdateStudent", JSON.stringify(payload));
+            window.expose.receiveDbData("receiveUpdateStudent", (data) => {
+                if (data == 1) {
+                    location.reload()
+                }
             });
         }
 

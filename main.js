@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 let mainWindow
-const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB, addStudents, DB_FLAG_INCONSISTENT_ERROR_CODE} = require('./sqlite-storage');
+const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB, addStudents, updateStudents, DB_FLAG_INCONSISTENT_ERROR_CODE} = require('./sqlite-storage');
 
 function createWindow() {
   let ses = session.defaultSession
@@ -71,6 +71,8 @@ app.on('ready', async () => {
   }
 })
 
+// -------------- general ---------------- //
+
 ipcMain.on("sendPrint", (event, args) => {
   let printWindow = new BrowserWindow({ show: false });
   printWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(args));
@@ -84,6 +86,83 @@ ipcMain.on("sendPrint", (event, args) => {
   });
 });
 
+ipcMain.on("sendReadDbData", async (event, args) => {
+  try {
+    const data = await readData(args);
+    mainWindow.webContents.send("receiveReadDbData" + args, data);
+  } catch (error) {
+    mainWindow.webContents.send("receiveReadDbData" + args, '[]');
+  }
+});
+
+ipcMain.on("sendWriteDbData", async (event, args) => {
+  if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
+    try {
+      JSON.parse(args[1]);
+      await insertExcelToDB(args[0], args[1]);
+      mainWindow.webContents.send("receiveWriteDbData" + args[0], 1);
+    } catch (e) {
+      console.error("Invalid JSON data:", e);
+      mainWindow.webContents.send("receiveWriteDbData" + args[0], 0);
+    }
+  } else {
+    console.error("Empty or invalid data.");
+    mainWindow.webContents.send("receiveWriteDbData" + args[0], 0);
+  }
+});
+
+// -------------- system ---------------- //
+
+ipcMain.on("sendReadSystem", async (event, args) => {
+  try {
+    const data = await readSystem();
+    mainWindow.webContents.send("receiveReadSystem" + args, data);
+  } catch (error) {
+    mainWindow.webContents.send("receiveReadSystem" + args, 0);
+  }
+});
+
+ipcMain.on("sendWriteSystem", async (event, args) => {
+  if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
+    try {
+      JSON.parse(args[1]);
+      await writeSystem(args[1]);
+      mainWindow.webContents.send("receiveWriteSystem" + args[0], 1);
+    } catch (e) {
+      console.error(e instanceof SyntaxError ? "Invalid JSON data:" : "Save failed:", e);
+      mainWindow.webContents.send("receiveWriteSystem" + args[0], 0);
+    }
+  } else {
+    console.error("Empty or invalid data.");
+    mainWindow.webContents.send("receiveWriteSystem" + args[0], 0);
+  }
+});
+
+// -------------- students ---------------- //
+
+ipcMain.on("sendInsertStudent", async () => {
+  try {
+    const data = await addStudents();
+    mainWindow.webContents.send("receiveInsertStudent", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveInsertStudent", 0);
+  }
+});
+
+ipcMain.on("sendUpdateStudent", async (event, args) => {
+  try {
+    const payload = JSON.parse(args);
+    const data = await updateStudents(payload.tz, payload.field, payload.value);
+    mainWindow.webContents.send("receiveUpdateStudent", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveUpdateStudent", 0);
+  }
+});
+
+//-----------------------//
+
 ipcMain.on("sendReadExcel", (event, args) => {
   fs.readFile(args + '.txt',
     { encoding: 'utf8', flag: 'r' },
@@ -95,39 +174,6 @@ ipcMain.on("sendReadExcel", (event, args) => {
         mainWindow.webContents.send("receiveReadExcel" + args, data);
       }
     });
-});
-
-ipcMain.on("sendReadDbData", async (event, args) => {
-  try {
-    const data = await readData(args);
-    mainWindow.webContents.send("receiveReadDbData" + args, data);
-  } catch (error) {
-    mainWindow.webContents.send("receiveReadDbData" + args, '[]');
-  }
-});
-
-ipcMain.on("sendReadSystem", async (event, args) => {
-  try {
-    const data = await readSystem(args);
-    mainWindow.webContents.send("receiveReadSystem" + args, data);
-  } catch (error) {
-    mainWindow.webContents.send("receiveReadSystem" + args, 0);
-  }
-});
-
-ipcMain.on("getBackground", (event, args) => {
-  fs.readFile(args + '.png', { encoding: 'base64', flag: 'r' }, function (err, data) {
-    if (err) {
-      console.log("background read error", err);
-      if (mainWindow && mainWindow.webContents) {
-        mainWindow.webContents.send("receiveGetBackground" + args, 0);
-      }
-    } else {
-      if (mainWindow && mainWindow.webContents) {
-        mainWindow.webContents.send("receiveGetBackground" + args, data);
-      }
-    }
-  });
 });
 
 ipcMain.on("sendWriteExcel", (event, args) => {
@@ -151,46 +197,19 @@ ipcMain.on("sendWriteExcel", (event, args) => {
   }
 });
 
-ipcMain.on("sendWriteDbData", async (event, args) => {
-  if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
-    try {
-      JSON.parse(args[1]);
-      await insertExcelToDB(args[0], args[1]);
-      mainWindow.webContents.send("receiveWriteDbData" + args[0], 1);
-    } catch (e) {
-      console.error("Invalid JSON data:", e);
-      mainWindow.webContents.send("receiveWriteDbData" + args[0], 0);
+ipcMain.on("getBackground", (event, args) => {
+  fs.readFile(args + '.png', { encoding: 'base64', flag: 'r' }, function (err, data) {
+    if (err) {
+      console.log("background read error", err);
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.send("receiveGetBackground" + args, 0);
+      }
+    } else {
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.send("receiveGetBackground" + args, data);
+      }
     }
-  } else {
-    console.error("Empty or invalid data.");
-    mainWindow.webContents.send("receiveWriteDbData" + args[0], 0);
-  }
-});
-
-ipcMain.on("sendAddStudents", async (event, args) => {
-  try {
-    const data = await addStudents(JSON.parse(args));
-    mainWindow.webContents.send("receiveAddStudents", data);
-  } catch (error) {
-    console.error(error);
-    mainWindow.webContents.send("receiveAddStudents", 0);
-  }
-});
-
-ipcMain.on("sendWriteSystem", async (event, args) => {
-  if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
-    try {
-      JSON.parse(args[1]);
-      await writeSystem(args[1]);
-      mainWindow.webContents.send("receiveWriteSystem" + args[0], 1);
-    } catch (e) {
-      console.error(e instanceof SyntaxError ? "Invalid JSON data:" : "Save failed:", e);
-      mainWindow.webContents.send("receiveWriteSystem" + args[0], 0);
-    }
-  } else {
-    console.error("Empty or invalid data.");
-    mainWindow.webContents.send("receiveWriteSystem" + args[0], 0);
-  }
+  });
 });
 
 ipcMain.on("sendUploadBackground", (event, args) => {

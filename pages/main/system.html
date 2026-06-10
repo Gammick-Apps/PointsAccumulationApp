@@ -204,7 +204,7 @@
             return "";
         }
 
-        function handleFileSelect(event) {
+        function insertexcelToDB(event) {
             var file = event.target.files[0];
             var reader = new FileReader();
             reader.onload = function (e) {
@@ -221,9 +221,9 @@
                     json_object = JSON.stringify(XLSX.utils.sheet_to_json(sheet));
                 }
                 if (name != "") {
-                    fileName = name;
-                    window.expose.sendDbData("sendWriteDbData", [fileName, json_object]);
-                    window.expose.receiveDbData("receiveWriteDbData" + fileName, (data) => {
+                    tableName = name;
+                    window.expose.sendDbData("sendWriteDbData", [tableName, json_object]);
+                    window.expose.receiveDbData("receiveWriteDbData" + tableName, (data) => {
                         location.reload()
                     });
                 }
@@ -266,15 +266,15 @@
                         students[i].tasks = ','
                     }
                     fileName = "students"
-                    window.expose.SendExcel("sendWriteDbData", [fileName, JSON.stringify(students)]);
-                    window.expose.ReceiveExcel("receiveWriteDbData" + fileName, (data) => {
+                    window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
+                    window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
                         if (systemConfig.type == 1) {
                             for (var i = 0; i < uniqTasks.length; i++) {
                                 uniqTasks[i].used = 0
                             }
                             fileName = "uniqTasks"
-                            window.expose.SendExcel("sendWriteDbData", [fileName, JSON.stringify(uniqTasks)]);
-                            window.expose.ReceiveExcel("receiveWriteDbData" + fileName, (data) => {
+                            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(uniqTasks)]);
+                            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
                                 // alert("!הקבצים אופסו בהצלחה")
                                 location.reload()
                             });
@@ -291,8 +291,8 @@
                     products[i].used = 0
                 }
                 fileName = "products"
-                window.expose.SendExcel("sendWriteDbData", [fileName, JSON.stringify(products)]);
-                window.expose.ReceiveExcel("receiveWriteDbData" + fileName, (data) => {
+                window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(products)]);
+                window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
                     // alert("!הקבצים אופסו בהצלחה")
                     location.reload()
                 });
@@ -471,11 +471,11 @@
     </div>
 
     <script>
-        document.getElementById('uploadStudents').addEventListener('change', handleFileSelect, false);
-        document.getElementById('uploaduniqTasks').addEventListener('change', handleFileSelect, false);
-        document.getElementById('uploadProducts').addEventListener('change', handleFileSelect, false);
-        document.getElementById('uploadParents').addEventListener('change', handleFileSelect, false);
-        document.getElementById('uploadTest').addEventListener('change', handleFileSelect, false);
+        document.getElementById('uploadStudents').addEventListener('change', insertExcelToDB, false);
+        document.getElementById('uploaduniqTasks').addEventListener('change', insertExcelToDB, false);
+        document.getElementById('uploadProducts').addEventListener('change', insertExcelToDB, false);
+        document.getElementById('uploadParents').addEventListener('change', insertExcelToDB, false);
+        document.getElementById('uploadTest').addEventListener('change', insertExcelToDB, false);
 
     </script>
 </body>
