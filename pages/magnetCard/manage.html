@@ -96,9 +96,9 @@
                 printSwitch.checked = systemConfig.hasPrint == "1" ? true : false;
                 showLabel();
                 showPrintLabel();
-                fileName = 'uniqTasks'
-                window.expose.SendExcel("sendReadExcel", fileName);
-                window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+                tableName = 'uniqTasks'
+                window.expose.SendExcel("sendGetDataByTable", tableName);
+                window.expose.ReceiveExcel("receiveGetDataByTable" + tableName, (data) => {
                     if (data != 0) {
                         if (systemConfig.device != "1" || (systemConfig.device == "1" && systemConfig.type =="2") ) {
                             uniqTasks = JSON.parse(data)
@@ -117,9 +117,9 @@
                     }
                 })
             });
-            fileName = 'students'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+            tableName = 'students'
+            window.expose.SendExcel("sendGetDataByTable", tableName);
+            window.expose.ReceiveExcel("receiveGetDataByTable" + tableName, (data) => {
                 if (data != 0) {
                     students = JSON.parse(data)
                     createStudentsGrid()
@@ -152,7 +152,7 @@
                     sortable: true,
                 },
                 onCellClicked: cellClickedTask,
-                onCellEditingStopped: editTask,
+                onCellEditingStopped: updateTask,
                 onRowSelected: onTaskRowSelected,
                 onFirstDataRendered: onTasksFirstRendered,
             };
@@ -195,7 +195,7 @@
                     resizable: true
                 },
                 onFirstDataRendered: onStudentsFirstRendered,
-                onCellEditingStopped: editStudent
+                onCellEditingStopped: updateStudent
             };
             var gridDiv = document.querySelector('#studentsGrid');
             new agGrid.Grid(gridDiv, gridOptions);
@@ -231,7 +231,7 @@
             if (params.colDef.field === 'multiple') {
                 params.data.multiple = params.data.multiple === 1 ? 0 : 1;
                 params.api.refreshCells({ rowNodes: [params.node] });
-                editTask()
+                updateTask(params)
             }
         }
 
@@ -243,10 +243,17 @@
             }
         }
 
-        function editTask(params) {
-            fileName = 'uniqTasks'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(uniqTasks)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+        function updateTask(params) {
+            const payload = {
+                code: params.data.code,
+                field: params.colDef.field,
+                value: params.colDef.field === 'multiple' ? params.data.multiple : params.newValue
+            };
+            window.expose.sendDbData("sendUpdateTask", JSON.stringify(payload));
+            window.expose.receiveDbData("receiveUpdateTask", (data) => {
+                if (data === true) {
+                    location.reload()
+                }
             });
         }
 
@@ -257,10 +264,17 @@
             });
         }
 
-        function editStudent(params) {
-            fileName = 'students'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+        function updateStudent(params) {
+            const payload = {
+                tz: params.data.tz,
+                field: params.colDef.field,
+                value: params.newValue
+            };
+            window.expose.sendDbData("sendUpdateStudent", JSON.stringify(payload));
+            window.expose.receiveDbData("receiveUpdateStudent", (data) => {
+                if (data === true) {
+                    location.reload()
+                }
             });
         }
 
@@ -284,15 +298,12 @@
             }
         }
 
-        function newTask() {
-            const code = uniqTasks[uniqTasks.length - 1].code + 1;
-            uniqTasks.push({
-                name: '------', code: code, points: 0, multiple: true, type: 1
-            })
-            fileName = 'uniqTasks'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(uniqTasks)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                location.reload()
+        function addTask() {
+            window.expose.sendDbData("sendInsertTask");
+            window.expose.receiveDbData("receiveInsertTask", (data) => {
+                if (data === true) {
+                    location.reload();
+                }
             });
         }
 
@@ -308,25 +319,13 @@
             });
         }
 
-        function newStudent() {
-            if (students.length > 0) {
-                var tz = Math.floor(Math.random() * (399999999 - 200000000 + 1) + 200000000)
-                for (var i = 0; i < students.length; i++) {
-                    while (students[i]["tz"] == tz) {
-                        tz = Math.floor(Math.random() * (399999999 - 200000000 + 1) + 200000000)
-                        i = 0
-                    }
+        function addStudent() {
+            window.expose.sendDbData("sendInsertStudent");
+            window.expose.receiveDbData("receiveInsertStudent", (data) => {
+                if (data === true) {
+                    location.reload();
                 }
-                students.push({
-                    grade: '------', name: '------', tz: tz, barcode: '',
-                    points: 0, tasks: ",", tasksNumber: ","
-                })
-                fileName = 'students'
-                window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
-                window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                    location.reload()
-                });
-            }
+            });
         }
 
         function exportToExcel(name) {
@@ -395,7 +394,7 @@
                     </div>
                     <div id="tasksSec" class="h-50 mb-2" style="text-align: right; visibility: hidden;">
                         <label> רשימת המשימות</label>
-                        <img onclick="newTask()" src="../../resources/barcode/plus-light.svg" class="cursor-pointer" />
+                        <img onclick="addTask()" src="../../resources/barcode/plus-light.svg" class="cursor-pointer" />
                         <div id="tasksGrid" class="ag-theme-alpine ag-theme-quartz"></div>
                     </div>
                     <div id="productsSec" class="h-50 mb-2" style="text-align: right; visibility: hidden;">
@@ -409,7 +408,7 @@
                     <div style="text-align: right;">
                         <img onclick="exportToExcel('ניקוד תלמידות')"
                             src="../../resources/barcode/download-simple-light.svg" class="cursor-pointer" />
-                        <img onclick="newStudent()" src="../../resources/barcode/plus-light.svg"
+                        <img onclick="addStudent()" src="../../resources/barcode/plus-light.svg"
                             class="cursor-pointer" />
                     </div>
                     <div id="studentsGrid" class="ag-theme-alpine w-100 h-100"></div>

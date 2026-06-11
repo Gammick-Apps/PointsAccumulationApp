@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 let mainWindow
-const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB, addStudents, updateStudents, DB_FLAG_INCONSISTENT_ERROR_CODE} = require('./sqlite-storage');
+const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB, addStudents, updateStudents, addTask, updateTasks, DB_FLAG_INCONSISTENT_ERROR_CODE} = require('./sqlite-storage');
 
 function createWindow() {
   let ses = session.defaultSession
@@ -145,6 +145,29 @@ ipcMain.on("sendUpdateStudent", async (event, args) => {
   } catch (error) {
     console.error(error);
     mainWindow.webContents.send("receiveUpdateStudent", false);
+  }
+});
+
+// -------------- uniqTasks ---------------- //
+
+ipcMain.on("sendInsertTask", async () => {
+  try {
+    const data = await addTask();
+    mainWindow.webContents.send("receiveInsertTask", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveInsertTask", false);
+  }
+});
+
+ipcMain.on("sendUpdateTask", async (event, args) => {  
+  try {
+    const payload = JSON.parse(args);
+    const data = await updateTasks(payload.code, payload.field, payload.value);
+    mainWindow.webContents.send("receiveUpdateTask", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveUpdateTask", false);
   }
 });
 

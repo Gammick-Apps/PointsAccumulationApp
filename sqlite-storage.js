@@ -300,6 +300,43 @@ async function updateStudents(tz, field, value){
   }
 }
 
+// -------------- uniqTasks ---------------- //
+
+async function addTask() {
+  await waitDB();
+  const lastTask = await get('SELECT MAX(code) AS code FROM uniqtasks;');
+  const code = Number(lastTask ?.code || 0) + 1;
+  await run('BEGIN TRANSACTION;');
+  try {
+    await run(
+      'INSERT INTO uniqtasks (code) VALUES (?);',
+      [code]
+    );
+    await run('COMMIT;');
+    return true;
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
+}
+
+async function updateTasks(code, field, value){  
+  await waitDB();
+  const correctValue = field === 'name' ? value : Number(value);
+  await run('BEGIN TRANSACTION;');
+  try {
+    await run(
+      `UPDATE uniqtasks SET ${quoteIdentifier(field)} = ? WHERE code = ?;`,
+      [correctValue, code]
+    );
+    await run('COMMIT;');
+    return true;
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
+}
+
 //----------------------------------------------------//
 
 
@@ -313,5 +350,7 @@ module.exports = {
   insertExcelToDB,
   addStudents,
   updateStudents,
+  addTask,
+  updateTasks,
   DB_FLAG_INCONSISTENT_ERROR_CODE
 };
