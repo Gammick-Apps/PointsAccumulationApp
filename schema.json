@@ -24,7 +24,7 @@
       "columns": [
         { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
         { "name": "code", "type": "INTEGER", "nullable": false, "default": "0" },
-        { "name": "name", "type": "TEXT", "nullable": false, "default": "''" },
+        { "name": "name", "type": "TEXT", "nullable": false, "default": "'--------'" },
         { "name": "points", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "multiple", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "type", "type": "INTEGER", "nullable": false, "default": "0" },
@@ -72,7 +72,7 @@
       "columns": [
         { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
         { "name": "code", "type": "INTEGER", "nullable": false, "default": "0" },
-        { "name": "name", "type": "TEXT", "nullable": false, "default": "''" },
+        { "name": "name", "type": "TEXT", "nullable": false, "default": "'--------'" },
         { "name": "points", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "multiple", "type": "INTEGER", "nullable": false, "default": "0" }
       ],
