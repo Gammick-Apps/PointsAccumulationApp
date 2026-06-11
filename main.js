@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 let mainWindow
-const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB, addStudents, updateStudents, addTask, updateTasks, DB_FLAG_INCONSISTENT_ERROR_CODE} = require('./sqlite-storage');
+const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB, addStudents, updateStudents, addTask, updateTasks,addProduct,updateProducts, DB_FLAG_INCONSISTENT_ERROR_CODE} = require('./sqlite-storage');
 
 function createWindow() {
   let ses = session.defaultSession
@@ -168,6 +168,29 @@ ipcMain.on("sendUpdateTask", async (event, args) => {
   } catch (error) {
     console.error(error);
     mainWindow.webContents.send("receiveUpdateTask", false);
+  }
+});
+
+// -------------- products ---------------- //
+
+ipcMain.on("sendInsertProduct", async () => {
+  try {
+    const data = await addProduct();
+    mainWindow.webContents.send("receiveInsertProduct", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveInsertProduct", false);
+  }
+});
+
+ipcMain.on("sendUpdateProduct", async (event, args) => {  
+  try {
+    const payload = JSON.parse(args);
+    const data = await updateProducts(payload.code, payload.field, payload.value);
+    mainWindow.webContents.send("receiveUpdateProduct", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveUpdateProduct", false);
   }
 });
 

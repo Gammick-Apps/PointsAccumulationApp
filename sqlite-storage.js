@@ -337,6 +337,43 @@ async function updateTasks(code, field, value){
   }
 }
 
+// -------------- products ---------------- //
+
+async function addProduct() {
+  await waitDB();
+  const lastProduct = await get('SELECT MAX(code) AS code FROM products;');
+  const code = Number(lastProduct ?.code || 0) + 1;
+  await run('BEGIN TRANSACTION;');
+  try {
+    await run(
+      'INSERT INTO products (code) VALUES (?);',
+      [code]
+    );
+    await run('COMMIT;');
+    return true;
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
+}
+
+async function updateProducts(code, field, value){  
+  await waitDB();
+  const correctValue = field === 'name' ? value : Number(value);
+  await run('BEGIN TRANSACTION;');
+  try {
+    await run(
+      `UPDATE products SET ${quoteIdentifier(field)} = ? WHERE code = ?;`,
+      [correctValue, code]
+    );
+    await run('COMMIT;');
+    return true;
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
+}
+
 //----------------------------------------------------//
 
 
@@ -352,5 +389,7 @@ module.exports = {
   updateStudents,
   addTask,
   updateTasks,
+  addProduct,
+  updateProducts,
   DB_FLAG_INCONSISTENT_ERROR_CODE
 };

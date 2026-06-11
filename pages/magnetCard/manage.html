@@ -105,9 +105,9 @@
                             createTasksGrid()
                         }
                         if (systemConfig.hasBuy == 1) {
-                            fileName = 'products'
-                            window.expose.SendExcel("sendReadExcel", fileName);
-                            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+                            tableName = 'products'
+                            window.expose.SendExcel("sendGetDataByTable", tableName);
+                            window.expose.ReceiveExcel("receiveGetDataByTable" + tableName, (data) => {
                                 if (data != 0) {
                                     products = JSON.parse(data)
                                     createProductsGrid()
@@ -172,7 +172,7 @@
                     sortable: true,
                 },
                 onCellClicked: cellClickedProduct,
-                onCellEditingStopped: editProduct,
+                onCellEditingStopped: updateProduct,
                 onRowSelected: onProductsRowSelected,
                 onFirstDataRendered: onProductsFirstRendered,
             };
@@ -239,7 +239,7 @@
             if (params.colDef.field === 'multiple') {
                 params.data.multiple = params.data.multiple === 1 ? 0 : 1;
                 params.api.refreshCells({ rowNodes: [params.node] });
-                editProduct()
+                updateProduct(params)
             }
         }
 
@@ -257,10 +257,17 @@
             });
         }
 
-        function editProduct(params) {
-            fileName = 'products'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(products)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+        function updateProduct(params) {
+            const payload = {
+                code: params.data.code,
+                field: params.colDef.field,
+                value: params.colDef.field === 'multiple' ? params.data.multiple : params.newValue
+            };
+            window.expose.sendDbData("sendUpdateProduct", JSON.stringify(payload));
+            window.expose.receiveDbData("receiveUpdateProduct", (data) => {
+                if (data === true) {
+                    location.reload()
+                }
             });
         }
 
@@ -307,15 +314,12 @@
             });
         }
 
-        function newProduct() {
-            const code = products[products.length - 1].code + 1;
-            products.push({
-                name: '------', code: code, points: 0, multiple: false, type: 1
-            })
-            fileName = 'products'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(products)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                location.reload()
+         function addProduct() {
+            window.expose.sendDbData("sendInsertProduct");
+            window.expose.receiveDbData("receiveInsertProduct", (data) => {
+                if (data === true) {
+                    location.reload();
+                }
             });
         }
 
@@ -399,7 +403,7 @@
                     </div>
                     <div id="productsSec" class="h-50 mb-2" style="text-align: right; visibility: hidden;">
                         <label> רשימת המוצרים</label>
-                        <img onclick="newProduct()" src="../../resources/barcode/plus-light.svg"
+                        <img onclick="addProduct()" src="../../resources/barcode/plus-light.svg"
                             class="cursor-pointer" />
                         <div id="productsGrid" class="ag-theme-alpine"></div>
                     </div>
