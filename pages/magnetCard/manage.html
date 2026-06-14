@@ -231,7 +231,7 @@
             if (params.colDef.field === 'multiple') {
                 params.data.multiple = params.data.multiple === 1 ? 0 : 1;
                 params.api.refreshCells({ rowNodes: [params.node] });
-                updateProduct({...params,newValue: params.data.multiple})
+                updateTask({...params,newValue: params.data.multiple})
             }
         }
 
