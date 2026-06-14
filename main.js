@@ -86,15 +86,15 @@ ipcMain.on("sendInsertExcelToDB", async (event, args) => {
   if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
     try {
       JSON.parse(args[1]);
-      await insertExcelToDB(args[0], args[1]);
-      mainWindow.webContents.send("receiveInsertExcelToDB" + args[0], 1);
+      const data = await insertExcelToDB(args[0], args[1]);
+      mainWindow.webContents.send("receiveInsertExcelToDB" + args[0], data);
     } catch (e) {
       console.error("Invalid JSON data:", e);
-      mainWindow.webContents.send("receiveInsertExcelToDB" + args[0], 0);
+      mainWindow.webContents.send("receiveInsertExcelToDB" + args[0], false);
     }
   } else {
     console.error("Empty or invalid data.");
-    mainWindow.webContents.send("receiveInsertExcelToDB" + args[0], 0);
+    mainWindow.webContents.send("receiveInsertExcelToDB" + args[0], false);
   }
 });
 
@@ -117,11 +117,11 @@ ipcMain.on("sendUpdateSystem", async (event, args) => {
       mainWindow.webContents.send("receiveUpdateSystem" + args[0], data);
     } catch (e) {
       console.error(e instanceof SyntaxError ? "Invalid JSON data:" : "Save failed:", e);
-      mainWindow.webContents.send("receiveUpdateSystem" + args[0], 0);
+      mainWindow.webContents.send("receiveUpdateSystem" + args[0], false);
     }
   } else {
     console.error("Empty or invalid data.");
-    mainWindow.webContents.send("receiveUpdateSystem" + args[0], 0);
+    mainWindow.webContents.send("receiveUpdateSystem" + args[0], false);
   }
 });
 

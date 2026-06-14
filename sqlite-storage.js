@@ -245,7 +245,7 @@ async function insertExcelToDB(tableName, payload) {
     await run('ROLLBACK;');
     throw error;
   }
-  return 1;
+  return true;
 }
 
 async function readData(tableName) {

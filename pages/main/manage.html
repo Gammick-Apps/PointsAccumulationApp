@@ -14,8 +14,8 @@
 
         function onLoad() {
             tableName = 'systemConfig'
-            window.expose.SendExcel("sendReadSystem", tableName);
-            window.expose.ReceiveExcel("receiveReadSystem" + tableName, (data) => {
+            window.expose.sendDbData("sendReadSystem", tableName);
+            window.expose.receiveDbData("receiveReadSystem" + tableName, (data) => {
                 systemConfig = JSON.parse(data)
                 if (systemConfig.device == 2 || systemConfig.device == 4 || systemConfig.device == 1 && (systemConfig.hasBuy == "1" || systemConfig.type=="2" ))
                     login("../magnetCard/manage")

@@ -33,8 +33,8 @@
 
         function onLoad() {
             tableName = 'systemConfig'
-            window.expose.SendExcel("sendReadSystem", tableName);
-            window.expose.ReceiveExcel("receiveReadSystem" + tableName, (data) => {
+            window.expose.SendSystem("sendReadSystem", tableName);
+            window.expose.ReceiveSystem("receiveReadSystem" + tableName, (data) => {
                 systemConfig = JSON.parse(data)
                 document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color);
                 document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
