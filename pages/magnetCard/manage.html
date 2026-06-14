@@ -81,8 +81,8 @@
 
         function onLoad() {
             tableName = 'systemConfig'
-            window.expose.SendExcel("sendReadSystem", tableName);
-            window.expose.ReceiveExcel("receiveReadSystem" + tableName, (data) => {
+            window.expose.sendDbData("sendReadSystem", tableName);
+            window.expose.receiveDbData("receiveReadSystem" + tableName, (data) => {
                 systemConfig = JSON.parse(data)
                 document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color)
                 document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
@@ -97,8 +97,8 @@
                 showLabel();
                 showPrintLabel();
                 tableName = 'uniqTasks'
-                window.expose.SendExcel("sendGetDataByTable", tableName);
-                window.expose.ReceiveExcel("receiveGetDataByTable" + tableName, (data) => {
+                window.expose.sendDbData("sendGetDataByTable", tableName);
+                window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
                     if (data != 0) {
                         if (systemConfig.device != "1" || (systemConfig.device == "1" && systemConfig.type =="2") ) {
                             uniqTasks = JSON.parse(data)
@@ -106,8 +106,8 @@
                         }
                         if (systemConfig.hasBuy == 1) {
                             tableName = 'products'
-                            window.expose.SendExcel("sendGetDataByTable", tableName);
-                            window.expose.ReceiveExcel("receiveGetDataByTable" + tableName, (data) => {
+                            window.expose.sendDbData("sendGetDataByTable", tableName);
+                            window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
                                 if (data != 0) {
                                     products = JSON.parse(data)
                                     createProductsGrid()
@@ -118,8 +118,8 @@
                 })
             });
             tableName = 'students'
-            window.expose.SendExcel("sendGetDataByTable", tableName);
-            window.expose.ReceiveExcel("receiveGetDataByTable" + tableName, (data) => {
+            window.expose.sendDbData("sendGetDataByTable", tableName);
+            window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
                 if (data != 0) {
                     students = JSON.parse(data)
                     createStudentsGrid()
@@ -231,7 +231,7 @@
             if (params.colDef.field === 'multiple') {
                 params.data.multiple = params.data.multiple === 1 ? 0 : 1;
                 params.api.refreshCells({ rowNodes: [params.node] });
-                updateTask(params)
+                updateProduct({...params,newValue: params.data.multiple})
             }
         }
 
@@ -239,7 +239,7 @@
             if (params.colDef.field === 'multiple') {
                 params.data.multiple = params.data.multiple === 1 ? 0 : 1;
                 params.api.refreshCells({ rowNodes: [params.node] });
-                updateProduct(params)
+                updateProduct({...params,newValue: params.data.multiple})
             }
         }
 
@@ -247,7 +247,7 @@
             const payload = {
                 code: params.data.code,
                 field: params.colDef.field,
-                value: params.colDef.field === 'multiple' ? params.data.multiple : params.newValue
+                value: params.newValue
             };
             window.expose.sendDbData("sendUpdateTask", JSON.stringify(payload));
             window.expose.receiveDbData("receiveUpdateTask", (data) => {
@@ -261,7 +261,7 @@
             const payload = {
                 code: params.data.code,
                 field: params.colDef.field,
-                value: params.colDef.field === 'multiple' ? params.data.multiple : params.newValue
+                value: params.newValue
             };
             window.expose.sendDbData("sendUpdateProduct", JSON.stringify(payload));
             window.expose.receiveDbData("receiveUpdateProduct", (data) => {

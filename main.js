@@ -113,8 +113,8 @@ ipcMain.on("sendUpdateSystem", async (event, args) => {
   if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
     try {
       JSON.parse(args[1]);
-      await writeSystem(args[1]);
-      mainWindow.webContents.send("receiveUpdateSystem" + args[0], 1);
+      const data = await writeSystem(args[1]);
+      mainWindow.webContents.send("receiveUpdateSystem" + args[0], data);
     } catch (e) {
       console.error(e instanceof SyntaxError ? "Invalid JSON data:" : "Save failed:", e);
       mainWindow.webContents.send("receiveUpdateSystem" + args[0], 0);

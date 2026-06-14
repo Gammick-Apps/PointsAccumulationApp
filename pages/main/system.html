@@ -311,7 +311,7 @@
             tableName = "systemConfig"
             window.expose.SendSystem("sendUpdateSystem", [tableName, JSON.stringify(systemConfig)]);
             window.expose.ReceiveSystem("receiveUpdateSystem" + tableName, (data) => {
-                if (data == 1) {
+                if (data === true) {
                     location.reload()
                 }
                 else {

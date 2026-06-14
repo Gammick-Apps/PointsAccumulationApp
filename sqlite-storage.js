@@ -191,7 +191,7 @@ async function writeSystem(payload) {
     await run('ROLLBACK;');
     throw error;
   }
-  return 1;
+  return true;
 }
 
 async function readSystem() {
