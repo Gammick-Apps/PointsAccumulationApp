@@ -11,7 +11,6 @@
     <link href="../../styleSheets/systemStyleSheet.css" rel="stylesheet" />
     <link href="../../styleSheets/mainStyleSheet.css" rel="stylesheet" />
     <script src="../../js/ag-grid-community.min.js"></script>
-    <script src="../../js/uniqTasks-ag-grid.js"></script>
     <script src="../../js/jquery.min.js"></script>
     <script src="../../js/xlsx.full.min.js"></script>
     <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
@@ -53,8 +52,8 @@
             const uploadPolls = document.getElementById('uploadPolls');
 
             tableName = 'systemConfig'
-            window.expose.SendSystem("sendReadSystem", tableName);
-            window.expose.ReceiveSystem("receiveReadSystem" + tableName, (data) => {               
+            window.expose.sendSystem("sendReadSystem", tableName);
+            window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {               
                 systemConfig = JSON.parse(data)
                 document.getElementById("background").style.backgroundImage = getBackground("1", "1");
 
@@ -309,8 +308,8 @@
             })
 
             tableName = "systemConfig"
-            window.expose.SendSystem("sendUpdateSystem", [tableName, JSON.stringify(systemConfig)]);
-            window.expose.ReceiveSystem("receiveUpdateSystem" + tableName, (data) => {
+            window.expose.sendSystem("sendUpdateSystem", [tableName, JSON.stringify(systemConfig)]);
+            window.expose.receiveSystem("receiveUpdateSystem" + tableName, (data) => {
                 if (data === true) {
                     location.reload()
                 }
@@ -320,9 +319,6 @@
             });
         }
 
-        function exportUniqTasks() {
-            ExportUniqTasks()
-        }
     </script>
 
     <div class="background" id="background">
@@ -450,10 +446,6 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-1">
-                        <label class="form-label">.</label>
-                        <button onclick="exportUniqTasks()" class="form-control"> משימות</button>
-                    </div>
                     <div class="col-md-2">
                         <label class="form-label">.</label>
                         <button id="reset" onclick="resetExcel()" class="form-control"> איפוס </button>

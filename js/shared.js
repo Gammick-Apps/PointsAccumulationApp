@@ -23,7 +23,7 @@ function login(page) {
 
 function getBackgroundUrl() {
      fileName = 'personalBackground';
-                window.expose.SendImage("getBackground", fileName);
+                window.expose.sendImage("getBackground", fileName);
                 window.expose.receive("receiveGetBackground" + fileName, (data) => {
                     if (data && data != 0) {
                         document.getElementById("background").style.backgroundImage = 'url("data:image/png;base64,' + data + '")';

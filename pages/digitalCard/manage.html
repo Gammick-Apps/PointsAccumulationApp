@@ -36,15 +36,15 @@
 
         function onLoad() {
             tableName = 'systemConfig'
-            window.expose.SendSystem("sendReadSystem", tableName);
-            window.expose.ReceiveSystem("receiveReadSystem" + tableName, (data) => {
+            window.expose.sendSystem("sendReadSystem", tableName);
+            window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
                 systemConfig = JSON.parse(data)
                 document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color);
             });
             tableName = 'products'
             window.expose.sendDbData("sendGetDataByTable", tableName);
             window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
-                if (data != 0) {
+                if (data != "[]") {
                     products = JSON.parse(data)
                     gridOptions = {
                         columnDefs: columnDefs,
@@ -58,7 +58,7 @@
                             sortable: true,
                         },
                         onFirstDataRendered: onFirstDataRendered,
-                        onCellEditingStopped: updateProduct(params)
+                        onCellEditingStopped: updateProduct
                     };
                     var gridDiv = document.querySelector('#productsGrid');
                     new agGrid.Grid(gridDiv, gridOptions);
@@ -100,11 +100,7 @@
                 value: params.newValue
             };
             window.expose.sendDbData("sendUpdateProduct", JSON.stringify(payload));
-            window.expose.receiveDbData("receiveUpdateProduct", (data) => {
-                if (data === true) {
-                    location.reload()
-                }
-            });
+            window.expose.receiveDbData("receiveUpdateProduct");
         }
 
     </script>

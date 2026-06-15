@@ -29,7 +29,9 @@
         { "name": "multiple", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "type", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "class", "type": "INTEGER", "nullable": false, "default": "0" },
-        { "name": "position", "type": "INTEGER", "nullable": false, "default": "0" }
+        { "name": "position", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "show", "type": "BOOLEAN", "nullable": false, "default": false } 
+
       ],
       "foreignKeys": []
     },
@@ -74,7 +76,8 @@
         { "name": "code", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "name", "type": "TEXT", "nullable": false, "default": "'--------'" },
         { "name": "points", "type": "INTEGER", "nullable": false, "default": "0" },
-        { "name": "multiple", "type": "INTEGER", "nullable": false, "default": "0" }
+        { "name": "multiple", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "show", "type": "BOOLEAN", "nullable": false, "default": false } 
       ],
       "foreignKeys": []
     },

@@ -15,8 +15,8 @@
 
         function onLoad() {
             tableName = 'systemConfig'
-            window.expose.SendSystem("sendReadSystem", tableName);
-            window.expose.ReceiveSystem("receiveReadSystem" + tableName, (data) => {
+            window.expose.sendSystem("sendReadSystem", tableName);
+            window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
                 systemConfig = JSON.parse(data)
                 if (currentDate > systemConfig.date)
                     login('expired')

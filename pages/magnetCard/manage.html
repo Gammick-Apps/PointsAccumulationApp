@@ -81,8 +81,8 @@
 
         function onLoad() {
             tableName = 'systemConfig'
-            window.expose.SendSystem("sendReadSystem", tableName);
-            window.expose.ReceiveSystem("receiveReadSystem" + tableName, (data) => {
+            window.expose.sendSystem("sendReadSystem", tableName);
+            window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
                 systemConfig = JSON.parse(data)
                 document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color)
                 document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
@@ -99,7 +99,7 @@
                 tableName = 'uniqTasks'
                 window.expose.sendDbData("sendGetDataByTable", tableName);
                 window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
-                    if (data != 0) {
+                if (data != "[]") {
                         if (systemConfig.device != "1" || (systemConfig.device == "1" && systemConfig.type =="2") ) {
                             uniqTasks = JSON.parse(data)
                             createTasksGrid()
@@ -108,7 +108,7 @@
                             tableName = 'products'
                             window.expose.sendDbData("sendGetDataByTable", tableName);
                             window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
-                                if (data != 0) {
+                            if (data != "[]") {
                                     products = JSON.parse(data)
                                     createProductsGrid()
                                 }
@@ -120,7 +120,7 @@
             tableName = 'students'
             window.expose.sendDbData("sendGetDataByTable", tableName);
             window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
-                if (data != 0) {
+                if (data != "[]") {
                     students = JSON.parse(data)
                     createStudentsGrid()
                 }
@@ -231,6 +231,7 @@
             if (params.colDef.field === 'multiple') {
                 params.data.multiple = params.data.multiple === 1 ? 0 : 1;
                 params.api.refreshCells({ rowNodes: [params.node] });
+                //Injects the value of multiple to newValue into payload.
                 updateTask({...params,newValue: params.data.multiple})
             }
         }
@@ -239,6 +240,7 @@
             if (params.colDef.field === 'multiple') {
                 params.data.multiple = params.data.multiple === 1 ? 0 : 1;
                 params.api.refreshCells({ rowNodes: [params.node] });
+                //Injects the value of multiple to newValue into payload.
                 updateProduct({...params,newValue: params.data.multiple})
             }
         }
@@ -250,11 +252,7 @@
                 value: params.newValue
             };
             window.expose.sendDbData("sendUpdateTask", JSON.stringify(payload));
-            window.expose.receiveDbData("receiveUpdateTask", (data) => {
-                if (data === true) {
-                    location.reload()
-                }
-            });
+            window.expose.receiveDbData("receiveUpdateTask");
         }
 
         function updateProduct(params) {
@@ -264,11 +262,7 @@
                 value: params.newValue
             };
             window.expose.sendDbData("sendUpdateProduct", JSON.stringify(payload));
-            window.expose.receiveDbData("receiveUpdateProduct", (data) => {
-                if (data === true) {
-                    location.reload()
-                }
-            });
+            window.expose.receiveDbData("receiveUpdateProduct");
         }
 
         function updateStudent(params) {
@@ -278,11 +272,7 @@
                 value: params.newValue
             };
             window.expose.sendDbData("sendUpdateStudent", JSON.stringify(payload));
-            window.expose.receiveDbData("receiveUpdateStudent", (data) => {
-                if (data === true) {
-                    location.reload()
-                }
-            });
+            window.expose.receiveDbData("receiveUpdateStudent");
         }
 
         function onTaskRowSelected(event) {
