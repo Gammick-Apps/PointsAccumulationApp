@@ -41,7 +41,16 @@
 
         var productsGridOptions
         var productsColumnDefs = [
-            { checkboxSelection: true },
+            {
+                headerName: "",
+                field: "show",
+                width: 60,
+                cellStyle: { textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center' },
+                cellRenderer: params => {
+                    const isChecked = (params.data.show == 1 || params.data.show === true) ? 'checked' : '';
+                    return `<input type="checkbox" ${isChecked} style="cursor: pointer; width: 18px; height: 18px; margin: 0;" />`;
+                }
+            },
             { headerName: "שם", field: "name", editable: true },
             { headerName: "נקודות", field: "points", editable: true },
             {
@@ -61,7 +70,16 @@
 
         var tasksGridOptions
         var tasksColumnDefs = [
-            { checkboxSelection: true },
+            {
+                headerName: "",
+                field: "show",
+                width: 60,
+                cellStyle: { textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center' },
+                cellRenderer: params => {
+                    const isChecked = (params.data.show == 1 || params.data.show === true) ? 'checked' : '';
+                    return `<input type="checkbox" ${isChecked} style="cursor: pointer; width: 18px; height: 18px; margin: 0;" />`;
+                }
+            },
             { headerName: "שם", field: "name", editable: true },
             { headerName: "נקודות", field: "points", editable: true },
             {
@@ -151,8 +169,8 @@
                 defaultColDef: {
                     sortable: true,
                 },
-                onCellClicked: cellClickedTask,
-                onCellEditingStopped: updateTask,
+                onCellClicked: cellClicked,
+                onCellClicked: (params) => cellClicked(params, 'task'),
                 onRowSelected: onTaskRowSelected,
                 onFirstDataRendered: onTasksFirstRendered,
             };
@@ -171,8 +189,8 @@
                 defaultColDef: {
                     sortable: true,
                 },
-                onCellClicked: cellClickedProduct,
-                onCellEditingStopped: updateProduct,
+                onCellClicked: cellClicked,
+                onCellClicked: (params) => cellClicked(params, 'product'),
                 onRowSelected: onProductsRowSelected,
                 onFirstDataRendered: onProductsFirstRendered,
             };
@@ -203,21 +221,11 @@
 
         function onTasksFirstRendered(params) {
             tasksGridOptions.api.sizeColumnsToFit({});
-            tasksGridOptions.api.forEachNode((node) => {
-                if (node.data.show == true) {
-                    node.setSelected(true);
-                }
-            });
             isInitialLoadTasks = false;
         }
 
         function onProductsFirstRendered(params) {
             productsGridOptions.api.sizeColumnsToFit({});
-            productsGridOptions.api.forEachNode((node) => {
-                if (node.data.show == true) {
-                    node.setSelected(true);
-                }
-            });
             isInitialLoadProducts = false;
         }
 
@@ -227,21 +235,30 @@
             });
         }
 
-        function cellClickedTask(params) {
-            if (params.colDef.field === 'multiple') {
-                params.data.multiple = params.data.multiple === 1 ? 0 : 1;
-                params.api.refreshCells({ rowNodes: [params.node] });
-                //Injects the value of multiple to newValue into payload.
-                updateTask({...params,newValue: params.data.multiple})
-            }
-        }
+        // function cellClicked(params, type) {
+        //     if (params.colDef.field === 'multiple') {
+        //         params.data.multiple = params.data.multiple === 1 ? 0 : 1;
+        //         params.api.refreshCells({ rowNodes: [params.node] });
 
-        function cellClickedProduct(params) {
+        //         const updateFunc = type === 'task' ? updateTask : updateProduct;
+        //         updateFunc({ ...params, newValue: params.data.multiple });
+        //     }
+        // }
+
+        function cellClicked(params, type) {
             if (params.colDef.field === 'multiple') {
                 params.data.multiple = params.data.multiple === 1 ? 0 : 1;
                 params.api.refreshCells({ rowNodes: [params.node] });
+                const updateFunc = type === 'task' ? updateTask : updateProduct;
+                updateFunc({ ...params, newValue: params.data.multiple });
+            }
+            if (params.colDef.field === 'show') {
+                params.data.show = params.data.show === 1 ? 0 : 1;
+                params.api.refreshCells({ rowNodes: [params.node] });
+
+                const updateFunc = type === 'task' ? updateTask : updateProduct;
                 //Injects the value of multiple to newValue into payload.
-                updateProduct({...params,newValue: params.data.multiple})
+                updateFunc({ ...params, newValue: params.data.show });
             }
         }
 

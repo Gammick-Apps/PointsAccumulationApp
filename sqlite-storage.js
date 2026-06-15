@@ -220,14 +220,14 @@ async function insertExcelToDB(tableName, payload) {
           break;
         case 'uniqTasks':
           await run(
-            'INSERT OR REPLACE INTO uniqtasks (code, name, points, multiple, type, class, position) VALUES ( ?, ?, ?, ?, ?, ?, ?);',
-            [row.code, row.name, row.points, row.multiple, row.type, row.class, row.position]
+            'INSERT OR REPLACE INTO uniqtasks (code, name, points, multiple, type, class, position, show) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?);',
+            [row.code, row.name, row.points, row.multiple, row.type, row.class, row.position, row.show]
           );
           break;
         case 'products':
           await run(
-            'INSERT OR REPLACE INTO products (code, name, points, multiple) VALUES (?, ?, ?, ?);',
-            [row.code, row.name, row.points, row.multiple]
+            'INSERT OR REPLACE INTO products (code, name, points, multiple, show) VALUES (?, ?, ?, ?, ?);',
+            [row.code, row.name, row.points, row.multiple, row.show]
           );
           break;
         case 'parents':
