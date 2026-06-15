@@ -67,6 +67,14 @@ function getBackground(device, color, step = "") {
         case "3":{     
                 return "url('../../resources/digitalCard/background" + step + ".gif')";
         };
+        case "5": {
+            switch (color) {
+                case "4":
+                    return getBackgroundUrl();
+                case "5":
+                    return "url('../../resources/gammick/gammickBackground.png')";
+            }
+        };
     }
 }
 
@@ -96,7 +104,7 @@ function getTextColor(color) {
 }
 
 function getExcelFiles() {
-    return ["students", "uniqTasks", "products", "parents", "tests"];
+    return ["students", "uniqTasks", "products", "parents", "tests", "videoQuiz"];
 }
 
 function getWonTexts() {
@@ -106,3 +114,4 @@ function getWonTexts() {
 function getLossTexts() {
     return ["...לא זכית, אוי לא", "!!חבל--- לא זכית הפעם", "!אופס... הכרטיס לא שווה ", "...לא זכית! לא נורא"];
 }
+

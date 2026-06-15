@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>הפעלה יומית</title>
+</head>
+
+<body onload="onLoad()">
+  <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
+  <link href="../../styleSheets/dailyActivationUserStyleSheet.css" rel="stylesheet" />
+  <link href="../../styleSheets/mainStyleSheet.css" rel="stylesheet" />
+  <script src="../../js/jquery.min.js"></script>
+  <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+  <script src="../../js/shared.js"></script>
+   <script src="../../js/chart.js"></script>
+  <script src="../../js/chartjs-plugin-datalabels.js"></script>
+
+  <script>
+    var students = ""
+    var systemConfig = ""
+    var searchVal = ""
+    var buffer = "";
+    var studentResult = ""
+    var fileName
+    var classesPoints = ""
+    // מספר הנקודות שמתווספות לכיתה בכל תיקוף
+    const POINTS_PER_SCAN = 6
+    // מספר הכיתות המוצגות בגרף ובכרטיסים
+    const MAX_DISPLAYED_CLASSES = 8
+    // ברקודי שכבה - כל ברקוד מוסיף נקודות לשתי הכיתות של אותה שכבה
+    const gradeBarcodes = {
+      "331277925": "כיתה ט'",
+      "331277926": "כיתה ט'",
+      "331277927": "כיתה י'",
+      "331277928": "כיתה י'",
+      "331277929": 'כיתה י"א',
+      "331277930": 'כיתה י"א',
+      "331277931": 'כיתה י"ב',
+      "331277932": 'כיתה י"ב'
+    };
+    const colorPool = [
+      { color: '#00a597', used: false },
+      { color: '#ff9800', used: false },
+      { color: '#e91e63', used: false },
+      { color: '#4caf50', used: false },
+      { color: '#3f51b5', used: false },
+      { color: '#9c27b0', used: false },
+      { color: '#f44336', used: false },
+      { color: '#009688', used: false },
+      { color: '#cddc39', used: false },
+      { color: '#607d8b', used: false },
+      { color: '#795548', used: false },
+      { color: '#ffc107', used: false },
+      { color: '#2196f3', used: false },
+      { color: '#8bc34a', used: false },
+      { color: '#ff5722', used: false }
+    ];
+
+    function onLoad() {
+      updateLines("!ברוכות הבאות", "?...מי הכיתה המנצחת");
+      fileName = 'systemConfig';
+      window.expose.SendExcel("sendReadExcel", fileName);
+      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+        if (data == 0) {
+          systemConfig = getDefaultConfig()
+        }
+        else {
+          systemConfig = JSON.parse(data)
+        }
+        document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
+        document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
+
+        document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color)
+        document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
+
+        if (systemConfig.numPosition.length > 0) {
+          document.getElementById("position").innerHTML += ' ' + systemConfig.numPosition
+        }
+        else {
+          document.getElementById("position").style.display = "none";
+        }
+      })
+      fileName = 'students'
+      window.expose.SendExcel("sendReadExcel", fileName);
+      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+        if (data != 0) {
+          students = JSON.parse(data);
+          // בניית רשימת כיתות דינמית מתוך students, עם הגרלת צבע ייחודי לכל כיתה
+          const classMap = {};
+          students.forEach(stu => {
+            if (stu.grade && !classMap[stu.grade]) {
+              classMap[stu.grade] = {
+                code: stu.grade,
+                name: stu.grade,
+                points: 0,
+                color: pickUniqueColor()
+              };
+            }
+          });
+          // אם אין localStorage, שמור את הרשימה הדינמית
+          if (!localStorage.getItem("classesPoints")) {
+            localStorage.setItem("classesPoints", JSON.stringify(Object.values(classMap)));
+          }
+          classesPoints = JSON.parse(localStorage.getItem("classesPoints"));
+          renderClassCards(); // Render cards for the classes
+          renderChart();
+        }
+      });
+
+    }
+
+    document.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        if (buffer.length > 0) {
+          searchVal = buffer;
+          buffer = "";
+          if (searchVal == '999999999')
+            login('../main/manage')
+          else if (searchVal == '011429519')
+            login('../main/system')
+          else if (searchVal == '207594581')
+              login('../parentsMeeting/user')
+          else if (gradeBarcodes[searchVal])
+              addPointsToGrade(gradeBarcodes[searchVal]);//ברקוד שכבה
+          else
+              searchInExcel();//בת
+        }
+      } else {
+        buffer += e.key;
+      }
+    });
+
+    function searchInExcel() {
+      studentResult = "";
+      for (var i = 0; i < students.length; i++) {
+        if (students[i]["tz"] == searchVal || students[i]["code"] == searchVal) {
+          studentResult = students[i];
+          break;
+        }
+      }
+      if (studentResult == "") {
+        showAlert("הברקוד לא מופיע ברשימות. גשו למורה!");
+        return;
+      }
+      saveData();
+    }
+
+    function saveData() {
+      for (var i = 0; i < classesPoints.length; i++) {
+        if (classesPoints[i]["code"] == studentResult.grade) {
+          classesPoints[i]["points"] += POINTS_PER_SCAN;
+          updateLines("(:כל הכבוד ל" + studentResult.name + " " + "מ" + studentResult.grade, "!עד כה צברתן " + classesPoints[i]["points"] + " נקודות");
+          localStorage.setItem("classesPoints", JSON.stringify(classesPoints));
+          renderClassCards();
+          renderChart();
+          break;
+        }
+      }
+      reset(3000);
+    }
+
+    // ברקוד שכבה - מוסיף נקודות לכל הכיתות של אותה שכבה (לדוגמה: כיתה ט'1 וכיתה ט'2)
+    function addPointsToGrade(gradePrefix) {
+      var matched = false;
+      for (var i = 0; i < classesPoints.length; i++) {
+        if (String(classesPoints[i]["code"]).indexOf(gradePrefix) === 0) {
+          classesPoints[i]["points"] += POINTS_PER_SCAN;
+          matched = true;
+        }
+      }
+      if (!matched) {
+        showAlert("לא נמצאו כיתות לשכבה זו. גשו למורה!");
+        return;
+      }
+      localStorage.setItem("classesPoints", JSON.stringify(classesPoints));
+      renderClassCards();
+      renderChart();
+      var gradeLabel = gradePrefix.replace("כיתה ", "");
+      updateLines("!כל הכבוד לכיתות " + gradeLabel, "!כל כיתה קיבלה " + POINTS_PER_SCAN + " נקודות");
+      reset(3000);
+    }
+
+    function reset(time = 0) {
+      setTimeout(function () {
+        updateLines("!ברוכות הבאות", "?...מי הכיתה המנצחת");
+      }, time);
+    }
+
+    function updateLines(line1Text, line2Text, line3Text = "") {
+      document.getElementById("line1").innerHTML = line1Text;
+      document.getElementById("line2").innerHTML = line2Text;
+      document.getElementById("line3").innerHTML = line3Text;
+    }
+
+    function showAlert(message) {
+      document.querySelector(".modal-body").innerHTML = message;
+      $(document).ready(function () {
+        $('#modal').modal('show')
+      });
+      setTimeout(function () {
+        $(document).ready(function () {
+          $('#modal').modal('hide')
+        });
+        reset(0)
+      }
+        , 2500);
+    }
+     function renderClassCards() {
+      const cardsContainer = document.getElementById('cards-container');
+      cardsContainer.innerHTML = '';
+      cardsContainer.className = 'd-flex flex-row flex-wrap justify-content-center';
+      // מיון כל הכיתות מהגבוה לנמוך והצגת עד MAX_DISPLAYED_CLASSES המובילות
+      const sortedClasses = [...classesPoints].sort((a, b) => b.points - a.points).slice(0, MAX_DISPLAYED_CLASSES);
+      sortedClasses.forEach((classData) => {
+        const card = document.createElement('div');
+        card.className = 'class-card';
+        card.style.background = '#f8f9fa';
+        card.style.border = '6px solid ' + (classData.color || '#00a597');
+        card.style.borderRadius = '18px';
+        card.style.margin = '6px';
+        card.style.minWidth = '120px';
+        card.style.maxWidth = '135px';
+        card.style.width = '45%';
+        card.style.textAlign = 'center';
+        card.style.boxShadow = '0 2px 8px ' + (classData.color || '#00a597') + '33';
+        card.style.transition = 'transform 0.2s';
+        card.onmouseover = () => card.style.transform = 'scale(1.04)';
+        card.onmouseout = () => card.style.transform = 'scale(1)';
+        const cardTitle = document.createElement('div');
+        cardTitle.className = 'class-title';
+        cardTitle.textContent = classData.name;
+        cardTitle.style.fontSize = '1.2rem';
+        cardTitle.style.fontWeight = 'bold';
+        cardTitle.style.color = classData.color || '#00a597';
+        cardTitle.style.marginBottom = '0';
+        cardTitle.style.lineHeight = '3';
+        const cardPoints = document.createElement('div');
+        cardPoints.className = 'class-points';
+        cardPoints.textContent = classData.points;
+        cardPoints.style.fontSize = '2rem';
+        cardPoints.style.color = classData.color || '#ff9800';
+        cardPoints.style.fontWeight = 'bold';
+        cardPoints.style.lineHeight = '1';
+        cardPoints.style.marginBottom = '0.5rem';
+        card.appendChild(cardTitle);
+        card.appendChild(cardPoints);
+        cardsContainer.appendChild(card);
+      });
+    }
+
+    let chartInstance;
+    function renderChart() {
+      const ctx = document.getElementById('pointsChart').getContext('2d');
+      // מיון יורד לפי נקודות והצגת עד MAX_DISPLAYED_CLASSES המובילות
+      const sortedClasses = [...classesPoints].sort((a, b) => b.points - a.points).slice(0, MAX_DISPLAYED_CLASSES);
+      const labels = sortedClasses.map(c => c.name);
+      const data = sortedClasses.map(c => c.points);
+      const barColors = sortedClasses.map(c => c.color || '#00a597');
+      if (chartInstance) chartInstance.destroy();
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'נקודות',
+              data: data,
+              backgroundColor: barColors,
+              borderWidth: 2,
+              borderRadius: 18,
+              maxBarThickness: 60,
+              datalabels: {
+                anchor: 'end',
+                align: 'end',
+                color: '#333',
+                font: { weight: 'bold', size: 18 },
+                formatter: function (value) { return value; }
+              }
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              enabled: true,
+              callbacks: {
+                label: function (context) {
+                  return context.label + ': ' + context.parsed.y + ' נקודות';
+                }
+              }
+            },
+            datalabels: {
+              display: true,
+              color: '#333',
+              font: { weight: 'bold', size: 18 },
+              formatter: function (value) { return value; }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { color: '#00a597', font: { size: 16 } },
+              grid: { color: '#e0e0e0' }
+            },
+            x: {
+              ticks: { color: '#000000', font: { size: 16 } },
+              grid: { display: false }
+            }
+          }
+        },
+        plugins: [ChartDataLabels]
+      });
+    }
+
+    // מגריל צבע ייחודי מתוך המאגר ומסמן אותו כ-used; אם נגמרו - צבע ברירת מחדל
+    function pickUniqueColor() {
+      const available = colorPool.filter(c => !c.used);
+      if (available.length === 0) return '#00a597';
+      const idx = Math.floor(Math.random() * available.length);
+      available[idx].used = true;
+      return available[idx].color;
+    }
+
+  </script>
+
+  <div class="background" id="background">
+    <div class="closeBtn">
+      <img onclick="expose.appClose()" src="../../resources/barcode/x-light.svg" />
+    </div>
+    <div class="text">
+      <div id="line1"></div>
+      <div id="line2"></div>
+      <div id="line3"></div>
+      <br>
+      <div class="d-flex flex-row justify-content-center align-items-start" style="direction: rtl;">
+        <div style="min-width:220px; width:300px; margin-left: 5%;">
+          <div id="cards-scroll"
+            style="max-height:520px; overflow-y:auto; overflow-x:hidden; direction:ltr; scrollbar-width:thin;">
+            <div id="cards-container" class="d-flex flex-row flex-wrap justify-content-center"></div>
+          </div>
+        </div>
+        <div id="chart-container" style="flex:1; min-width:0; max-width:1000px; width:100%;">
+          <div style="position:relative; width:100%; aspect-ratio:2/1; min-width:220px;">
+            <canvas id="pointsChart" style="background:#fff;direction:ltr; display:block; margin:auto; border-radius:18px; box-shadow:0 2px 8px #00a59733;
+               width:100%;  max-width:1000px; max-height:450px;"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="bottom-actions d-flex flex-row justify-content-center" style="gap: 24px;">
+        <button onclick="login('./graphology');" class="action-btn">גרפולוגית</button>
+        <button onclick="login('./videoQuiz');" class="action-btn">הסרטות</button>
+      </div>
+    </div>
+    <div id="position">עמדה</div>
+  </div>
+
+  <!-- Cards Container -->
+
+  <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalLabel">הודעת מערכת</h5>
+        </div>
+        <div class="modal-body"></div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>
