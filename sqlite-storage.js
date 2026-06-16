@@ -230,6 +230,12 @@ async function insertExcelToDB(tableName, payload) {
             [row.code, row.name, row.points, row.multiple, row.show]
           );
           break;
+        case 'questions':
+          await run(
+            'INSERT OR REPLACE INTO questions (code, question, answers, videos) VALUES (?, ?, ?, ?);',
+            [row.code, row.question, row.answers, row.videos]
+          );
+          break;
         case 'parents':
           await run(
             'INSERT OR REPLACE INTO parents (tz, idStudent, text) VALUES (?, ?, ?);',

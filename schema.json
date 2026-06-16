@@ -117,6 +117,18 @@
           "referencesColumns": ["id"]
         }
       ]
+    },
+    {
+      "name": "questions",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
+        { "name": "code", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "question", "type": "TEXT", "nullable": false , "default": "''" },
+        { "name": "answers", "type": "TEXT", "nullable": false , "default": "'{}'"},
+        { "name": "videos", "type": "TEXT", "nullable": false, "default": "'{}'" }
+      ]
     }
+
   ]
 }
+  

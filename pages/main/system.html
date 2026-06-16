@@ -20,6 +20,7 @@
         var students = ""
         var uniqTasks = ""
         var products = ""
+        var questions = ""
         var tasks = ""
         var systemConfig = ""
         var excelFiles = getExcelFiles();
@@ -97,6 +98,15 @@
                     products = JSON.parse(data)
                 }
             })
+
+            fileName = 'questions'
+            window.expose.SendExcel("sendReadExcel", fileName);
+            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+                if (data != 0) {
+                    questions = JSON.parse(data)
+                }
+            })
+
 
             hasParents.addEventListener('change', function () {
                 const selectedOption = hasParents.value;
@@ -455,7 +465,7 @@
                         <input type="file" class="form-control" id="uploadPolls" accept="image/png">
                     </div>
                     <div class="col-md-2" id="uploadVideoQuizWrapper" style="display: none;">
-                        <label for="uploadVideoQuiz" class="form-label">שאלות הסרטות</label>
+                        <label for="uploadVideoQuiz" class="form-label">שאלות</label>
                         <input type=file class="form-control" id="uploadVideoQuiz" name="files[]">
                     </div>
                 </div>
@@ -482,6 +492,7 @@
         document.getElementById('uploadProducts').addEventListener('change', insertExcelToDB, false);
         document.getElementById('uploadParents').addEventListener('change', insertExcelToDB, false);
         document.getElementById('uploadTest').addEventListener('change', insertExcelToDB, false);
+        document.getElementById('uploadVideoQuiz').addEventListener('change', insertExcelToDB, false);
 
     </script>
 </body>
