@@ -19,6 +19,7 @@
         var systemConfig = "";
         var products = "";
         var fileName
+        var tableName
         var currentDate = getTodayDate();
         var searchVal=""
 
@@ -35,15 +36,10 @@
         ];
 
         function onLoad() {
-            fileName = 'systemConfig'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                if (data == 0) {
-                    systemConfig = getDefaultConfig()
-                }
-                else {
-                    systemConfig = JSON.parse(data)
-                }
+            tableName = 'systemConfig'
+            window.expose.SendExcel("sendReadSystem", tableName);
+            window.expose.ReceiveExcel("receiveReadSystem" + tableName, (data) => {
+                systemConfig = JSON.parse(data)
                 document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color);
             });
             fileName = 'products'

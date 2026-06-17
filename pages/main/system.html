@@ -25,6 +25,7 @@
         var systemConfig = ""
         var excelFiles = getExcelFiles();
         var fileName
+        var tableName
         var searchVal = ""
 
         function onLoad() {
@@ -53,20 +54,17 @@
             const uploadVideoQuizWrapper = document.getElementById('uploadVideoQuizWrapper');
             const uploadVideoQuiz = document.getElementById('uploadVideoQuiz');
 
-            fileName = 'systemConfig'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                if (data == 0) {
-                    systemConfig = getDefaultConfig()
-                }
-                else {
-                    systemConfig = JSON.parse(data)
-                }
+            tableName = 'systemConfig'
+            window.expose.SendSystem("sendReadSystem", tableName);
+            window.expose.ReceiveSystem("receiveReadSystem" + tableName, (data) => {               
+                systemConfig = JSON.parse(data)
                 document.getElementById("background").style.backgroundImage = getBackground("1", "1");
 
                 Object.entries(systemConfig).forEach(x => {
-                    if (x[0] != 'buy')
-                        document.getElementById(x[0]).value = x[1]
+                    const element = document.getElementById(x[0]);
+                    if (element) {
+                        element.value = x[1];
+                    }
                 })
                 const changeEvent = new Event('change');
                 device.dispatchEvent(changeEvent);
@@ -310,20 +308,24 @@
             }
         }
 
-        function update() {
+        function updateSystem() {
             Object.entries(systemConfig).forEach(x => {
                 var key = x[0]
-                if (key != 'buy')
-                    systemConfig[key] = document.getElementById(x[0]).value;
-                else {
-                    systemConfig[key] = 0;
-                }
+                    const element = document.getElementById(x[0]);
+                    if (element) {
+                        systemConfig[key] = element.value;
+                    }
             })
 
-            fileName = "systemConfig"
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(systemConfig)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                location.reload()
+            tableName = "systemConfig"
+            window.expose.SendSystem("sendWriteSystem", [tableName, JSON.stringify(systemConfig)]);
+            window.expose.ReceiveSystem("receiveWriteSystem" + tableName, (data) => {
+                if (data == 1) {
+                    location.reload()
+                }
+                else {
+                    alert("שמירת ההגדרות נכשלה");
+                }
             });
         }
 
@@ -424,7 +426,7 @@
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">.</label>
-                        <button type="submit" onclick="update()" class="form-control">עדכן</button>
+                        <button type="submit" onclick="updateSystem()" class="form-control">עדכן</button>
                     </div>
                 </div>
                 <div class="row">

@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 
 <head>
     <meta charset="utf-8" />
-    <title>פג תוקף</title>
+    <title>שגיאת מסד נתונים</title>
 </head>
 
 <body onload="onLoad()">
@@ -13,33 +13,35 @@
     <script src="../../js/shared.js"></script>
 
     <script>
-        var searchVal = ""
+        var searchVal = "";
 
         function onLoad() {
-           document.getElementById("background").style.backgroundImage = getBackground("1", "5");
+            document.getElementById("background").style.backgroundImage = getBackground("1", "5");
             document.querySelector(".text").style.color = getTextColor("2");
         }
+
         document.addEventListener("keypress", function (e) {
             if (e.key === "Enter") {
                 if (searchVal.length > 0) {
                     if (searchVal == '999999999')
-                        login("manage")
+                        login("manage");
                     if (searchVal == '011429519')
-                        login("system")
+                        login("system");
                 }
             } else {
                 searchVal += e.key;
             }
         });
-
     </script>
+
     <div class="background" id="background">
         <div class="closeBtn">
             <img onclick="expose.appClose()" src="../../resources/barcode/x-light.svg" />
         </div>
         <div class="text">
             <div id="line1">...מצטערים</div>
-            <div id="line2">!פג תוקף הרשיון</div>
+            <div id="line2">אירעה שגיאה בגישה למסד הנתונים</div>
+            <div id="line3">!יש ליצור קשר בהקדם עם המשרד</div>
         </div>
     </div>
 </body>
