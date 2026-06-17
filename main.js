@@ -77,7 +77,7 @@ ipcMain.on("sendGetDataByTable", async (event, args) => {
     const data = await readData(args);
     mainWindow.webContents.send("receiveGetDataByTable" + args, data);
   } catch (error) {
-    mainWindow.webContents.send("receiveGetDataByTable" + args, '[]');
+    mainWindow.webContents.send("receiveGetDataByTable" + args, []);
   }
 });
 

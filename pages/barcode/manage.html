@@ -42,8 +42,9 @@
             tableName = 'students'
             window.expose.sendDbData("sendGetDataByTable", tableName);
             window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
-                if (data != "[]") {
-                    students = JSON.parse(data)
+                if (Array.isArray(data) && data.length > 0) {
+                    students = data
+                    
                     gridOptions = {
                         columnDefs: columnDefs,
                         rowData: students,

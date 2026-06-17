@@ -99,17 +99,17 @@
                 tableName = 'uniqTasks'
                 window.expose.sendDbData("sendGetDataByTable", tableName);
                 window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
-                if (data != "[]") {
-                        if (systemConfig.device != "1" || (systemConfig.device == "1" && systemConfig.type =="2") ) {
-                            uniqTasks = JSON.parse(data)
+                if (Array.isArray(data) && data.length > 0) {
+                            if (systemConfig.device != "1" || (systemConfig.device == "1" && systemConfig.type =="2") ) {
+                            uniqTasks = data
                             createTasksGrid()
                         }
                         if (systemConfig.hasBuy == 1) {
                             tableName = 'products'
                             window.expose.sendDbData("sendGetDataByTable", tableName);
                             window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
-                                if (data != "[]") {
-                                    products = JSON.parse(data)
+                                if (Array.isArray(data) && data.length > 0) {
+                                    products = data
                                     createProductsGrid()
                                 }
                             })
@@ -120,8 +120,8 @@
             tableName = 'students'
             window.expose.sendDbData("sendGetDataByTable", tableName);
             window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
-                if (data != "[]") {
-                    students = JSON.parse(data)
+                if (Array.isArray(data) && data.length > 0) {
+                    students = data
                     createStudentsGrid()
                 }
             });

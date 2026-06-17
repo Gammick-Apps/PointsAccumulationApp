@@ -257,7 +257,7 @@ async function insertExcelToDB(tableName, payload) {
 async function readData(tableName) {
   await waitDB();
   const rows = await all(`SELECT * FROM ${quoteIdentifier(tableName)};`);
-  return JSON.stringify(rows);
+  return rows;
 }
 
 // -------------- students ---------------- //
