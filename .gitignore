@@ -5,6 +5,7 @@ parents.txt
 products.txt
 students.txt
 uniqTasks.txt
+videoQuiz.txt
 
 dist/builder-debug.yml
 dist/latest.yml
