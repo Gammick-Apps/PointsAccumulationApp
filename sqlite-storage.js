@@ -8,14 +8,54 @@ let dbPath;
 let initPromise;
 const DB_FLAG_INCONSISTENT_ERROR_CODE = 'SQLITE_DB_FLAG_INCONSISTENT';
 
+// -------------- basic functions ---------------- //
+
 function quoteIdentifier(identifier) {
   return `"${String(identifier).replace(/"/g, '""')}"`;
 }
 
+function run(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function onRun(error) {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(this);
+    });
+  });
+}
+
+function get(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params, (error, row) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(row);
+    });
+  });
+}
+
+function all(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.all(sql, params, (error, rows) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(rows);
+    });
+  });
+}
+
+
+// -------------- create database ---------------- //
 
 async function initDatabase(electronApp) {
 
-  // פונקציה ליצירת מסד הנתונים
+  // function to create the DB
   initPromise = (async () => {
     const openDatabase = (filePath) => new Promise((resolve, reject) => {
       const connection = new sqlite3.Database(filePath, (error) => {
@@ -27,13 +67,13 @@ async function initDatabase(electronApp) {
       });
     });
 
-    //שומר את המסד נתונים בתיקיה 
+    // save the DB in folder   
     const userDataPath = electronApp.getPath('userData');
     dbPath = path.join(userDataPath, 'points-accumulation.sqlite');
     fs.mkdirSync(userDataPath, { recursive: true });
 
-    //פותח בפועל את מסד הנתונים
-    // ואז יוצר את הטבלאות על פי הסכמה רק בהפעלה הראשונה
+    //open the DB 
+    // then create the tables according to the schema
     const flagPath = path.join(userDataPath, 'db_created.json');
 
     if (fs.existsSync(dbPath)) {
@@ -63,8 +103,7 @@ async function initDatabase(electronApp) {
   return true;
 }
 
-//בודק שנוצר מסד נתונים
-//לפני שניגש אליו מהקוד
+// check if DB exists
 async function waitDB() {
   if (db) return true;
   if (initPromise) await initPromise;
@@ -72,49 +111,7 @@ async function waitDB() {
   return true;
 }
 
-// מתקשר עם המסד נתונים
-//לבצע שם שינויים
-function run(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function onRun(error) {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve(this);
-    });
-  });
-}
-
-//מתקשר עם המסד נתונים
-//עבור קבלת נתונים 
-function get(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (error, row) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve(row);
-    });
-  });
-}
-
-//מתקשר עם המסד נתונים
-//עבור קבלת נתונים כמערך
-function all(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.all(sql, params, (error, rows) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve(rows);
-    });
-  });
-}
-
-//בונה מהנתונים שאילתה לבנות שדות במסד נתונים
+//build SQL query for build the columns 
 function buildColumnSql(column) {
   const parts = [quoteIdentifier(column.name), String(column.type || 'TEXT')];
   if (column.primaryKey) {
@@ -129,7 +126,7 @@ function buildColumnSql(column) {
   return parts.join(' ');
 };
 
-//בונה מהנתונים שאילתה לבנות מפתחות זרים במסד נתונים
+//build SQL query for build the foreign keys
 function buildFKSql(foreignKey) {
   const localColumns = foreignKey.columns.map(quoteIdentifier).join(', ');
   const referenceColumns = foreignKey.referencesColumns.map(quoteIdentifier).join(', ');
@@ -149,7 +146,6 @@ async function createSchema() {
     for (const table of tables) {
       const columns = table.columns;
       const foreignKeys = table.foreignKeys || [];
-
       const columnSql = columns.map(buildColumnSql);
       const foreignKeySql = foreignKeys.map(buildFKSql);
       const definitions = [...columnSql, ...foreignKeySql].join(',\n      ');
@@ -163,7 +159,7 @@ async function createSchema() {
     }
 
     await run('INSERT OR IGNORE INTO "systemConfig" ("id") VALUES (1);');
-    
+
     await run('COMMIT;');
   } catch (error) {
     await run('ROLLBACK;');
@@ -171,6 +167,41 @@ async function createSchema() {
   }
 }
 
+function closeDatabase() {
+  if (!db) {
+    return;
+  }
+  db.close();
+  db = undefined;
+  dbPath = undefined;
+  initPromise = undefined;
+}
+
+// -------------- system ---------------- //
+
+async function writeSystem(payload) {
+  await waitDB();
+  const config = JSON.parse(payload) || {};
+  await run('BEGIN TRANSACTION;');
+  try {
+    await run(`INSERT OR REPLACE INTO systemConfig (id, device, color, textColor, date, numPosition, type, hasPrint, hasBuy, hasParents, hasTests, buy, timer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+      [1, config.device, config.color, config.textColor, config.date, config.numPosition, config.type, config.hasPrint, config.hasBuy, config.hasParents, config.hasTests, config.buy, config.timer]);
+    await run('COMMIT;');
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
+  return true;
+}
+
+async function readSystem() {
+  await waitDB();
+ const row = await get('SELECT * FROM systemConfig WHERE id = 1 LIMIT 1;') || {};
+  const { id, ...data } = row;
+  return data;
+}
+
+// -------------- general ---------------- //
 
 async function insertExcelToDB(tableName, payload) {
   await waitDB();
@@ -190,14 +221,20 @@ async function insertExcelToDB(tableName, payload) {
           break;
         case 'uniqTasks':
           await run(
-            'INSERT OR REPLACE INTO uniqtasks (code, name, points, multiple, type, class, position) VALUES ( ?, ?, ?, ?, ?, ?, ?);',
-            [row.code, row.name, row.points, row.multiple, row.type, row.class, row.position]
+            'INSERT OR REPLACE INTO uniqtasks (code, name, points, multiple, type, class, position, show) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?);',
+            [row.code, row.name, row.points, row.multiple, row.type, row.class, row.position, row.show]
           );
           break;
         case 'products':
           await run(
-            'INSERT OR REPLACE INTO products (code, name, points, multiple) VALUES (?, ?, ?, ?);',
-            [row.code, row.name, row.points, row.multiple]
+            'INSERT OR REPLACE INTO products (code, name, points, multiple, show) VALUES (?, ?, ?, ?, ?);',
+            [row.code, row.name, row.points, row.multiple, row.show]
+          );
+          break;
+        case 'questions':
+          await run(
+            'INSERT OR REPLACE INTO questions (code, question, answers, videos) VALUES (?, ?, ?, ?);',
+            [row.code, row.question, row.answers, row.videos]
           );
           break;
         case 'parents':
@@ -209,52 +246,143 @@ async function insertExcelToDB(tableName, payload) {
         default:
           throw new Error(`Unsupported table name for Excel import: ${tableName}`);
       }
-
     }
     await run('COMMIT;');
   } catch (error) {
     await run('ROLLBACK;');
     throw error;
   }
-  return 1;
+  return true;
 }
 
-async function writeSystem(payload) {
+async function readData(tableName) {
   await waitDB();
-  const config = JSON.parse(payload) || {};
+  const rows = await all(`SELECT * FROM ${quoteIdentifier(tableName)};`);
+  return rows;
+}
+
+// -------------- students ---------------- //
+
+async function generateUniqueStudentTz() {
+  while (true) {
+    const tz = Math.floor(Math.random() * (399999999 - 200000000 + 1) + 200000000);
+    const existingStudent = await get('SELECT 1 FROM students WHERE tz = ? LIMIT 1;', [tz]);
+    if (!existingStudent) {
+      return tz;
+    }
+  }
+}
+
+async function addStudents() {
+  await waitDB();
+  const tz = await generateUniqueStudentTz();
   await run('BEGIN TRANSACTION;');
   try {
-    await run(`INSERT OR REPLACE INTO systemConfig (id, device, color, textColor, date, numPosition, type, hasPrint, hasBuy, hasParents, hasTests, buy, timer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-      [1, config.device, config.color, config.textColor, config.date, config.numPosition, config.type, config.hasPrint, config.hasBuy, config.hasParents, config.hasTests, config.buy, config.timer]);
+    await run(
+      'INSERT INTO students (tz) VALUES (?);',
+      [tz]
+    );
     await run('COMMIT;');
+    return true;
   } catch (error) {
     await run('ROLLBACK;');
     throw error;
   }
-  return 1;
 }
 
-async function readData(dataName) {
+async function updateStudents(tz, field, value){
   await waitDB();
-  const rows = await all(`SELECT * FROM ${quoteIdentifier(dataName)};`);
-  return JSON.stringify(rows);
-}
-
-async function readSystem(dataName) {
-  await waitDB();
-  const row = await get('SELECT * FROM systemConfig WHERE id = 1 LIMIT 1;');
-  return JSON.stringify((({ id, ...response }) => response)(row || {}));
-}
-
-function closeDatabase() {
-  if (!db) {
-    return;
+  const correctValue = field === 'points' ? Number(value) : value;
+  await run('BEGIN TRANSACTION;');
+  try {
+    await run(
+      `UPDATE students SET ${quoteIdentifier(field)} = ? WHERE tz = ?;`,
+      [correctValue, tz]
+    );
+    await run('COMMIT;');
+    return true;
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
   }
-  db.close();
-  db = undefined;
-  dbPath = undefined;
-  initPromise = undefined;
 }
+
+// -------------- uniqTasks ---------------- //
+
+async function addTask() {
+  await waitDB();
+  const lastTask = await get('SELECT MAX(code) AS code FROM uniqtasks;');
+  const code = Number(lastTask ?.code || 0) + 1;
+  await run('BEGIN TRANSACTION;');
+  try {
+    await run(
+      'INSERT INTO uniqtasks (code) VALUES (?);',
+      [code]
+    );
+    await run('COMMIT;');
+    return true;
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
+}
+
+async function updateTasks(code, field, value){  
+  await waitDB();
+  const correctValue = field === 'name' ? value : Number(value);
+  await run('BEGIN TRANSACTION;');
+  try {
+    await run(
+      `UPDATE uniqtasks SET ${quoteIdentifier(field)} = ? WHERE code = ?;`,
+      [correctValue, code]
+    );
+    await run('COMMIT;');
+    return true;
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
+}
+
+// -------------- products ---------------- //
+
+async function addProduct() {
+  await waitDB();
+  const lastProduct = await get('SELECT MAX(code) AS code FROM products;');
+  const code = Number(lastProduct ?.code || 0) + 1;
+  await run('BEGIN TRANSACTION;');
+  try {
+    await run(
+      'INSERT INTO products (code) VALUES (?);',
+      [code]
+    );
+    await run('COMMIT;');
+    return true;
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
+}
+
+async function updateProducts(code, field, value){  
+  await waitDB();
+  const correctValue = field === 'name' ? value : Number(value);
+  await run('BEGIN TRANSACTION;');
+  try {
+    await run(
+      `UPDATE products SET ${quoteIdentifier(field)} = ? WHERE code = ?;`,
+      [correctValue, code]
+    );
+    await run('COMMIT;');
+    return true;
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
+}
+
+//----------------------------------------------------//
+
 
 module.exports = {
   initDatabase,
@@ -264,5 +392,11 @@ module.exports = {
   readData,
   closeDatabase,
   insertExcelToDB,
+  addStudents,
+  updateStudents,
+  addTask,
+  updateTasks,
+  addProduct,
+  updateProducts,
   DB_FLAG_INCONSISTENT_ERROR_CODE
 };

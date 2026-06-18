@@ -16,19 +16,14 @@
 
     <script>
         var systemConfig = "";
-        var fileName
+        var tableName
         var searchVal = ""
 
         function onLoad() {
-            fileName = 'systemConfig'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                if (data == 0) {
-                    systemConfig = getDefaultConfig()
-                }
-                else {
-                    systemConfig = JSON.parse(data)
-                }
+            tableName = 'systemConfig'
+           window.expose.sendSystem("sendReadSystem", tableName);
+            window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
+                systemConfig = data
                 document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color);
                 document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
             });

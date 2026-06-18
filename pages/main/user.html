@@ -15,9 +15,9 @@
 
         function onLoad() {
             tableName = 'systemConfig'
-            window.expose.SendSystem("sendReadSystem", tableName);
-            window.expose.ReceiveSystem("receiveReadSystem" + tableName, (data) => {
-                systemConfig = JSON.parse(data)
+            window.expose.sendSystem("sendReadSystem", tableName);
+            window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
+                systemConfig = data
                 if (currentDate > systemConfig.date)
                     login('expired')
                 else if (systemConfig.device == 2 || systemConfig.device == 4 || systemConfig.device == "1" && (systemConfig.type == "2" || systemConfig.buy == "1"))

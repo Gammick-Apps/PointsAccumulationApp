@@ -18,7 +18,6 @@
     <script>
         var systemConfig = "";
         var products = "";
-        var fileName
         var tableName
         var currentDate = getTodayDate();
         var searchVal=""
@@ -37,16 +36,16 @@
 
         function onLoad() {
             tableName = 'systemConfig'
-            window.expose.SendExcel("sendReadSystem", tableName);
-            window.expose.ReceiveExcel("receiveReadSystem" + tableName, (data) => {
-                systemConfig = JSON.parse(data)
+            window.expose.sendSystem("sendReadSystem", tableName);
+            window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
+                systemConfig = data
                 document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color);
             });
-            fileName = 'products'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                if (data != 0) {
-                    products = JSON.parse(data)
+            tableName = 'products'
+            window.expose.sendDbData("sendGetDataByTable", tableName);
+            window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
+                if (Array.isArray(data) && data.length > 0) {
+                    products = data
                     gridOptions = {
                         columnDefs: columnDefs,
                         rowData: products,
@@ -59,7 +58,7 @@
                             sortable: true,
                         },
                         onFirstDataRendered: onFirstDataRendered,
-                        onCellEditingStopped: onCellEditingStopped
+                        onCellEditingStopped: updateProduct
                     };
                     var gridDiv = document.querySelector('#productsGrid');
                     new agGrid.Grid(gridDiv, gridOptions);
@@ -80,17 +79,13 @@
             }
         });
 
-        function newProducts() {
-            if (products.length > 0) {
-                products.unshift({
-                    name: '', code: '', used: "0"
-                })
-                fileName = 'products'
-                window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(products)]);
-                window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                    location.reload()
-                });
-            }
+        function addProduct() {
+            window.expose.sendDbData("sendInsertProduct");
+            window.expose.receiveDbData("receiveInsertProduct", (data) => {
+                if (data === true) {
+                    location.reload();
+                }
+            });
         }
         function onFirstDataRendered(params) {
             gridOptions.api.sizeColumnsToFit({
@@ -98,12 +93,14 @@
             });
         }
 
-        function onCellEditingStopped(params) {
-            fileName = 'products'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(products)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                location.reload()
-            });
+        function updateProduct(params) {
+            const payload = {
+                code: params.data.code,
+                field: params.colDef.field,
+                value: params.newValue
+            };
+            window.expose.sendDbData("sendUpdateProduct", JSON.stringify(payload));
+            window.expose.receiveDbData("receiveUpdateProduct");
         }
 
     </script>
@@ -115,7 +112,7 @@
             <div id="line1">ברוכים הבאים הבאה לממשק ניהול</div>
             <div id="line2">כאן אפשר להוסיף ולשנות מתנות</div>
             <br>
-            <img style="margin-left: 10px;" onclick="newProducts()" src="../../resources/barcode/plus-light.svg" />
+            <img style="margin-left: 10px;" onclick="addProduct()" src="../../resources/barcode/plus-light.svg" />
             <div id="productsGrid" style="width:100%" class="ag-theme-alpine"></div>
         </div>
     </div>

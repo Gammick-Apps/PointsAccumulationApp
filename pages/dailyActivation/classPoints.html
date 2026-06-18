@@ -22,7 +22,7 @@
     var searchVal = ""
     var buffer = "";
     var studentResult = ""
-    var fileName
+    var tableName
     var classesPoints = ""
     // מספר הנקודות שמתווספות לכיתה בכל תיקוף
     const POINTS_PER_SCAN = 6
@@ -59,15 +59,10 @@
 
     function onLoad() {
       updateLines("!ברוכות הבאות", "?...מי הכיתה המנצחת");
-      fileName = 'systemConfig';
-      window.expose.SendExcel("sendReadExcel", fileName);
-      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-        if (data == 0) {
-          systemConfig = getDefaultConfig()
-        }
-        else {
+      tableName = 'systemConfig';
+      window.expose.SendSystem("sendReadSystem", tableName);
+      window.expose.ReceiveSystem("receiveReadSystem" + tableName, (data) => {
           systemConfig = JSON.parse(data)
-        }
         document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
         document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
 
@@ -81,9 +76,9 @@
           document.getElementById("position").style.display = "none";
         }
       })
-      fileName = 'students'
-      window.expose.SendExcel("sendReadExcel", fileName);
-      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+        tableName = 'students'
+            window.expose.sendDbData("sendGetDataByTable", tableName);
+            window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
         if (data != 0) {
           students = JSON.parse(data);
           // בניית רשימת כיתות דינמית מתוך students, עם הגרלת צבע ייחודי לכל כיתה

@@ -33,17 +33,18 @@
 
         function onLoad() {
             tableName = 'systemConfig'
-            window.expose.SendExcel("sendReadSystem", tableName);
-            window.expose.ReceiveExcel("receiveReadSystem" + tableName, (data) => {
-                systemConfig = JSON.parse(data)
+            window.expose.sendSystem("sendReadSystem", tableName);
+            window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
+                systemConfig = data
                 document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color);
                 document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
             });
-            fileName = 'students'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                if (data != 0) {
-                    students = JSON.parse(data)
+            tableName = 'students'
+            window.expose.sendDbData("sendGetDataByTable", tableName);
+            window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
+                if (Array.isArray(data) && data.length > 0) {
+                    students = data
+                    
                     gridOptions = {
                         columnDefs: columnDefs,
                         rowData: students,
@@ -57,7 +58,7 @@
                             resizable: true,
                         },
                         onFirstDataRendered: onFirstDataRendered,
-                        onCellEditingStopped: onCellEditingStopped
+                        onCellEditingStopped: updateStudent
                     };
                     var gridDiv = document.querySelector('#studentsGrid');
                     new agGrid.Grid(gridDiv, gridOptions);
@@ -78,25 +79,13 @@
             }
         });
 
-        function newStudent() {
-            if (students.length > 0) {
-                var tz = Math.floor(Math.random() * (399999999 - 200000000 + 1) + 200000000)
-                for (var i = 0; i < students.length; i++) {
-                    while (students[i]["tz"] == tz) {
-                        tz = Math.floor(Math.random() * (399999999 - 200000000 + 1) + 200000000)
-                        i = 0
-                    }
+        function addStudent() {
+            window.expose.sendDbData("sendInsertStudent");
+            window.expose.receiveDbData("receiveInsertStudent", (data) => {
+                if (data === true) {
+                    location.reload();
                 }
-                students.unshift({
-                    grade: '------', name: '------', tz: tz, barcode: '',
-                    points: 0, tasks: ",", tasksNumber: ","
-                })
-                fileName = 'students'
-                window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
-                window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                    location.reload()
-                });
-            }
+            });
         }
 
         function onFirstDataRendered(params) {
@@ -106,12 +95,14 @@
             });
         }
 
-        function onCellEditingStopped(params) {
-            fileName = 'students'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                location.reload()
-            });
+        function updateStudent(params) {
+            const payload = {
+                tz: params.data.tz,
+                field: params.colDef.field,
+                value: params.newValue
+            };
+            window.expose.sendDbData("sendUpdateStudent", JSON.stringify(payload));
+            window.expose.receiveDbData("receiveUpdateStudent");
         }
 
         function exportToExcel(name) {
@@ -131,7 +122,7 @@
             <div id="line2">כאן אפשר לצפות, לערוך ולהוריד את הנתונים</div>
             <img style="margin-left: 10px;" onclick="exportToExcel('ניקוד תלמידות')"
                 src="../../resources/barcode/download-simple-light.svg" />
-            <img style="margin-left: 10px;" onclick="newStudent()" src="../../resources/barcode/plus-light.svg" />
+            <img style="margin-left: 10px;" onclick="addStudent()" src="../../resources/barcode/plus-light.svg" />
             <div id="studentsGrid" style="width:100%" class="ag-theme-alpine"></div>
         </div>
     </div>

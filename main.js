@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 let mainWindow
-const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB, DB_FLAG_INCONSISTENT_ERROR_CODE} = require('./sqlite-storage');
+const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB, addStudents, updateStudents, addTask, updateTasks,addProduct,updateProducts, DB_FLAG_INCONSISTENT_ERROR_CODE} = require('./sqlite-storage');
 
 function createWindow() {
   let ses = session.defaultSession
@@ -70,6 +70,157 @@ app.on('ready', async () => {
   }
 })
 
+// -------------- general ---------------- //
+
+ipcMain.on("sendGetDataByTable", async (event, args) => {
+  try {
+    const data = await readData(args);
+    mainWindow.webContents.send("receiveGetDataByTable" + args, data);
+  } catch (error) {
+    mainWindow.webContents.send("receiveGetDataByTable" + args, []);
+  }
+});
+
+ipcMain.on("sendInsertExcelToDB", async (event, args) => {
+  if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
+    try {
+      JSON.parse(args[1]);
+      const data = await insertExcelToDB(args[0], args[1]);
+      mainWindow.webContents.send("receiveInsertExcelToDB" + args[0], data);
+    } catch (e) {
+      console.error("Invalid JSON data:", e);
+      mainWindow.webContents.send("receiveInsertExcelToDB" + args[0], false);
+    }
+  } else {
+    console.error("Empty or invalid data.");
+    mainWindow.webContents.send("receiveInsertExcelToDB" + args[0], false);
+  }
+});
+
+// -------------- system ---------------- //
+
+ipcMain.on("sendReadSystem", async (event, args) => {
+  try {
+    const data = await readSystem();
+    mainWindow.webContents.send("receiveReadSystem" + args, data);
+  } catch (error) {
+    mainWindow.webContents.send("receiveReadSystem" + args, null);
+  }
+});
+
+ipcMain.on("sendUpdateSystem", async (event, args) => {
+  if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
+    try {
+      JSON.parse(args[1]);
+      const data = await writeSystem(args[1]);
+      mainWindow.webContents.send("receiveUpdateSystem" + args[0], data);
+    } catch (e) {
+      console.error(e instanceof SyntaxError ? "Invalid JSON data:" : "Save failed:", e);
+      mainWindow.webContents.send("receiveUpdateSystem" + args[0], false);
+    }
+  } else {
+    console.error("Empty or invalid data.");
+    mainWindow.webContents.send("receiveUpdateSystem" + args[0], false);
+  }
+});
+
+// -------------- students ---------------- //
+
+ipcMain.on("sendInsertStudent", async () => {
+  try {
+    const data = await addStudents();
+    mainWindow.webContents.send("receiveInsertStudent", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveInsertStudent", false);
+  }
+});
+
+ipcMain.on("sendUpdateStudent", async (event, args) => {
+  try {
+    const payload = JSON.parse(args);
+    const data = await updateStudents(payload.tz, payload.field, payload.value);
+    mainWindow.webContents.send("receiveUpdateStudent", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveUpdateStudent", false);
+  }
+});
+
+// -------------- uniqTasks ---------------- //
+
+ipcMain.on("sendInsertTask", async () => {
+  try {
+    const data = await addTask();
+    mainWindow.webContents.send("receiveInsertTask", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveInsertTask", false);
+  }
+});
+
+ipcMain.on("sendUpdateTask", async (event, args) => {  
+  try {
+    const payload = JSON.parse(args);
+    const data = await updateTasks(payload.code, payload.field, payload.value);
+    mainWindow.webContents.send("receiveUpdateTask", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveUpdateTask", false);
+  }
+});
+
+// -------------- products ---------------- //
+
+ipcMain.on("sendInsertProduct", async () => {
+  try {
+    const data = await addProduct();
+    mainWindow.webContents.send("receiveInsertProduct", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveInsertProduct", false);
+  }
+});
+
+ipcMain.on("sendUpdateProduct", async (event, args) => {  
+  try {
+    const payload = JSON.parse(args);
+    const data = await updateProducts(payload.code, payload.field, payload.value);
+    mainWindow.webContents.send("receiveUpdateProduct", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveUpdateProduct", false);
+  }
+});
+
+// -------------- utils ---------------- //
+
+ipcMain.on("getBackground", (event, args) => {
+  fs.readFile(args + '.png', { encoding: 'base64', flag: 'r' }, function (err, data) {
+    if (err) {
+      console.log("background read error", err);
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.send("receiveGetBackground" + args, 0);
+      }
+    } else {
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.send("receiveGetBackground" + args, data);
+      }
+    }
+  });
+});
+
+ipcMain.on("sendUploadBackground", (event, args) => {
+  const fileData = args;
+  const buffer = Buffer.from(fileData, "base64");
+  fs.writeFile("personalBackground.png", buffer, (err) => {
+    if (err) {
+      console.log(err)
+    }
+    mainWindow.webContents.send("recieveUploadBackground", 1);
+  });
+});
+
 ipcMain.on("sendPrint", (event, args) => {
   let printWindow = new BrowserWindow({ show: false });
   let printFinished = false;
@@ -112,81 +263,7 @@ ipcMain.on("sendPrint", (event, args) => {
   });
 });
 
-ipcMain.on("sendReadExcel", async (event, args) => {
-  try {
-    const data = await readData(args);
-    mainWindow.webContents.send("receiveReadExcel" + args, data);
-  } catch (error) {
-    mainWindow.webContents.send("receiveReadExcel" + args, '[]');
-  }
-});
-
-ipcMain.on("sendReadSystem", async (event, args) => {
-  try {
-    const data = await readSystem(args);
-    mainWindow.webContents.send("receiveReadSystem" + args, data);
-  } catch (error) {
-    mainWindow.webContents.send("receiveReadSystem" + args, 0);
-  }
-});
-
-ipcMain.on("getBackground", (event, args) => {
-  fs.readFile(args + '.png', { encoding: 'base64', flag: 'r' }, function (err, data) {
-    if (err) {
-      console.log("background read error", err);
-      if (mainWindow && mainWindow.webContents) {
-        mainWindow.webContents.send("receiveGetBackground" + args, 0);
-      }
-    } else {
-      if (mainWindow && mainWindow.webContents) {
-        mainWindow.webContents.send("receiveGetBackground" + args, data);
-      }
-    }
-  });
-});
-
-ipcMain.on("sendWriteExcel", async (event, args) => {
-  if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
-    try {
-      JSON.parse(args[1]);
-      await insertExcelToDB(args[0], args[1]);
-      mainWindow.webContents.send("receiveWriteExcel" + args[0], 1);
-    } catch (e) {
-      console.error("Invalid JSON data:", e);
-      mainWindow.webContents.send("receiveWriteExcel" + args[0], 0);
-    }
-  } else {
-    console.error("Empty or invalid data.");
-    mainWindow.webContents.send("receiveWriteExcel" + args[0], 0);
-  }
-});
-
-ipcMain.on("sendWriteSystem", async (event, args) => {
-  if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
-    try {
-      JSON.parse(args[1]);
-      await writeSystem(args[1]);
-      mainWindow.webContents.send("receiveWriteSystem" + args[0], 1);
-    } catch (e) {
-      console.error(e instanceof SyntaxError ? "Invalid JSON data:" : "Save failed:", e);
-      mainWindow.webContents.send("receiveWriteSystem" + args[0], 0);
-    }
-  } else {
-    console.error("Empty or invalid data.");
-    mainWindow.webContents.send("receiveWriteSystem" + args[0], 0);
-  }
-});
-
-ipcMain.on("sendUploadBackground", (event, args) => {
-  const fileData = args;
-  const buffer = Buffer.from(fileData, "base64");
-  fs.writeFile("personalBackground.png", buffer, (err) => {
-    if (err) {
-      console.log(err)
-    }
-    mainWindow.webContents.send("recieveUploadBackground", 1);
-  });
-});
+// -------------- electron ---------------- //
 
 ipcMain.on('close', () => {
   app.quit()
@@ -208,3 +285,39 @@ app.on('before-quit', () => {
 app.on('activate', () => {
   if (mainWindow === null) createWindow()
 })
+
+//-----------------------//
+
+ipcMain.on("sendReadExcel", (event, args) => {
+  fs.readFile(args + '.txt',
+    { encoding: 'utf8', flag: 'r' },
+    function (err, data) {
+      if (err) {
+        mainWindow.webContents.send("receiveReadExcel" + args, 0);
+      }
+      else {
+        mainWindow.webContents.send("receiveReadExcel" + args, data);
+      }
+    });
+});
+
+ipcMain.on("sendWriteExcel", (event, args) => {
+  if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
+    try {
+      JSON.parse(args[1]);
+      fs.writeFile(args[0] + '.txt', args[1], err => {
+        if (err) {
+          console.error(err);
+        } else {
+          mainWindow.webContents.send("receiveWriteExcel" + args[0], 1);
+        }
+      });
+    } catch (e) {
+      console.error("Invalid JSON data:", e);
+      mainWindow.webContents.send("receiveWriteExcel" + args[0], 0);
+    }
+  } else {
+    console.error("Empty or invalid data.");
+    mainWindow.webContents.send("receiveWriteExcel" + args[0], 0);
+  }
+});

@@ -11,7 +11,6 @@
     <link href="../../styleSheets/systemStyleSheet.css" rel="stylesheet" />
     <link href="../../styleSheets/mainStyleSheet.css" rel="stylesheet" />
     <script src="../../js/ag-grid-community.min.js"></script>
-    <script src="../../js/uniqTasks-ag-grid.js"></script>
     <script src="../../js/jquery.min.js"></script>
     <script src="../../js/xlsx.full.min.js"></script>
     <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
@@ -21,6 +20,7 @@
         var students = ""
         var uniqTasks = ""
         var products = ""
+        var questions = ""
         var tasks = ""
         var systemConfig = ""
         var excelFiles = getExcelFiles();
@@ -55,9 +55,9 @@
             const uploadVideoQuiz = document.getElementById('uploadVideoQuiz');
 
             tableName = 'systemConfig'
-            window.expose.SendSystem("sendReadSystem", tableName);
-            window.expose.ReceiveSystem("receiveReadSystem" + tableName, (data) => {               
-                systemConfig = JSON.parse(data)
+            window.expose.sendSystem("sendReadSystem", tableName);
+            window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {               
+                systemConfig = data
                 document.getElementById("background").style.backgroundImage = getBackground("1", "1");
 
                 Object.entries(systemConfig).forEach(x => {
@@ -98,6 +98,15 @@
                     products = JSON.parse(data)
                 }
             })
+
+            fileName = 'questions'
+            window.expose.SendExcel("sendReadExcel", fileName);
+            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+                if (data != 0) {
+                    questions = JSON.parse(data)
+                }
+            })
+
 
             hasParents.addEventListener('change', function () {
                 const selectedOption = hasParents.value;
@@ -208,7 +217,7 @@
             return "";
         }
 
-        function handleFileSelect(event) {
+        function insertExcelToDB(event) {
             var file = event.target.files[0];
             var reader = new FileReader();
             reader.onload = function (e) {
@@ -225,9 +234,9 @@
                     json_object = JSON.stringify(XLSX.utils.sheet_to_json(sheet));
                 }
                 if (name != "") {
-                    fileName = name;
-                    window.expose.SendExcel("sendWriteExcel", [fileName, json_object]);
-                    window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+                    tableName = name;
+                    window.expose.sendDbData("sendInsertExcelToDB", [tableName, json_object]);
+                    window.expose.receiveDbData("receiveInsertExcelToDB" + tableName, (data) => {
                         location.reload()
                     });
                 }
@@ -318,9 +327,9 @@
             })
 
             tableName = "systemConfig"
-            window.expose.SendSystem("sendWriteSystem", [tableName, JSON.stringify(systemConfig)]);
-            window.expose.ReceiveSystem("receiveWriteSystem" + tableName, (data) => {
-                if (data == 1) {
+            window.expose.sendSystem("sendUpdateSystem", [tableName, JSON.stringify(systemConfig)]);
+            window.expose.receiveSystem("receiveUpdateSystem" + tableName, (data) => {
+                if (data === true) {
                     location.reload()
                 }
                 else {
@@ -329,9 +338,6 @@
             });
         }
 
-        function exportUniqTasks() {
-            ExportUniqTasks()
-        }
     </script>
 
     <div class="background" id="background">
@@ -459,15 +465,11 @@
                         <input type="file" class="form-control" id="uploadPolls" accept="image/png">
                     </div>
                     <div class="col-md-2" id="uploadVideoQuizWrapper" style="display: none;">
-                        <label for="uploadVideoQuiz" class="form-label">שאלות הסרטות</label>
+                        <label for="uploadVideoQuiz" class="form-label">שאלות</label>
                         <input type=file class="form-control" id="uploadVideoQuiz" name="files[]">
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-1">
-                        <label class="form-label">.</label>
-                        <button onclick="exportUniqTasks()" class="form-control"> משימות</button>
-                    </div>
                     <div class="col-md-2">
                         <label class="form-label">.</label>
                         <button id="reset" onclick="resetExcel()" class="form-control"> איפוס </button>
@@ -485,12 +487,12 @@
     </div>
 
     <script>
-        document.getElementById('uploadStudents').addEventListener('change', handleFileSelect, false);
-        document.getElementById('uploaduniqTasks').addEventListener('change', handleFileSelect, false);
-        document.getElementById('uploadProducts').addEventListener('change', handleFileSelect, false);
-        document.getElementById('uploadParents').addEventListener('change', handleFileSelect, false);
-        document.getElementById('uploadTest').addEventListener('change', handleFileSelect, false);
-        document.getElementById('uploadVideoQuiz').addEventListener('change', handleFileSelect, false);
+        document.getElementById('uploadStudents').addEventListener('change', insertExcelToDB, false);
+        document.getElementById('uploaduniqTasks').addEventListener('change', insertExcelToDB, false);
+        document.getElementById('uploadProducts').addEventListener('change', insertExcelToDB, false);
+        document.getElementById('uploadParents').addEventListener('change', insertExcelToDB, false);
+        document.getElementById('uploadTest').addEventListener('change', insertExcelToDB, false);
+        document.getElementById('uploadVideoQuiz').addEventListener('change', insertExcelToDB, false);
 
     </script>
 </body>
