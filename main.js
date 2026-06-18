@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 let mainWindow
-const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB, addStudents, updateStudents, addTask, updateTasks,addProduct,updateProducts, DB_FLAG_INCONSISTENT_ERROR_CODE} = require('./sqlite-storage');
+const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB, addStudents, updateStudents, addTask, updateTasks,addProduct,updateProducts, DB_FLAG_INCONSISTENT_ERROR_CODE} = require('./db/sqlite-storage');
 
 function createWindow() {
   let ses = session.defaultSession
