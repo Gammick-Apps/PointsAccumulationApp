@@ -19,6 +19,7 @@
     var systemConfig = ""
     var students = ""
     var searchVal = ""
+    var tableName
     var result = "";
     var step
     const Steps = {
@@ -31,9 +32,9 @@
     function onLoad() {
       step = Steps.step1;
       updateLines("ברוכות הבאות!", "מה הגרפולוגית רשמה על...?");
-      fileName = 'systemConfig'
-      window.expose.SendExcel("sendReadExcel", fileName);
-      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+      tableName = 'systemConfig'
+      window.expose.SendSystem("sendReadSystem", tableName);
+      window.expose.ReceiveSystem("receiveReadSystem" + tableName, (data) => {
         if (data == 0) {
           systemConfig = getDefaultConfig()
         }
@@ -51,9 +52,9 @@
         else {
           document.getElementById("position").style.display = "none";
         }
-        fileName = 'students'
-        window.expose.SendExcel("sendReadExcel", fileName);
-        window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+        tableName = 'students'
+        window.expose.sendDbData("sendGetDataByTable", tableName);
+        window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
           if (data != 0) {
             students = JSON.parse(data)
           }

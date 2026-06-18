@@ -89,7 +89,7 @@
             tableName = 'systemConfig'
             window.expose.SendExcel("sendReadSystem", tableName);
             window.expose.ReceiveExcel("receiveReadSystem" + tableName, (data) => {
-                systemConfig = JSON.parse(data)
+                systemConfig = data
                 document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
                 document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
                 document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color)

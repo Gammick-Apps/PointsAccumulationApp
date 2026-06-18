@@ -38,7 +38,7 @@
             tableName = 'systemConfig'
             window.expose.sendSystem("sendReadSystem", tableName);
             window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
-                systemConfig = JSON.parse(data)
+                systemConfig = data
                 document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color);
             });
             tableName = 'products'

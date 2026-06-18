@@ -104,7 +104,7 @@ ipcMain.on("sendReadSystem", async (event, args) => {
     const data = await readSystem();
     mainWindow.webContents.send("receiveReadSystem" + args, data);
   } catch (error) {
-    mainWindow.webContents.send("receiveReadSystem" + args, 0);
+    mainWindow.webContents.send("receiveReadSystem" + args, null);
   }
 });
 

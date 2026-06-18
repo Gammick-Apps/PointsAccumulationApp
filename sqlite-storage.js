@@ -196,8 +196,9 @@ async function writeSystem(payload) {
 
 async function readSystem() {
   await waitDB();
-  const row = await get('SELECT * FROM systemConfig WHERE id = 1 LIMIT 1;');
-  return JSON.stringify((({ id, ...response }) => response)(row || {}));
+ const row = await get('SELECT * FROM systemConfig WHERE id = 1 LIMIT 1;') || {};
+  const { id, ...data } = row;
+  return data;
 }
 
 // -------------- general ---------------- //
