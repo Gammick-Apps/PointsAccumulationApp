@@ -263,6 +263,12 @@ async function readData(tableName) {
 
 // -------------- students ---------------- //
 
+async function getStudentsById(id) {
+  await waitDB();
+  const student = await get('SELECT * FROM students WHERE tz = ? OR code = ? LIMIT 1;', [id, id]);
+  return student || null;
+}
+
 async function generateUniqueStudentTz() {
   while (true) {
     const tz = Math.floor(Math.random() * (399999999 - 200000000 + 1) + 200000000);
@@ -398,5 +404,6 @@ module.exports = {
   updateTasks,
   addProduct,
   updateProducts,
+  getStudentsById,
   DB_FLAG_INCONSISTENT_ERROR_CODE
 };
