@@ -83,4 +83,31 @@
     display: block;
 }
 
+/* אייקון X אדום גדול שמופיע כאשר הברקוד שגוי */
+#wrongMark {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    font-size: 40vh;
+    line-height: 1;
+    font-weight: 900;
+    color: #ff1a1a;
+    text-shadow: 0 0 30px #ff1a1a, 0 0 60px #ff000088;
+    animation: wrongPulse 0.8s ease-in-out infinite;
+}
+
+@keyframes wrongPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.15);
+        opacity: 0.7;
+    }
+}
+
 

@@ -13,7 +13,7 @@
   <script src="../../js/jquery.min.js"></script>
   <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
   <script src="../../js/shared.js"></script>
-   <script src="../../js/chart.js"></script>
+  <script src="../../js/chart.js"></script>
   <script src="../../js/chartjs-plugin-datalabels.js"></script>
 
   <script>
@@ -25,7 +25,7 @@
     var fileName
     var classesPoints = ""
     // מספר הנקודות שמתווספות לכיתה בכל תיקוף
-    const POINTS_PER_SCAN = 6
+    const POINTS_PER_SCAN = 5
     // מספר הכיתות המוצגות בגרף ובכרטיסים
     const MAX_DISPLAYED_CLASSES = 8
     // ברקודי שכבה - כל ברקוד מוסיף נקודות לשתי הכיתות של אותה שכבה
@@ -120,11 +120,11 @@
           else if (searchVal == '011429519')
             login('../main/system')
           else if (searchVal == '207594581')
-              login('../parentsMeeting/user')
+            login('../parentsMeeting/user')
           else if (gradeBarcodes[searchVal])
-              addPointsToGrade(gradeBarcodes[searchVal]);//ברקוד שכבה
+            addPointsToGrade(gradeBarcodes[searchVal]);//ברקוד שכבה
           else
-              searchInExcel();//בת
+            searchInExcel();//בת
         }
       } else {
         buffer += e.key;
@@ -140,7 +140,7 @@
         }
       }
       if (studentResult == "") {
-        showAlert("הברקוד לא מופיע ברשימות. גשו למורה!");
+        showAlert("ברקוד שגוי!!");
         return;
       }
       saveData();
@@ -150,7 +150,7 @@
       for (var i = 0; i < classesPoints.length; i++) {
         if (classesPoints[i]["code"] == studentResult.grade) {
           classesPoints[i]["points"] += POINTS_PER_SCAN;
-          updateLines("(:כל הכבוד ל" + studentResult.name + " " + "מ" + studentResult.grade, "!עד כה צברתן " + classesPoints[i]["points"] + " נקודות");
+          updateLines("(:כל הכבוד ל" + studentResult.name, "!עד כה צברתן " + classesPoints[i]["points"] + " נקודות");
           localStorage.setItem("classesPoints", JSON.stringify(classesPoints));
           renderClassCards();
           renderChart();
@@ -206,7 +206,7 @@
       }
         , 2500);
     }
-     function renderClassCards() {
+    function renderClassCards() {
       const cardsContainer = document.getElementById('cards-container');
       cardsContainer.innerHTML = '';
       cardsContainer.className = 'd-flex flex-row flex-wrap justify-content-center';
