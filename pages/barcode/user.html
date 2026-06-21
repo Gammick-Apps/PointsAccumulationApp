@@ -88,7 +88,6 @@
           showAlert("הברקוד לא מופיע ברשימות. גשו למורה!")
           return;
         }
-
       document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step)
       updateLines("(: שלום  " + studentResult.name, "יש לסרוק את הברקוד לעדכון משימה", "עד כה צברת " + studentResult.points + " נקודות")
       });
@@ -96,68 +95,37 @@
 
     function updateTask() {
       step = Steps.step3;
-      for (var i = 0; i < uniqTasks.length; i++) {
-        if (uniqTasks[i]["code"] == searchVal) {
-          result = uniqTasks[i]
-          break;
+      const task = {
+          studentId: studentResult.tz,
+          code: searchVal,
+          systemType: systemConfig.type
         }
-      }
-      if (result == "") {
-        showAlert("קוד לא תקין, גשו למורה!")
-        return;
-      }
+      window.expose.sendDbData("sendSubmitTask",task);
 
-      if (systemConfig.type == "1") {
-        if (result.used == 1) {
-          showAlert("הי, משימה זו כבר תוקפה!");
-          return;
+      window.expose.receiveDbData("receiveSubmitTask",(data) => {
+          if (!data.success) {
+            showAlert(data.message);
+            return;
+          }
+          studentResult = data.student;
+          result = data.task;
+          finishSession();
         }
-      }
-      else if (systemConfig.type == "2")
-        if (!result.multiple && studentResult.tasksNumber.includes(result.code)) {
-          showAlert("הי, אסור להגיש משימה פעמיים!");
-          return;
-        }
-      finishSession()
+      );
     }
 
     function finishSession() {
-      studentResult.tasks += result.name + ',';
-      studentResult.tasksNumber += result.code + ',';
-      studentResult.points = parseInt(result.points) + parseInt(studentResult.points);
-      saveData();
-    }
-
-    function saveData() {
-      for (var i = 0; i < students.length; i++) {
-        if (students[i]["tz"] == studentResult.tz) {
-          students[i] = studentResult;
-          break;
-        }
+      document.getElementById("background").style.backgroundImage =
+        getBackground(systemConfig.device, systemConfig.color, step);
+        updateLines("ביצעת את משימה " + result.name,"כעת יש בחשבונך " + studentResult.points + " נקודות","...לא לשכוח לקחת את האישור מהמדפסת");
+      if (systemConfig.hasPrint == 1) {
+        setTimeout(function () {
+          toPrint();
+        }, 2000);
       }
-      fileName = 'students'
-      window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
-      window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-        if (systemConfig.type == 1) {
-          for (var i = 0; i < uniqTasks.length; i++) {
-            if (uniqTasks[i]["code"] == result.code) {
-              uniqTasks[i].used = 1
-              break;
-            }
-          }
-          fileName = 'uniqTasks'
-          window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(uniqTasks)]);
-          window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => { });
-        }
-        document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
-        updateLines("ביצעת את משימה" + " " + result.name, " כעת יש בחשבונך " + studentResult.points + " נקודות ", "...לא לשכוח לקחת את האישור מהמדפסת")         
-        if (systemConfig.hasPrint == 1)
-          setTimeout(function () {
-            toPrint();
-          }, 2000);
-        else
-          reset(2000);
-      });
+      else {
+        reset(2000);
+      }
     }
 
     function toPrint() {

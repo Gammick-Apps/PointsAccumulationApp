@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 let mainWindow
 const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB,
-   addStudents, updateStudents, addTask, updateTasks,addProduct,updateProducts,getStudentsById, DB_FLAG_INCONSISTENT_ERROR_CODE} = require('./db/sqlite-storage');
+addStudents, updateStudents, addTask, updateTasks,addProduct,updateProducts,getStudentsById,submitTask,DB_FLAG_INCONSISTENT_ERROR_CODE} = require('./db/sqlite-storage');
 
 function createWindow() {
   let ses = session.defaultSession
@@ -97,6 +97,22 @@ ipcMain.on("sendInsertExcelToDB", async (event, args) => {
     mainWindow.webContents.send("receiveInsertExcelToDB" + args[0], false);
   }
 });
+
+ipcMain.on("sendSubmitTask", async (event, args) => {
+  try {
+    const data = await submitTask(
+      args.studentId,
+      args.code,
+      args.systemType
+    );
+    mainWindow.webContents.send("receiveSubmitTask",data);
+  } catch (error) {
+    mainWindow.webContents.send("receiveSubmitTask",
+      {success: false, message: "אירעה שגיאה בשמירת הנתונים"}
+    );
+  }
+});
+
 
 // -------------- system ---------------- //
 

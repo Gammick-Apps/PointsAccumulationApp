@@ -41,18 +41,21 @@
         { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
         { "name": "studentId", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "taskId", "type": "INTEGER", "nullable": false, "default": "0" },
-        { "name": "amount", "type": "INTEGER", "nullable": false, "default": "0" }
+        {"name": "createDateTime", "type": "DATETIME", "nullable": false, "default": "(datetime('now'))" },
+        { "name": "points", "type": "INTEGER", "nullable": false, "default": "0" }
       ],
       "foreignKeys": [
         {
           "columns": ["studentId"],
           "referencesTable": "students",
-          "referencesColumns": ["id"]
+          "referencesColumns": ["id"],
+          "onDelete": "CASCADE"
         },
         {
           "columns": ["taskId"],
           "referencesTable": "uniqTasks",
-          "referencesColumns": ["id"]
+          "referencesColumns": ["id"],
+          "onDelete": "CASCADE"
         }
       ]
     },
@@ -87,18 +90,21 @@
         { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
         { "name": "studentId", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "productId", "type": "INTEGER", "nullable": false, "default": "0" },
-        { "name": "amount", "type": "INTEGER", "nullable": false, "default": "0" }
+        {"name": "createDateTime", "type": "DATETIME", "nullable": false, "default": "(datetime('now'))" },
+        { "name": "points", "type": "INTEGER", "nullable": false, "default": "0" }
       ],
       "foreignKeys": [
         {
           "columns": ["studentId"],
           "referencesTable": "students",
-          "referencesColumns": ["id"]
+          "referencesColumns": ["id"],
+          "onDelete": "CASCADE"
         },
         {
           "columns": ["productId"],
           "referencesTable": "products",
-          "referencesColumns": ["id"]
+          "referencesColumns": ["id"],
+          "onDelete": "CASCADE"
         }
       ]
     },
@@ -114,7 +120,8 @@
         {
           "columns": ["idStudent"],
           "referencesTable": "students",
-          "referencesColumns": ["id"]
+          "referencesColumns": ["id"],
+          "onDelete": "CASCADE"
         }
       ]
     },
