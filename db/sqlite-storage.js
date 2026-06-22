@@ -390,59 +390,42 @@ async function updateProducts(code, field, value){
 //----------------------------------------------------//
 
 
-async function submitTask(studentId, code, systemType) {
+async function getTaskByCode(code) {
   await waitDB();
-  await run('BEGIN TRANSACTION;');
-  try {
-    const task = await get('SELECT id, name, points, multiple FROM uniqtasks WHERE code = ? LIMIT 1;',[code]);
-    //task doesn't exist
-    if (!task) {
-      throw new Error('קוד לא תקין, גשו למורה!');
-    }
-    //this task already exists in studentsTasks-אישי
-    if (systemType === '1') {
-      const used = await get('SELECT 1 FROM studentsTasks WHERE taskId = ? LIMIT 1;',[task.id]);
-      if (used) {
-        throw new Error('הי, משימה זו כבר תוקפה!');
-      }
-    }
-    //this task already exists in studentsTasks for this student-כללי
-    if (systemType === '2' && !task.multiple) {
-      const alreadyDone = await get('SELECT 1 FROM studentsTasks WHERE studentId = ? AND taskId = ? LIMIT 1;',[studentId, task.id]);
-      if (alreadyDone) {
-        throw new Error('הי, אסור להגיש משימה פעמיים!');
-      }
-    }
-    //insert to studentsTasks and update points in students
-    await run(
-      'INSERT INTO studentsTasks (studentId, taskId, points) VALUES (?, ?, ?);',
-      [studentId, task.id, task.points]
-    );
-    await run(
-      'UPDATE students SET points = points + ? WHERE tz = ?;',
-      [task.points, studentId]
-    );
-    //get the updated student data
-    const updatedStudent = await get(
-      'SELECT * FROM students WHERE tz = ?;',
-      [studentId]
-    );
-    await run('COMMIT;');
-
-    return {
-      success: true,
-      student: updatedStudent,
-      task: task
-    };
-
-  } catch (error) {
-    await run('ROLLBACK;');
-    return {
-      success: false,
-      message: error.message
-    };
-  }
+  return get(`
+    SELECT id, code, multiple 
+    FROM uniqTasks 
+    WHERE code = ?
+  `, [code]);
 }
+
+
+async function isTaskUsed(taskId) {
+  await waitDB();
+  const result = await get(`
+    SELECT 1
+    FROM studentsTasks
+    WHERE taskId = ?
+    LIMIT 1
+  `, [taskId]);
+  return !!result;
+}
+
+
+async function hasStudentDoneTask(studentId, taskId) {
+  await waitDB();
+  const result = await get(`
+    SELECT 1
+    FROM studentsTasks
+    WHERE studentId = ?
+      AND taskId = ?
+    LIMIT 1
+  `, [studentId, taskId]);
+
+  return !!result;
+}
+
+
 
 //----------------------------------------------------//
 
@@ -461,6 +444,8 @@ module.exports = {
   addProduct,
   updateProducts,
   getStudentsById,
-  submitTask,
+  getTaskByCode,
+  isTaskUsed,
+  hasStudentDoneTask,
   DB_FLAG_INCONSISTENT_ERROR_CODE
 };

@@ -290,24 +290,37 @@
         }
 
         function searchStudent() {
-            document.getElementById("cards").style.display = "none"
-            step = Steps.step3
-            const task = {
-                studentId: searchVal,
-                code: result.code,
-                systemType: systemConfig.type
-            }
-            window.expose.sendDbData("sendSubmitTask", task);
-            window.expose.receiveDbData("receiveSubmitTask", (data) => {
-                if (!data.success) {
-                    showAlert(data.message);
+            document.getElementById("cards").style.display = "none";
+            step = Steps.step3;
+
+            window.expose.sendDbData("sendGetStudentById", searchVal);
+            window.expose.receiveDbData("receiveGetStudentById", (student) => {
+
+                if (student == null) {
+                    showAlert("הברקוד לא מופיע ברשימות. גשו למורה!");
                     return;
                 }
-                studentResult = data.student;
-                result = data.task;
-                finishSession();
-            }
-            );
+
+                studentResult = student;
+
+                // אם המשימה מאפשרת תיקוף מרובה
+                if (result.multiple) {
+                    finishSession();
+                    return;
+                }
+
+                // בודקים האם התלמידה כבר ביצעה את המשימה
+                window.expose.sendDbData("sendHasStudentDoneTask",{studentId: studentResult.tz,taskId: result.id});
+                window.expose.receiveDbData("receiveHasStudentDoneTask",(alreadyDone) => {
+                        if (alreadyDone) {
+                            showAlert("הי, אסור להגיש משימה פעמיים!");
+                            return;
+                        }
+
+                        finishSession();
+                    }
+                );
+            });
         }
 
         function finishSession() {

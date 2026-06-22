@@ -41,8 +41,7 @@
         { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
         { "name": "studentId", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "taskId", "type": "INTEGER", "nullable": false, "default": "0" },
-        {"name": "createDateTime", "type": "DATETIME", "nullable": false, "default": "(datetime('now'))" },
-        { "name": "points", "type": "INTEGER", "nullable": false, "default": "0" }
+        {"name": "createDateTime", "type": "DATETIME", "nullable": false, "default": "(datetime('now'))" }
       ],
       "foreignKeys": [
         {
@@ -90,8 +89,7 @@
         { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
         { "name": "studentId", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "productId", "type": "INTEGER", "nullable": false, "default": "0" },
-        {"name": "createDateTime", "type": "DATETIME", "nullable": false, "default": "(datetime('now'))" },
-        { "name": "points", "type": "INTEGER", "nullable": false, "default": "0" }
+        {"name": "createDateTime", "type": "DATETIME", "nullable": false, "default": "(datetime('now'))" }
       ],
       "foreignKeys": [
         {

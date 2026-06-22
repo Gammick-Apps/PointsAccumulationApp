@@ -95,24 +95,42 @@
 
     function updateTask() {
       step = Steps.step3;
-      const task = {
-          studentId: studentResult.tz,
-          code: searchVal,
-          systemType: systemConfig.type
-        }
-      window.expose.sendDbData("sendSubmitTask",task);
 
-      window.expose.receiveDbData("receiveSubmitTask",(data) => {
-          if (!data.success) {
-            showAlert(data.message);
-            return;
-          }
-          studentResult = data.student;
-          result = data.task;
-          finishSession();
+      window.expose.sendDbData("sendGetTaskByCode", searchVal);
+      window.expose.receiveDbData("receiveGetTaskByCode", (task) => {
+        if (!task) {
+          showAlert("קוד לא תקין, גשו למורה!");
+          return;
         }
-      );
+
+        if (systemConfig.type === 1) {
+          window.expose.sendDbData("sendIsTaskUsed", task.id);
+          window.expose.receiveDbData("receiveIsTaskUsed", (used) => {
+            if (used) {
+              showAlert("הי, משימה זו כבר תוקפה!");
+              return;
+            }
+            finishSession(task.id);
+          });
+          return;
+        }
+
+        // if (systemConfig.type === 2) {
+        //   if (!task.multiple) {
+        //     window.expose.sendDbData("sendHasStudentDoneTask", {studentId: studentResult.tz,taskId: task.id});
+        //     window.expose.receiveDbData("receiveHasStudentDoneTask",(alreadyDone) => {
+        //         if (alreadyDone) {
+        //           showAlert("הי, אסור להגיש משימה פעמיים!");
+        //           return;}
+        //         finishSession(task.id);});
+        //     return;
+        //   }
+        // }
+
+        finishSession(task.id);
+      });
     }
+
 
     function finishSession() {
       document.getElementById("background").style.backgroundImage =

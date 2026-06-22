@@ -2,7 +2,8 @@ const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 let mainWindow
 const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB,
-addStudents, updateStudents, addTask, updateTasks,addProduct,updateProducts,getStudentsById,submitTask,DB_FLAG_INCONSISTENT_ERROR_CODE} = require('./db/sqlite-storage');
+  addStudents, updateStudents, addTask, updateTasks, addProduct, updateProducts, getStudentsById, getTaskByCode,
+  isTaskUsed, hasStudentDoneTask, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
 
 function createWindow() {
   let ses = session.defaultSession
@@ -98,22 +99,6 @@ ipcMain.on("sendInsertExcelToDB", async (event, args) => {
   }
 });
 
-ipcMain.on("sendSubmitTask", async (event, args) => {
-  try {
-    const data = await submitTask(
-      args.studentId,
-      args.code,
-      args.systemType
-    );
-    mainWindow.webContents.send("receiveSubmitTask",data);
-  } catch (error) {
-    mainWindow.webContents.send("receiveSubmitTask",
-      {success: false, message: "אירעה שגיאה בשמירת הנתונים"}
-    );
-  }
-});
-
-
 // -------------- system ---------------- //
 
 ipcMain.on("sendReadSystem", async (event, args) => {
@@ -197,6 +182,40 @@ ipcMain.on("sendUpdateTask", async (event, args) => {
   }
 });
 
+ipcMain.on("sendGetTaskByCode", async (event, args) => {
+  try {
+    const data = await getTaskByCode(args);
+    mainWindow.webContents.send("receiveGetTaskByCode", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveGetTaskByCode", null);
+  }
+});
+
+ipcMain.on("sendIsTaskUsed", async (event, taskId) => {
+  try {
+    const data = await isTaskUsed(taskId);
+    mainWindow.webContents.send("receiveIsTaskUsed", data);
+    
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveIsTaskUsed", null);
+  }
+});
+
+ipcMain.on("sendHasStudentDoneTask", async (event, args) => {
+  try {
+    const data = await hasStudentDoneTask(
+      args.studentId,
+      args.taskId
+    );
+    mainWindow.webContents.send("receiveHasStudentDoneTask", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveHasStudentDoneTask", null);
+  }
+});
+
 // -------------- products ---------------- //
 
 ipcMain.on("sendInsertProduct", async () => {
@@ -267,12 +286,12 @@ ipcMain.on("sendPrint", (event, args) => {
   };
 
   printWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(args));
-  printWindow.webContents.once('did-finish-load', () => {
+  printWindow.webContents.once('did-finish-load', async () => {
     // רשת ביטחון: אם ההדפסה לא מחזירה תשובה (למשל כשהמדפסת מנותקת),
     // נחזיר receivePrint בכל מקרה אחרי 5 שניות.
     setTimeout(() => finishPrint(false), 5000);
     try {
-      const printers = printWindow.webContents.getPrinters();
+      const printers = await printWindow.webContents.getPrintersAsync();
       if (!printers || printers.length === 0) {
         finishPrint(false);
         return;
