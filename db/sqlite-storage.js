@@ -350,6 +350,12 @@ async function updateTasks(code, field, value){
   }
 }
 
+async function getTaskByCode(code) {
+  await waitDB();
+  return get(`
+    SELECT id, code, name, multiple, points FROM uniqTasks WHERE code = ?`, [code]);
+}
+
 // -------------- products ---------------- //
 
 async function addProduct() {
@@ -387,27 +393,12 @@ async function updateProducts(code, field, value){
   }
 }
 
-//----------------------------------------------------//
-
-
-async function getTaskByCode(code) {
-  await waitDB();
-  return get(`
-    SELECT id, code, multiple 
-    FROM uniqTasks 
-    WHERE code = ?
-  `, [code]);
-}
-
+//------------------ studentsTasks ----------------------//
 
 async function isTaskUsed(taskId) {
   await waitDB();
   const result = await get(`
-    SELECT 1
-    FROM studentsTasks
-    WHERE taskId = ?
-    LIMIT 1
-  `, [taskId]);
+    SELECT 1 FROM studentsTasks WHERE taskId = ? LIMIT 1`, [taskId]);
   return !!result;
 }
 
@@ -415,17 +406,30 @@ async function isTaskUsed(taskId) {
 async function hasStudentDoneTask(studentId, taskId) {
   await waitDB();
   const result = await get(`
-    SELECT 1
-    FROM studentsTasks
-    WHERE studentId = ?
-      AND taskId = ?
-    LIMIT 1
-  `, [studentId, taskId]);
-
+    SELECT 1 FROM studentsTasks WHERE studentId = ? AND taskId = ? LIMIT 1`, [studentId, taskId]);
   return !!result;
 }
 
 
+async function saveStudentData(studentId, taskId, points) {  
+  await waitDB();
+  await run('BEGIN TRANSACTION;');  
+  try {
+   await run(
+  'INSERT INTO studentsTasks (studentId, taskId, createDateTime) VALUES (?, ?, DATETIME(\'now\', \'localtime\'));',
+  [studentId, taskId] 
+);
+    await run(
+      'UPDATE students SET points = points + ? WHERE tz = ?;',
+      [points, studentId]
+    );
+    await run('COMMIT;');
+    return true;
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  } 
+}
 
 //----------------------------------------------------//
 
@@ -447,5 +451,6 @@ module.exports = {
   getTaskByCode,
   isTaskUsed,
   hasStudentDoneTask,
+  saveStudentData,
   DB_FLAG_INCONSISTENT_ERROR_CODE
 };
