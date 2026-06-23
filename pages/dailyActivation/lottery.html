@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>הגרלה</title>
+</head>
+
+<body onload="onLoad()">
+  <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
+  <link href="../../styleSheets/mainStyleSheet.css" rel="stylesheet" />
+  <link href="../../styleSheets/lotteryStyleSheet.css" rel="stylesheet" />
+  <script src="../../js/jquery.min.js"></script>
+  <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+  <script src="../../js/shared.js"></script>
+
+  <script>
+    var systemConfig = "";
+    var students = [];
+    var candidates = [];
+    var isDrawing = false;
+    var fileName;
+
+    function onLoad() {
+      updateStatus("טוענת את רשימת המשתתפות...");
+      loadSystemConfig();
+      loadStudents();
+    }
+
+    function loadSystemConfig() {
+      fileName = 'systemConfig';
+      window.expose.SendExcel("sendReadExcel", fileName);
+      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+        if (data == 0) {
+          systemConfig = getDefaultConfig();
+        }
+        else {
+          systemConfig = JSON.parse(data);
+        }
+        document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0];
+        document.getElementById("position").style.color = getPosition(systemConfig.color)[1];
+        document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color);
+        document.querySelector(".lottery-panel").style.color = getTextColor(systemConfig.textColor);
+
+        if (systemConfig.numPosition.length > 0) {
+          document.getElementById("position").innerHTML += ' ' + systemConfig.numPosition;
+        }
+        else {
+          document.getElementById("position").style.display = "none";
+        }
+      });
+    }
+
+    function loadStudents() {
+      fileName = 'students';
+      window.expose.SendExcel("sendReadExcel", fileName);
+      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+        if (data != 0) {
+          students = JSON.parse(data);
+        }
+        buildCandidates();
+      });
+    }
+
+    function buildCandidates() {
+      var scannedCodes = parseScannedCodes();
+      var candidateMap = {};
+
+      scannedCodes.forEach(function (scannedCode) {
+        var student = findStudentByCode(scannedCode);
+        if (student && !candidateMap[getStudentKey(student)]) {
+          candidateMap[getStudentKey(student)] = student;
+        }
+      });
+
+      candidates = Object.values(candidateMap);
+
+      if (candidates.length == 0) {
+        updateStatus("עדיין אין בנות שתיקפו להגרלה");
+        document.getElementById("drawBtn").disabled = true;
+        document.getElementById("numberDisplay").textContent = "";
+        return;
+      }
+
+      document.getElementById("drawBtn").disabled = false;
+      updateStatus("מוכנות להגרלה");
+      document.getElementById("numberDisplay").textContent = "";
+    }
+
+    function parseScannedCodes() {
+      try {
+        var storedCodes = JSON.parse(localStorage.getItem("scannedCodes")) || [];
+        return storedCodes.filter(function (code) {
+          return code !== null && code !== undefined && String(code).trim() !== "";
+        });
+      }
+      catch (e) {
+        return [];
+      }
+    }
+
+    function findStudentByCode(scannedCode) {
+      var scannedText = String(scannedCode).trim();
+      for (var i = 0; i < students.length; i++) {
+        if (String(students[i].code).trim() == scannedText) {
+          return students[i];
+        }
+      }
+      return null;
+    }
+
+    function getStudentKey(student) {
+      return getStudentCode(student);
+    }
+
+    function getStudentCode(student) {
+      return String(student.code || "").trim();
+    }
+
+    function startDraw() {
+      if (isDrawing || candidates.length == 0) {
+        return;
+      }
+
+      isDrawing = true;
+      hideWinner();
+      updateStatus("מערבבות את המספרים...");
+      document.getElementById("drawBtn").disabled = true;
+      document.getElementById("numberDisplay").classList.add("spinning");
+
+      var finalIndex = Math.floor(Math.random() * candidates.length);
+      var steps = 34 + Math.floor(Math.random() * 12);
+      var currentStep = 0;
+      var delay = 45;
+
+      function spinNext() {
+        var shownIndex;
+        if (currentStep >= steps) {
+          shownIndex = finalIndex;
+        }
+        else {
+          shownIndex = Math.floor(Math.random() * candidates.length);
+        }
+
+        showNumber(getStudentCode(candidates[shownIndex]));
+        pulseNumber();
+        currentStep++;
+
+        if (currentStep <= steps) {
+          delay = Math.min(delay + 10, 190);
+          setTimeout(spinNext, delay);
+        }
+        else {
+          showWinner(candidates[finalIndex]);
+        }
+      }
+
+      spinNext();
+    }
+
+    function showNumber(number) {
+      document.getElementById("numberDisplay").textContent = padNumber(number);
+    }
+
+    function pulseNumber() {
+      var numberDisplay = document.getElementById("numberDisplay");
+      numberDisplay.classList.remove("number-pop");
+      void numberDisplay.offsetWidth;
+      numberDisplay.classList.add("number-pop");
+    }
+
+    function showWinner(winner) {
+      document.getElementById("numberDisplay").classList.remove("spinning");
+      showNumber(getStudentCode(winner));
+      updateStatus("המספר הזוכה נבחר...");
+      setTimeout(function () {
+        document.getElementById("winnerName").textContent = winner.name || "---";
+        document.getElementById("winnerGrade").textContent = winner.grade || "---";
+        document.getElementById("winnerBox").classList.add("show");
+        updateStatus("יש לנו זוכה!");
+        isDrawing = false;
+        document.getElementById("drawBtn").disabled = false;
+      }, 5000);
+    }
+
+    function hideWinner() {
+      document.getElementById("winnerBox").classList.remove("show");
+      document.getElementById("winnerName").textContent = "";
+      document.getElementById("winnerGrade").textContent = "";
+    }
+
+    function updateStatus(text) {
+      document.getElementById("statusText").textContent = text;
+    }
+
+    function refreshCandidates() {
+      if (isDrawing) {
+        return;
+      }
+      hideWinner();
+      buildCandidates();
+    }
+
+    function padNumber(number) {
+      return String(number).padStart(3, "0");
+    }
+  </script>
+
+  <div class="background" id="background">
+    <div class="closeBtn">
+      <img onclick="expose.appClose()" src="../../resources/barcode/x-light.svg" />
+    </div>
+
+    <div class="lottery-panel">
+      <div id="statusText" class="status-text"></div>
+
+      <div class="number-stage" aria-live="polite">
+        <div id="numberDisplay" class="number-display">000</div>
+      </div>
+
+      <div id="winnerBox" class="winner-box">
+        <div id="winnerName" class="winner-name"></div>
+        <div id="winnerGrade" class="winner-grade"></div>
+      </div>
+
+      <div class="bottom-actions d-flex flex-row justify-content-center" style="gap: 24px;">
+        <button id="drawBtn" onclick="startDraw(); this.blur();" class="action-btn">התחלת הגרלה</button>
+        <button onclick="refreshCandidates(); this.blur();" class="action-btn">רענון רשימה</button>
+        <button onclick="login('./classPoints'); this.blur();" class="action-btn">חזרה למסך ניקוד</button>
+      </div>
+    </div>
+
+    <div id="position">עמדה</div>
+  </div>
+</body>
+
+</html>

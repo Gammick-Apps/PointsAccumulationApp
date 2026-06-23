@@ -13,7 +13,7 @@
   <script src="../../js/jquery.min.js"></script>
   <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
   <script src="../../js/shared.js"></script>
-   <script src="../../js/chart.js"></script>
+  <script src="../../js/chart.js"></script>
   <script src="../../js/chartjs-plugin-datalabels.js"></script>
 
   <script>
@@ -56,9 +56,10 @@
       { color: '#8bc34a', used: false },
       { color: '#ff5722', used: false }
     ];
+    var campaign = 1;
 
     function onLoad() {
-      updateLines("!ברוכות הבאות", "?...מי הכיתה המנצחת");
+      updateLines("גם אני לוקחת חלק", "!בקמפיין למען עצמי");
       fileName = 'systemConfig';
       window.expose.SendExcel("sendReadExcel", fileName);
       window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
@@ -102,6 +103,9 @@
           if (!localStorage.getItem("classesPoints")) {
             localStorage.setItem("classesPoints", JSON.stringify(Object.values(classMap)));
           }
+          if (!localStorage.getItem("scannedCodes")) {
+            localStorage.setItem("scannedCodes", JSON.stringify([]));
+          }
           classesPoints = JSON.parse(localStorage.getItem("classesPoints"));
           renderClassCards(); // Render cards for the classes
           renderChart();
@@ -120,11 +124,11 @@
           else if (searchVal == '011429519')
             login('../main/system')
           else if (searchVal == '207594581')
-              login('../parentsMeeting/user')
+            login('../parentsMeeting/user')
           else if (gradeBarcodes[searchVal])
-              addPointsToGrade(gradeBarcodes[searchVal]);//ברקוד שכבה
+            addPointsToGrade(gradeBarcodes[searchVal]);//ברקוד שכבה
           else
-              searchInExcel();//בת
+            searchInExcel();//בת
         }
       } else {
         buffer += e.key;
@@ -151,13 +155,35 @@
         if (classesPoints[i]["code"] == studentResult.grade) {
           classesPoints[i]["points"] += POINTS_PER_SCAN;
           updateLines("(:כל הכבוד ל" + studentResult.name + " " + "מ" + studentResult.grade, "!עד כה צברתן " + classesPoints[i]["points"] + " נקודות");
+          showFloatingName(studentResult.name, studentResult.grade);
           localStorage.setItem("classesPoints", JSON.stringify(classesPoints));
+          var scannedCodes = JSON.parse(localStorage.getItem("scannedCodes")) || [];
+          scannedCodes.push(studentResult.code);
+          localStorage.setItem("scannedCodes", JSON.stringify(scannedCodes));
           renderClassCards();
           renderChart();
           break;
         }
       }
       reset(3000);
+    }
+
+    // Show a small side toast (3s) with scanned student's name and class; multiple can stack
+    function showFloatingName(name, grade) {
+      var container = document.getElementById("toastContainer");
+      var toast = document.createElement("div");
+      toast.className = "name-toast";
+      toast.innerHTML = '<div class="name-toast-text"></div><div class="name-toast-grade"></div>';
+      toast.querySelector(".name-toast-text").textContent = name;
+      toast.querySelector(".name-toast-grade").textContent = grade;
+      container.appendChild(toast);
+      // Trigger enter animation
+      requestAnimationFrame(function () { toast.classList.add("show"); });
+      // Remove after 3s
+      setTimeout(function () {
+        toast.classList.remove("show");
+        setTimeout(function () { toast.remove(); }, 400);
+      }, 3000);
     }
 
     // ברקוד שכבה - מוסיף נקודות לכל הכיתות של אותה שכבה (לדוגמה: כיתה ט'1 וכיתה ט'2)
@@ -183,7 +209,13 @@
 
     function reset(time = 0) {
       setTimeout(function () {
-        updateLines("!ברוכות הבאות", "?...מי הכיתה המנצחת");
+        if (campaign == 2) {
+          updateLines("!ברוכות הבאות", "?...מזדהה או לא מזדהה");
+          document.querySelector(".text").style.color = getTextColor("#f7ed3d");
+        } else {
+          updateLines("גם אני לוקחת חלק", "!בקמפיין למען עצמי");
+          document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
+        }
       }, time);
     }
 
@@ -206,7 +238,7 @@
       }
         , 2500);
     }
-     function renderClassCards() {
+    function renderClassCards() {
       const cardsContainer = document.getElementById('cards-container');
       cardsContainer.innerHTML = '';
       cardsContainer.className = 'd-flex flex-row flex-wrap justify-content-center';
@@ -323,7 +355,17 @@
       available[idx].used = true;
       return available[idx].color;
     }
-
+    function changeCampaign() {
+      if (campaign == 1) {
+        campaign = 2;
+        updateLines("!ברוכות הבאות", "?...מזדהה או לא מזדהה");
+        document.querySelector(".text").style.color = getTextColor("#f7ed3d");
+      } else {
+        campaign = 1;
+        updateLines("גם אני לוקחת חלק", "!בקמפיין למען עצמי");
+        document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
+      }
+    }
   </script>
 
   <div class="background" id="background">
@@ -352,12 +394,15 @@
       <div class="bottom-actions d-flex flex-row justify-content-center" style="gap: 24px;">
         <button onclick="login('./graphology'); this.blur();" class="action-btn">גרפולוגית</button>
         <button onclick="login('./videoQuiz'); this.blur();" class="action-btn">הסרטות</button>
+        <button onclick="changeCampaign(); this.blur();" class="action-btn"> החלפת קמפיין</button>
+        <button onclick="login('./lottery'); this.blur();" class="action-btn"> הגרלה</button>
       </div>
     </div>
     <div id="position">עמדה</div>
   </div>
 
-  <!-- Cards Container -->
+  <!-- Side toasts: scanned student's name and class -->
+  <div id="toastContainer"></div>
 
   <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">

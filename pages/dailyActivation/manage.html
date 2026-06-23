@@ -54,8 +54,13 @@
                     element.points = 0;
                 });
                 localStorage.setItem("classesPoints", JSON.stringify(classesPoints));
-                alert("הנקודות אופסו בהצלחה!");
             }
+            var scannedCodes = JSON.parse(localStorage.getItem("scannedCodes"));
+            if (scannedCodes != null) {
+                scannedCodes.length = 0;
+                localStorage.setItem("scannedCodes", JSON.stringify(scannedCodes));
+            }
+           alert("הנקודות אופסו בהצלחה!");
         }
     </script>
 
