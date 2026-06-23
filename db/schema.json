@@ -47,14 +47,12 @@
         {
           "columns": ["studentId"],
           "referencesTable": "students",
-          "referencesColumns": ["id"],
-          "onDelete": "CASCADE"
+          "referencesColumns": ["id"]
         },
         {
           "columns": ["taskId"],
           "referencesTable": "uniqTasks",
-          "referencesColumns": ["id"],
-          "onDelete": "CASCADE"
+          "referencesColumns": ["id"]
         }
       ]
     },
@@ -95,14 +93,12 @@
         {
           "columns": ["studentId"],
           "referencesTable": "students",
-          "referencesColumns": ["id"],
-          "onDelete": "CASCADE"
+          "referencesColumns": ["id"]
         },
         {
           "columns": ["productId"],
           "referencesTable": "products",
-          "referencesColumns": ["id"],
-          "onDelete": "CASCADE"
+          "referencesColumns": ["id"]
         }
       ]
     },
@@ -118,8 +114,7 @@
         {
           "columns": ["idStudent"],
           "referencesTable": "students",
-          "referencesColumns": ["id"],
-          "onDelete": "CASCADE"
+          "referencesColumns": ["id"]
         }
       ]
     },

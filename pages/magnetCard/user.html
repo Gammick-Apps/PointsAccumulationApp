@@ -79,6 +79,7 @@
         const questionProgress = document.getElementById('questionProgress');
         const testNameElement = document.getElementById('testName');
         const timerElement = document.getElementById('timer');
+        let currentTable = "";
         let currentTest = null;
         let currentQuestionIndex = 0;
         let correctCount = 0;
@@ -101,26 +102,20 @@
                 else {
                     document.getElementById("position").style.display = "none";
                 }
-                const currentTable = systemConfig.buy ? 'products' : 'uniqTasks';
+                currentTable = systemConfig.buy ? 'products' : 'uniqTasks';
                 if (systemConfig.buy) {
                     updateLines("שלום...!", "יש לבחור מתנה לקנייה")
                 }
                 else {
                     updateLines(" שלום...! ", "יש לבחור משימה לתיקוף ")
                 }
+                window.expose.receiveDbData("receiveGetDataByTable" + currentTable, (data) => {
+                    if (Array.isArray(data) && data.length > 0) {
+                        actions = data;
+                        createCards();
+                    }
+                });
                 window.expose.sendDbData("sendGetDataByTable", currentTable);
-            });
-            window.expose.receiveDbData("receiveGetDataByTable" + "uniqTasks", (data) => {
-                if (Array.isArray(data) && data.length > 0) {
-                    actions = data;
-                    createCards();
-                }
-            });
-            window.expose.receiveDbData("receiveGetDataByTable" + "products", (data) => {
-                if (Array.isArray(data) && data.length > 0) {
-                    actions = data;
-                    createCards();
-                }
             });
         }
 
@@ -212,6 +207,8 @@
             }
         }
 
+        //-------------tests-------------------//
+
         function openTest() {
             isModalOpen = true;
             document.getElementById("cards").style.display = "none"
@@ -289,6 +286,8 @@
             triviaModal.hide();
         }
 
+        //---------------------------//
+
         function searchStudent() {
             document.getElementById("cards").style.display = "none";
             step = Steps.step3;
@@ -302,41 +301,45 @@
                 }
 
                 studentResult = student;
-
-                // אם המשימה מאפשרת תיקוף מרובה
-                if (result.multiple) {
-                    finishSession();
-                    return;
-                }
-
-                // בודקים האם התלמידה כבר ביצעה את המשימה
-                window.expose.sendDbData("sendHasStudentDoneTask",{studentId: studentResult.tz,taskId: result.id});
-                window.expose.receiveDbData("receiveHasStudentDoneTask",(alreadyDone) => {
+                if (!result.multiple) {
+                    window.expose.sendDbData("sendHasStudentDoneTask", { studentId: studentResult.tz, taskId: result.id });
+                    window.expose.receiveDbData("receiveHasStudentDoneTask", (alreadyDone) => {
                         if (alreadyDone) {
-                            showAlert("הי, אסור להגיש משימה פעמיים!");
+                            showAlert("הי, משימה זו כבר תוקפה!");
                             return;
                         }
+                        
+                    saveStudentData(studentResult.tz, result.id, result.points,result.name);
+                    });
+                }
+                else
+                    saveStudentData(studentResult.tz, result.id, result.points,result.name);
+            })
+        }
 
-                        finishSession();
+        async function saveStudentData(studentId, taskId, points, name) {
+            window.expose.sendDbData("sendSaveStudentData", { studentId, taskId, points });
+            window.expose.receiveDbData("receiveSaveStudentData", (success) => {
+                if (success) {
+                    document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
+                    const totalPoints = Number(studentResult.points) + Number(points);
+                    updateLines("ביצעת את משימה " + name, "כעת יש בחשבונך " + totalPoints + " נקודות", "...לא לשכוח לקחת את האישור מהמדפסת");
+
+                    if (systemConfig.hasPrint == 1) {
+                        setTimeout(function () {
+                            toPrint();
+                        }, 2000);
+                    } else {
+                        reset(2000);
                     }
-                );
+                } else {
+                    console.error("שגיאה: השמירה במסד הנתונים נכשלה.");
+                }
             });
         }
 
-        function finishSession() {
-            document.getElementById("background").style.backgroundImage =
-                getBackground(systemConfig.device, systemConfig.color, step);
-            updateLines("ביצעת את משימה " + result.name, "כעת יש בחשבונך " + studentResult.points + " נקודות", "...לא לשכוח לקחת את האישור מהמדפסת");
-            if (systemConfig.hasPrint == 1) {
-                setTimeout(function () {
-                    toPrint();
-                }, 2000);
-            }
-            else {
-                reset(2000);
-            }
-            function toPrint() {
-                const dynamicHTML = `
+        function toPrint() {
+            const dynamicHTML = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -388,7 +391,6 @@
                 reset();
             });
         }
-    }
 
         function reset(time = 0) {
             setTimeout(function () {

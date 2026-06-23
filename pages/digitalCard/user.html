@@ -36,11 +36,11 @@
           systemConfig = data
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, 0, step)
       })
-      tableName = 'products'
-            window.expose.sendDbData("sendGetDataByTable", tableName);
-            window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
+      fileName = 'products'
+      window.expose.SendExcel("sendReadExcel", fileName);
+      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
         if (data != 0) {
-          products = data
+          products = JSON.parse(data)
         };
       });
     }
