@@ -50,6 +50,8 @@
             const uploadTests = document.getElementById('uploadTests');
             const uploadPollsWrapper = document.getElementById('uploadPollsWrapper');
             const uploadPolls = document.getElementById('uploadPolls');
+            const uploadVideoQuizWrapper = document.getElementById('uploadVideoQuizWrapper');
+            const uploadVideoQuiz = document.getElementById('uploadVideoQuiz');
 
             fileName = 'systemConfig'
             window.expose.SendExcel("sendReadExcel", fileName);
@@ -154,6 +156,8 @@
                     hasParents.value = "0";
                     hasParents.dispatchEvent(changeEvent);
                 }
+                // שדה העלאת שאלות הסרטות - גלוי רק בהפעלה יומית (device 5)
+                uploadVideoQuizWrapper.style.display = (selectedOption == '5') ? "unset" : "none";
             });
 
             color.addEventListener('change', function () {
@@ -260,6 +264,11 @@
         }
 
         function resetExcel() {
+            if (systemConfig.device == 5) {
+                localStorage.removeItem("classesPoints");
+                location.reload();
+                return;
+            }
             if (systemConfig.device == 1 || systemConfig.device == 2 || systemConfig.device == 4) {
                 if (students.length > 0 && uniqTasks.length > 0) {
                     for (var i = 0; i < students.length; i++) {
@@ -341,6 +350,7 @@
                             <option value="2">כרטיס מגנטי</option>
                             <option value="3">כרטיס גירוד</option>
                             <option value="4">צ'יפים</option>
+                            <option value="5">הפעלה יומית</option>
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -356,11 +366,8 @@
                     </div>
                     <div class="col-md-2" id="textColorWrapper" >
                         <label for="textColor" class="form-label"> צבע כיתוב</label>
-                        <select class="form-control" id="textColor">
-                            <option value="0">לבן</option>
-                            <option value="1">שחור</option>
-                            <option value="2">ירוק</option>
-                        </select>
+                        <input type="color" class="form-control form-control-color" id="textColor"
+                            value="#ffffff" style="width:100%; height:38px;">
                     </div>
                     <div class="col-md-2" id="typeWrapper" style="display: none;">
                         <label for="type" class="form-label">סוג משחק</label>
@@ -446,6 +453,10 @@
                         <label for="uploadPolls" class="form-label">סקרים</label>
                         <input type="file" class="form-control" id="uploadPolls" accept="image/png">
                     </div>
+                    <div class="col-md-2" id="uploadVideoQuizWrapper" style="display: none;">
+                        <label for="uploadVideoQuiz" class="form-label">שאלות הסרטות</label>
+                        <input type=file class="form-control" id="uploadVideoQuiz" name="files[]">
+                    </div>
                 </div>
                 <div class="row">
                     <div class="col-md-1">
@@ -474,6 +485,7 @@
         document.getElementById('uploadProducts').addEventListener('change', handleFileSelect, false);
         document.getElementById('uploadParents').addEventListener('change', handleFileSelect, false);
         document.getElementById('uploadTest').addEventListener('change', handleFileSelect, false);
+        document.getElementById('uploadVideoQuiz').addEventListener('change', handleFileSelect, false);
 
     </script>
 </body>

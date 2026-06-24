@@ -15,7 +15,6 @@ function createWindow() {
     }
   })
   mainWindow.loadFile('pages/main/user.html')
-  mainWindow.menuBarVisible = false
   mainWindow.fullScreen = true;
 
   if (!app.isPackaged) {
@@ -61,14 +60,43 @@ app.on('ready', createWindow)
 
 ipcMain.on("sendPrint", (event, args) => {
   let printWindow = new BrowserWindow({ show: false });
+  let printFinished = false;
+
+  const finishPrint = (success) => {
+    if (printFinished) {
+      return;
+    }
+    printFinished = true;
+    if (mainWindow) {
+      mainWindow.webContents.send("receivePrint", success);
+    }
+    if (printWindow && !printWindow.isDestroyed()) {
+      printWindow.close();
+      printWindow = null;
+    }
+  };
+
   printWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(args));
   printWindow.webContents.once('did-finish-load', () => {
-    printWindow.webContents.print(
-      { silent: true, printBackground: true },
-      (success, errorType) => {
-        mainWindow.webContents.send("receivePrint", success);
+    // רשת ביטחון: אם ההדפסה לא מחזירה תשובה (למשל כשהמדפסת מנותקת),
+    // נחזיר receivePrint בכל מקרה אחרי 5 שניות.
+    setTimeout(() => finishPrint(false), 5000);
+    try {
+      const printers = printWindow.webContents.getPrinters();
+      if (!printers || printers.length === 0) {
+        finishPrint(false);
+        return;
       }
-    );
+      printWindow.webContents.print(
+        { silent: true, printBackground: true },
+        (success, errorType) => {
+          finishPrint(success);
+        }
+      );
+    } catch (err) {
+      console.error('Print error:', err);
+      finishPrint(false);
+    }
   });
 });
 
@@ -83,6 +111,21 @@ ipcMain.on("sendReadExcel", (event, args) => {
         mainWindow.webContents.send("receiveReadExcel" + args, data);
       }
     });
+});
+
+ipcMain.on("getBackground", (event, args) => {
+  fs.readFile(args + '.png', { encoding: 'base64', flag: 'r' }, function (err, data) {
+    if (err) {
+      console.log("background read error", err);
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.send("receiveGetBackground" + args, 0);
+      }
+    } else {
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.send("receiveGetBackground" + args, data);
+      }
+    }
+  });
 });
 
 ipcMain.on("sendWriteExcel", (event, args) => {
