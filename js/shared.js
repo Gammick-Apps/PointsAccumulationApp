@@ -14,7 +14,7 @@ function getTodayDateTime() {
 }
 
 function getDefaultConfig() {
-    return { "date": getYesterdayDate(), "numPosition": "", "hasPrint": "1", "hasBuy": "0", "device": "0", "color": "0", "type": "0", "hasParents": "0", "hasTests": "0", "timer": "10", "buy": false, "textColor":0 };
+    return { "date": getYesterdayDate(), "numPosition": "", "hasPrint": "1", "hasBuy": "0", "device": "0", "color": "0", "type": "0", "hasParents": "0", "hasTests": "0", "timer": "10", "buy": false, "textColor": "#ffffff" };
 }
 
 function login(page) {
@@ -67,6 +67,14 @@ function getBackground(device, color, step = "") {
         case "3":{     
                 return "url('../../resources/digitalCard/background" + step + ".gif')";
         };
+        case "5": {
+            switch (color) {
+                case "4":
+                    return getBackgroundUrl();
+                case "5":
+                    return "url('../../resources/gammick/gammickBackground.png')";
+            }
+        };
     }
 }
 
@@ -85,18 +93,12 @@ function getPosition(color) {
 }
 
 function getTextColor(color) {
-    switch (color) {
-        case "0":
-            return "#ffffff";
-        case "1":
-            return "#000000";
-        case "2":
-            return "#00eac8";
-    }
+    // Hex color from the color picker; fallback to white if missing/invalid
+    return /^#[0-9a-fA-F]{6}$/.test(color) ? color : "#ffffff";
 }
 
 function getExcelFiles() {
-    return ["students", "uniqTasks", "products", "parents", "tests"];
+    return ["students", "uniqTasks", "products", "parents", "tests", "videoQuiz"];
 }
 
 function getWonTexts() {
@@ -106,3 +108,4 @@ function getWonTexts() {
 function getLossTexts() {
     return ["...לא זכית, אוי לא", "!!חבל--- לא זכית הפעם", "!אופס... הכרטיס לא שווה ", "...לא זכית! לא נורא"];
 }
+

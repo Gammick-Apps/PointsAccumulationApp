@@ -41,3 +41,42 @@ html {
     text-align: center;
     border-radius: 0px 50px 50px 0px;
 }
+
+.action-btn {
+    background: #000;
+    color: #fff;
+    border: none;
+    border-radius: 16px;
+    padding: 4px 12px;
+    font-size: 1rem;
+    font-weight: bold;
+    box-shadow: 0 2px 8px #00000033;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    margin: 0 auto;
+    display: block;
+    letter-spacing: 1px;
+    line-height: 1.5;
+}
+
+.action-btn:hover,
+.action-btn:focus {
+    background: #000;
+    transform: scale(1.04);
+    outline: none;
+}
+
+/* בתוך שורת פלקס לא רוצים את margin: auto שמרחיק את הכפתורים זה מזה */
+.d-flex .action-btn {
+    margin: 0 12px;
+}
+
+/* שורת כפתורים מקובעת בתחתית המסך */
+.bottom-actions {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 4vh;
+    z-index: 10;
+}
+
