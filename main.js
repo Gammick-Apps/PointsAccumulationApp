@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 let mainWindow
 const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB,
-  addStudents, updateStudents, addTask, updateTasks, addProduct, updateProducts, getStudentsById, getTaskByCode,
+  addStudents, updateStudents, addTask, updateTask, addProduct, updateProducts, getStudentsById, getTaskByCode,
   isTaskUsed, hasStudentDoneTask, saveStudentData, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
 
 function createWindow() {
@@ -174,7 +174,7 @@ ipcMain.on("sendInsertTask", async () => {
 ipcMain.on("sendUpdateTask", async (event, args) => {  
   try {
     const payload = JSON.parse(args);
-    const data = await updateTasks(payload.code, payload.field, payload.value);
+    const data = await updateTask(payload.code, payload.field, payload.value);
     mainWindow.webContents.send("receiveUpdateTask", data);
   } catch (error) {
     console.error(error);
@@ -217,9 +217,10 @@ ipcMain.on("sendUpdateProduct", async (event, args) => {
 
 // -------------- studentsTasks ---------------- //
 
-ipcMain.on("sendIsTaskUsed", async (event, taskId) => {
+ipcMain.on("sendIsTaskUsed", async (event, args) => {
   try {
-    const data = await isTaskUsed(taskId);
+    const { currentTask } = args;
+    const data = await isTaskUsed(currentTask.id);
     mainWindow.webContents.send("receiveIsTaskUsed", data);
     
   } catch (error) {
@@ -230,10 +231,8 @@ ipcMain.on("sendIsTaskUsed", async (event, taskId) => {
 
 ipcMain.on("sendHasStudentDoneTask", async (event, args) => {
   try {
-    const data = await hasStudentDoneTask(
-      args.studentId,
-      args.taskId
-    );
+    const { currentStudent, currentTask } = args;
+    const data = await hasStudentDoneTask(currentStudent.id, currentTask.id);
     mainWindow.webContents.send("receiveHasStudentDoneTask", data);
   } catch (error) {
     console.error(error);
@@ -243,9 +242,9 @@ ipcMain.on("sendHasStudentDoneTask", async (event, args) => {
 
 ipcMain.on("sendSaveStudentData", async (event, args) => {
   try {
-    const { studentId, taskId, points } = args;
-    const success = await saveStudentData(studentId, taskId, points);
-    mainWindow.webContents.send("receiveSaveStudentData", success);
+    const { currentStudent, currentTask } = args;
+    const points = await saveStudentData(currentStudent.id, currentTask.id);
+    mainWindow.webContents.send("receiveSaveStudentData", points);
   } catch (error) {
     console.error("Error saving student data:", error);
     mainWindow.webContents.send("receiveSaveStudentData", false);

@@ -411,24 +411,32 @@ async function hasStudentDoneTask(studentId, taskId) {
 }
 
 
-async function saveStudentData(studentId, taskId, points) {  
+async function saveStudentData(studentId, taskId) {
   await waitDB();
-  await run('BEGIN TRANSACTION;');  
+
+  const taskRow = await get('SELECT points FROM uniqTasks WHERE id = ? LIMIT 1;', [taskId]);
+  if (!taskRow) {
+    throw new Error(`Task with id ${taskId} not found`);
+  }
+  const points = taskRow.points;
+
+  await run('BEGIN TRANSACTION;');
   try {
    await run(
   'INSERT INTO studentsTasks (studentId, taskId, createDateTime) VALUES (?, ?, DATETIME(\'now\', \'localtime\'));',
   [studentId, taskId] 
 );
     await run(
-      'UPDATE students SET points = points + ? WHERE tz = ?;',
-      [points, studentId]
+      'UPDATE students SET points = points + ? WHERE id = ?;', [points, studentId]
     );
     await run('COMMIT;');
-    return true;
+    const studentRow = await get('SELECT points FROM students WHERE id = ? LIMIT 1;', [studentId]);
+    return studentRow ? studentRow.points : 0;
+
   } catch (error) {
     await run('ROLLBACK;');
     throw error;
-  } 
+  }
 }
 
 //----------------------------------------------------//
@@ -444,7 +452,7 @@ module.exports = {
   addStudents,
   updateStudents,
   addTask,
-  updateTasks,
+  updateTask,
   addProduct,
   updateProducts,
   getStudentsById,

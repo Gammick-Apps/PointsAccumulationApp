@@ -60,8 +60,8 @@
         var systemConfig = ""
         var students = ""
         var tests = ""
-        var studentResult = ""
-        var result = "";
+        var currentStudent = ""
+        var currentTask = "";
         var searchVal = ""
         var buffer = "";
         var fileName
@@ -185,20 +185,21 @@
         function selectAction(cardData) {
             if (step != Steps.step3) {
                 step = Steps.step2;
-                result = cardData;
-                switch (result.type) {
+                currentTask = cardData;
+                console.log("currentTask: ",currentTask);
+                
+                switch (currentTask.type) {
                     case 1: {
                         if (systemConfig.buy == 1) {
-                            updateLines("בחרת במתנה: " + result.name, "")
-                        }
-                        else {
-                            updateLines("בחרת ב: " + result.name, "")
+                            updateLines("בחרת במתנה: " + currentTask.name, "")
+                        } else {
+                            updateLines("בחרת ב: " + currentTask.name, "")
                         }
                         updateLinesByDevice()
                         break;
                     }
                     case 2: {
-                        updateLines("בחרת ב: " + result.name, "")
+                        updateLines("בחרת ב: " + currentTask.name, "")
                         openTest();
                         break;
                     }
@@ -212,10 +213,10 @@
         function openTest() {
             isModalOpen = true;
             document.getElementById("cards").style.display = "none"
-            currentTest = tests.find(test => test.id == result.code);
+            currentTest = tests.find(test => test.id == currentTask.code);
             currentQuestionIndex = 0;
             correctCount = 0;
-            testNameElement.innerText = `${result.name}`;
+            testNameElement.innerText = `${currentTask.name}`;
             questions = shuffleArray(currentTest.questions);
             displayQuestion();
 
@@ -277,10 +278,10 @@
 
         function showResults() {
             isModalOpen = false;
-            const score = correctCount * result.points;
+            const score = correctCount * currentTask.points;
             updateLines("הציון שלך: " + score)
             updateLinesByDevice()
-            result.points = score;
+            currentTask.points = score;
             const triviaModalEl = document.getElementById('triviaModal');
             const triviaModal = bootstrap.Modal.getInstance(triviaModalEl);
             triviaModal.hide();
@@ -294,36 +295,36 @@
 
             window.expose.sendDbData("sendGetStudentById", searchVal);
             window.expose.receiveDbData("receiveGetStudentById", (student) => {
-
-                if (student == null) {
+                currentStudent = student;
+                if (currentStudent == null) {
                     showAlert("הברקוד לא מופיע ברשימות. גשו למורה!");
                     return;
                 }
-
-                studentResult = student;
-                if (!result.multiple) {
-                    window.expose.sendDbData("sendHasStudentDoneTask", { studentId: studentResult.tz, taskId: result.id });
+                if (!currentTask.multiple) {
+                    window.expose.sendDbData("sendHasStudentDoneTask", { currentStudent, currentTask });
                     window.expose.receiveDbData("receiveHasStudentDoneTask", (alreadyDone) => {
-                        if (alreadyDone) {
+                        if (alreadyDone){
                             showAlert("הי, משימה זו כבר תוקפה!");
-                            return;
-                        }
-                        
-                    saveStudentData(studentResult.tz, result.id, result.points,result.name);
+                            console.log("currentTask: ", currentTask);
+                            
+                        }            
+                        else
+                            saveStudentData(currentStudent, currentTask);
                     });
                 }
-                else
-                    saveStudentData(studentResult.tz, result.id, result.points,result.name);
+                else {
+                    saveStudentData(currentStudent, currentTask);
+                }
             })
         }
 
-        async function saveStudentData(studentId, taskId, points, name) {
-            window.expose.sendDbData("sendSaveStudentData", { studentId, taskId, points });
-            window.expose.receiveDbData("receiveSaveStudentData", (success) => {
-                if (success) {
+        async function saveStudentData(student, task) {
+            window.expose.sendDbData("sendSaveStudentData", { currentStudent, currentTask });
+            window.expose.receiveDbData("receiveSaveStudentData", (points) => {
+                if (points !== false) {
                     document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
-                    const totalPoints = Number(studentResult.points) + Number(points);
-                    updateLines("ביצעת את משימה " + name, "כעת יש בחשבונך " + totalPoints + " נקודות", "...לא לשכוח לקחת את האישור מהמדפסת");
+                    const totalPoints = Number(currentStudent.points) + Number(points);
+                    updateLines("ביצעת את משימה " + task.name, "כעת יש בחשבונך " + totalPoints + " נקודות", "...לא לשכוח לקחת את האישור מהמדפסת");
 
                     if (systemConfig.hasPrint == 1) {
                         setTimeout(function () {
@@ -371,12 +372,12 @@
             <div id="title">אישור</div>
             <br>
             <div id="content">
-                <div>${studentResult.name}</div>
-                <div>${studentResult.grade}</div>
+                <div>${currentStudent.name}</div>
+                <div>${currentStudent.grade}</div>
                 <div>${systemConfig.buy == 0
-                    ? "" + result.name
-                    : "זכאות למתנה: " + result.name}</div>
-                <div>נקודות בחשבון: ${studentResult.points}</div>
+                    ? "" + currentTask.name
+                    : "זכאות למתנה: " + currentTask.name}</div>
+                <div>נקודות בחשבון: ${points}</div>
             </div>
             <br>
             <div id="title">בהצלחה!</div>
@@ -419,10 +420,10 @@
                 $('#modal').modal('show')
             });
             setTimeout(function () {
-            $(document).ready(function () {
-                $('#modal').modal('hide')
-            });
-            reset(0)
+                $(document).ready(function () {
+                    $('#modal').modal('hide')
+                });
+                reset(0)
             }
                 , 2500);
         }
