@@ -57,11 +57,11 @@
 
     <script>
         var actions = ""
-        var systemConfig = ""
+        var systemConfig
         var students = ""
         var tests = ""
         var currentStudent = ""
-        var currentTask = "";
+        var currentResult = "";
         var searchVal = ""
         var buffer = "";
         var fileName
@@ -185,21 +185,20 @@
         function selectAction(cardData) {
             if (step != Steps.step3) {
                 step = Steps.step2;
-                currentTask = cardData;
-                console.log("currentTask: ",currentTask);
                 
-                switch (currentTask.type) {
+                currentResult = cardData;
+                switch (currentResult.show) {      
                     case 1: {
                         if (systemConfig.buy == 1) {
-                            updateLines("בחרת במתנה: " + currentTask.name, "")
+                            updateLines("בחרת במתנה: " + currentResult.name, "")
                         } else {
-                            updateLines("בחרת ב: " + currentTask.name, "")
+                            updateLines("בחרת ב: " + currentResult.name, "")
                         }
                         updateLinesByDevice()
                         break;
                     }
                     case 2: {
-                        updateLines("בחרת ב: " + currentTask.name, "")
+                        updateLines("בחרת ב: " + currentResult.name, "")
                         openTest();
                         break;
                     }
@@ -213,10 +212,10 @@
         function openTest() {
             isModalOpen = true;
             document.getElementById("cards").style.display = "none"
-            currentTest = tests.find(test => test.id == currentTask.code);
+            currentTest = tests.find(test => test.id == currentResult.code);
             currentQuestionIndex = 0;
             correctCount = 0;
-            testNameElement.innerText = `${currentTask.name}`;
+            testNameElement.innerText = `${currentResult.name}`;
             questions = shuffleArray(currentTest.questions);
             displayQuestion();
 
@@ -278,10 +277,10 @@
 
         function showResults() {
             isModalOpen = false;
-            const score = correctCount * currentTask.points;
+            const score = correctCount * currentResult.points;
             updateLines("הציון שלך: " + score)
             updateLinesByDevice()
-            currentTask.points = score;
+            currentResult.points = score;
             const triviaModalEl = document.getElementById('triviaModal');
             const triviaModal = bootstrap.Modal.getInstance(triviaModalEl);
             triviaModal.hide();
@@ -300,31 +299,33 @@
                     showAlert("הברקוד לא מופיע ברשימות. גשו למורה!");
                     return;
                 }
-                if (!currentTask.multiple) {
-                    window.expose.sendDbData("sendHasStudentDoneTask", { currentStudent, currentTask });
+                if (!currentResult.multiple) {
+                    window.expose.sendDbData("sendHasStudentDoneTask", { currentStudent, currentResult });
                     window.expose.receiveDbData("receiveHasStudentDoneTask", (alreadyDone) => {
                         if (alreadyDone){
-                            showAlert("הי, משימה זו כבר תוקפה!");
-                            console.log("currentTask: ", currentTask);
-                            
+                            showAlert("הי, משימה זו כבר תוקפה!");                            
                         }            
                         else
-                            saveStudentData(currentStudent, currentTask);
+                            saveStudentData(currentStudent, currentResult);
                     });
                 }
                 else {
-                    saveStudentData(currentStudent, currentTask);
+                    saveStudentData(currentStudent, currentResult);
                 }
             })
         }
 
         async function saveStudentData(student, task) {
-            window.expose.sendDbData("sendSaveStudentData", { currentStudent, currentTask });
+            if(systemConfig.buy==1)
+            window.expose.sendDbData("sendSaveStudentProduct", { currentStudent, currentResult });
+            else
+            window.expose.sendDbData("sendSaveStudentData", { currentStudent, currentResult });
             window.expose.receiveDbData("receiveSaveStudentData", (points) => {
                 if (points !== false) {
                     document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
-                    const totalPoints = Number(currentStudent.points) + Number(points);
-                    updateLines("ביצעת את משימה " + task.name, "כעת יש בחשבונך " + totalPoints + " נקודות", "...לא לשכוח לקחת את האישור מהמדפסת");
+                    currentStudent.points = points;
+                    updateLines("תודה רבה " + currentStudent.name, " כעת יש בחשבונך " + currentStudent.points + " נקודות", "בהצלחה!")
+
 
                     if (systemConfig.hasPrint == 1) {
                         setTimeout(function () {
@@ -334,7 +335,7 @@
                         reset(2000);
                     }
                 } else {
-                    console.error("שגיאה: השמירה במסד הנתונים נכשלה.");
+                        showAlert("  אין לך מספיק נקודות בשביל המתנה הזאת... ");                            
                 }
             });
         }
@@ -375,8 +376,8 @@
                 <div>${currentStudent.name}</div>
                 <div>${currentStudent.grade}</div>
                 <div>${systemConfig.buy == 0
-                    ? "" + currentTask.name
-                    : "זכאות למתנה: " + currentTask.name}</div>
+                    ? "" + currentResult.name
+                    : "זכאות למתנה: " + currentResult.name}</div>
                 <div>נקודות בחשבון: ${points}</div>
             </div>
             <br>

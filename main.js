@@ -3,7 +3,7 @@ const fs = require('fs')
 let mainWindow
 const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB,
   addStudents, updateStudents, addTask, updateTask, addProduct, updateProducts, getStudentsById, getTaskByCode,
-  isTaskUsed, hasStudentDoneTask, saveStudentData, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
+  isTaskUsed, hasStudentDoneTask,saveStudentTask, saveStudentProduct,saveStudentData, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
 
 function createWindow() {
   let ses = session.defaultSession
@@ -219,8 +219,9 @@ ipcMain.on("sendUpdateProduct", async (event, args) => {
 
 ipcMain.on("sendIsTaskUsed", async (event, args) => {
   try {
-    const { currentTask } = args;
-    const data = await isTaskUsed(currentTask.id);
+    const { currentResult } = args;
+    
+    const data = await isTaskUsed(currentResult.id);
     mainWindow.webContents.send("receiveIsTaskUsed", data);
     
   } catch (error) {
@@ -231,8 +232,8 @@ ipcMain.on("sendIsTaskUsed", async (event, args) => {
 
 ipcMain.on("sendHasStudentDoneTask", async (event, args) => {
   try {
-    const { currentStudent, currentTask } = args;
-    const data = await hasStudentDoneTask(currentStudent.id, currentTask.id);
+    const { currentStudent, currentResult } = args;
+    const data = await hasStudentDoneTask(currentStudent.id, currentResult.id);
     mainWindow.webContents.send("receiveHasStudentDoneTask", data);
   } catch (error) {
     console.error(error);
@@ -242,11 +243,23 @@ ipcMain.on("sendHasStudentDoneTask", async (event, args) => {
 
 ipcMain.on("sendSaveStudentData", async (event, args) => {
   try {
-    const { currentStudent, currentTask } = args;
-    const points = await saveStudentData(currentStudent.id, currentTask.id);
+    const { currentStudent, currentResult, currentTable } = args;
+    const points = await saveStudentTask(currentStudent.id, currentResult.id, currentTable);
     mainWindow.webContents.send("receiveSaveStudentData", points);
   } catch (error) {
     console.error("Error saving student data:", error);
+    mainWindow.webContents.send("receiveSaveStudentData", false);
+  }
+});
+
+
+ipcMain.on("sendSaveStudentProduct", async (event, args) => {
+  try {
+    const { currentStudent, currentResult} = args;
+    const points = await saveStudentProduct(currentStudent.id, currentResult.id);
+    mainWindow.webContents.send("receiveSaveStudentData", points);
+  } catch (error) {
+    console.error("Error saving student product:", error);
     mainWindow.webContents.send("receiveSaveStudentData", false);
   }
 });

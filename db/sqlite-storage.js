@@ -182,13 +182,10 @@ function closeDatabase() {
 async function writeSystem(payload) {
   await waitDB();
   const config = JSON.parse(payload) || {};
-  await run('BEGIN TRANSACTION;');
   try {
     await run(`INSERT OR REPLACE INTO systemConfig (id, device, color, textColor, date, numPosition, type, hasPrint, hasBuy, hasParents, hasTests, buy, timer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
       [1, config.device, config.color, config.textColor, config.date, config.numPosition, config.type, config.hasPrint, config.hasBuy, config.hasParents, config.hasTests, config.buy, config.timer]);
-    await run('COMMIT;');
   } catch (error) {
-    await run('ROLLBACK;');
     throw error;
   }
   return true;
@@ -282,16 +279,13 @@ async function generateUniqueStudentTz() {
 async function addStudents() {
   await waitDB();
   const tz = await generateUniqueStudentTz();
-  await run('BEGIN TRANSACTION;');
   try {
     await run(
       'INSERT INTO students (tz) VALUES (?);',
       [tz]
     );
-    await run('COMMIT;');
     return true;
   } catch (error) {
-    await run('ROLLBACK;');
     throw error;
   }
 }
@@ -299,16 +293,13 @@ async function addStudents() {
 async function updateStudents(tz, field, value){
   await waitDB();
   const correctValue = field === 'points' ? Number(value) : value;
-  await run('BEGIN TRANSACTION;');
   try {
     await run(
       `UPDATE students SET ${quoteIdentifier(field)} = ? WHERE tz = ?;`,
       [correctValue, tz]
     );
-    await run('COMMIT;');
     return true;
   } catch (error) {
-    await run('ROLLBACK;');
     throw error;
   }
 }
@@ -318,34 +309,28 @@ async function updateStudents(tz, field, value){
 async function addTask() {
   await waitDB();
   const lastTask = await get('SELECT MAX(code) AS code FROM uniqtasks;');
-  const code = Number(lastTask ?.code || 0) + 1;
-  await run('BEGIN TRANSACTION;');
+  const code = Number(lastTask?.code || 0) + 1;
   try {
     await run(
       'INSERT INTO uniqtasks (code) VALUES (?);',
       [code]
     );
-    await run('COMMIT;');
     return true;
   } catch (error) {
-    await run('ROLLBACK;');
     throw error;
   }
 }
 
-async function updateTasks(code, field, value){  
+async function updateTask(code, field, value) {
   await waitDB();
   const correctValue = field === 'name' ? value : Number(value);
-  await run('BEGIN TRANSACTION;');
   try {
     await run(
       `UPDATE uniqtasks SET ${quoteIdentifier(field)} = ? WHERE code = ?;`,
       [correctValue, code]
     );
-    await run('COMMIT;');
     return true;
   } catch (error) {
-    await run('ROLLBACK;');
     throw error;
   }
 }
@@ -361,39 +346,33 @@ async function getTaskByCode(code) {
 async function addProduct() {
   await waitDB();
   const lastProduct = await get('SELECT MAX(code) AS code FROM products;');
-  const code = Number(lastProduct ?.code || 0) + 1;
-  await run('BEGIN TRANSACTION;');
+  const code = Number(lastProduct?.code || 0) + 1;
   try {
     await run(
       'INSERT INTO products (code) VALUES (?);',
       [code]
     );
-    await run('COMMIT;');
     return true;
   } catch (error) {
-    await run('ROLLBACK;');
     throw error;
   }
 }
 
-async function updateProducts(code, field, value){  
+async function updateProducts(code, field, value) {
   await waitDB();
   const correctValue = field === 'name' ? value : Number(value);
-  await run('BEGIN TRANSACTION;');
   try {
     await run(
       `UPDATE products SET ${quoteIdentifier(field)} = ? WHERE code = ?;`,
       [correctValue, code]
     );
-    await run('COMMIT;');
     return true;
   } catch (error) {
-    await run('ROLLBACK;');
     throw error;
   }
 }
 
-//------------------ studentsTasks ----------------------//
+//------------------ studentTask ----------------------//
 
 async function isTaskUsed(taskId) {
   await waitDB();
@@ -411,27 +390,61 @@ async function hasStudentDoneTask(studentId, taskId) {
 }
 
 
-async function saveStudentData(studentId, taskId) {
+async function saveStudentTask(studentId, taskId) {
   await waitDB();
 
-  const taskRow = await get('SELECT points FROM uniqTasks WHERE id = ? LIMIT 1;', [taskId]);
-  if (!taskRow) {
+  const getPoints = await get('SELECT points FROM uniqTasks WHERE id = ? LIMIT 1;', [taskId]);
+  if (!getPoints) {
     throw new Error(`Task with id ${taskId} not found`);
   }
-  const points = taskRow.points;
+  const points = getPoints.points;
 
   await run('BEGIN TRANSACTION;');
   try {
-   await run(
-  'INSERT INTO studentsTasks (studentId, taskId, createDateTime) VALUES (?, ?, DATETIME(\'now\', \'localtime\'));',
-  [studentId, taskId] 
-);
+    await run(
+      'INSERT INTO studentsTasks (studentId, taskId, createDateTime) VALUES (?, ?, DATETIME(\'now\', \'localtime\'));',
+      [studentId, taskId]
+    );
     await run(
       'UPDATE students SET points = points + ? WHERE id = ?;', [points, studentId]
     );
     await run('COMMIT;');
     const studentRow = await get('SELECT points FROM students WHERE id = ? LIMIT 1;', [studentId]);
     return studentRow ? studentRow.points : 0;
+
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
+}
+
+//------------------ studentProduct ----------------------//
+
+async function saveStudentProduct(studentId, productId) {
+  await waitDB();
+
+  const getPoints = await get(`SELECT points FROM products WHERE id = ? LIMIT 1;`, [productId]);
+  const studentRow = await get('SELECT points FROM students WHERE id = ? LIMIT 1;', [studentId]);
+  const productPoints = getPoints.points
+  const studentPoints = studentRow.points
+
+  if (studentPoints < productPoints) {
+      return false;
+  }
+
+  await run('BEGIN TRANSACTION;');
+  try {
+    await run(
+      'INSERT INTO studentsProducts (studentId, productId, createDateTime) VALUES (?, ?, DATETIME(\'now\', \'localtime\'));',
+      [studentId, productId]
+    );
+    await run(
+      'UPDATE students SET points = points - ? WHERE id = ?;', [productPoints, studentId]
+    );
+
+    const newPoints = studentPoints - productPoints;
+    await run('COMMIT;');
+    return newPoints;
 
   } catch (error) {
     await run('ROLLBACK;');
@@ -459,6 +472,7 @@ module.exports = {
   getTaskByCode,
   isTaskUsed,
   hasStudentDoneTask,
-  saveStudentData,
+  saveStudentTask,
+  saveStudentProduct,
   DB_FLAG_INCONSISTENT_ERROR_CODE
 };
