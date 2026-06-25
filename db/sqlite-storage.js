@@ -304,6 +304,22 @@ async function updateStudents(tz, field, value){
   }
 }
 
+async function hasStudentDoneSelected(studentId, taskId) {
+  await waitDB();
+  
+  const condition = await get('SELECT buy from systemConfig')
+  let result = ''
+  if(condition.buy === 1){
+    result = await get(`
+      SELECT 1 FROM studentsProducts WHERE studentId = ? AND productId = ? LIMIT 1`, [studentId, taskId]);
+  } else{
+    result = await get(`
+    SELECT 1 FROM studentsTasks WHERE studentId = ? AND taskId = ? LIMIT 1`, [studentId, taskId]);
+  }
+    return !!result;
+}
+
+
 // -------------- uniqTasks ---------------- //
 
 async function addTask() {
@@ -382,14 +398,6 @@ async function isTaskUsed(taskId) {
 }
 
 
-async function hasStudentDoneTask(studentId, taskId) {
-  await waitDB();
-  const result = await get(`
-    SELECT 1 FROM studentsTasks WHERE studentId = ? AND taskId = ? LIMIT 1`, [studentId, taskId]);
-  return !!result;
-}
-
-
 async function saveStudentTask(studentId, taskId) {
   await waitDB();
 
@@ -410,7 +418,7 @@ async function saveStudentTask(studentId, taskId) {
     );
     await run('COMMIT;');
     const studentRow = await get('SELECT points FROM students WHERE id = ? LIMIT 1;', [studentId]);
-    return studentRow ? studentRow.points : 0;
+    return studentRow ? studentRow.points : false;
 
   } catch (error) {
     await run('ROLLBACK;');
@@ -441,10 +449,10 @@ async function saveStudentProduct(studentId, productId) {
     await run(
       'UPDATE students SET points = points - ? WHERE id = ?;', [productPoints, studentId]
     );
-
-    const newPoints = studentPoints - productPoints;
+    
+    const newPoints = await get('SELECT points FROM students WHERE id = ? LIMIT 1;', [studentId]);
     await run('COMMIT;');
-    return newPoints;
+    return newPoints ? newPoints.points : false;
 
   } catch (error) {
     await run('ROLLBACK;');
@@ -471,7 +479,7 @@ module.exports = {
   getStudentsById,
   getTaskByCode,
   isTaskUsed,
-  hasStudentDoneTask,
+  hasStudentDoneSelected,
   saveStudentTask,
   saveStudentProduct,
   DB_FLAG_INCONSISTENT_ERROR_CODE

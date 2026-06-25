@@ -187,26 +187,27 @@
                 step = Steps.step2;
                 
                 currentResult = cardData;
-                switch (currentResult.show) {      
+
+                if(systemConfig.buy==1){
+                    updateLines("בחרת במתנה: " + currentResult.name, "")
+                } 
+                else 
+                {
+                    switch (currentResult.type) {
                     case 1: {
-                        if (systemConfig.buy == 1) {
-                            updateLines("בחרת במתנה: " + currentResult.name, "")
-                        } else {
-                            updateLines("בחרת ב: " + currentResult.name, "")
-                        }
-                        updateLinesByDevice()
-                        break;
+                    updateLines("בחרת ב: " + currentResult.name, "")
+                    break;
                     }
                     case 2: {
                         updateLines("בחרת ב: " + currentResult.name, "")
                         openTest();
-                        break;
+                        return;
                     }
                 }
-
-            }
+                updateLinesByDevice()
+            }}
         }
-
+    
         //-------------tests-------------------//
 
         function openTest() {
@@ -300,32 +301,35 @@
                     return;
                 }
                 if (!currentResult.multiple) {
-                    window.expose.sendDbData("sendHasStudentDoneTask", { currentStudent, currentResult });
-                    window.expose.receiveDbData("receiveHasStudentDoneTask", (alreadyDone) => {
+                    window.expose.sendDbData("sendHasStudentDoneSelected", { currentStudent, currentResult });
+                    window.expose.receiveDbData("receiveHasStudentDoneSelected", (alreadyDone) => {
                         if (alreadyDone){
                             showAlert("הי, משימה זו כבר תוקפה!");                            
                         }            
                         else
-                            saveStudentData(currentStudent, currentResult);
+                            saveStudentData();
                     });
                 }
                 else {
-                    saveStudentData(currentStudent, currentResult);
+                    saveStudentData();
                 }
             })
         }
 
-        async function saveStudentData(student, task) {
-            if(systemConfig.buy==1)
-            window.expose.sendDbData("sendSaveStudentProduct", { currentStudent, currentResult });
-            else
-            window.expose.sendDbData("sendSaveStudentData", { currentStudent, currentResult });
-            window.expose.receiveDbData("receiveSaveStudentData", (points) => {
-                if (points !== false) {
+        async function saveStudentData() {
+            if(systemConfig.buy==1){
+                window.expose.sendDbData("sendSaveStudentProduct", { currentStudent, currentResult });
+            } else{
+                window.expose.sendDbData("sendSaveStudentTask", { currentStudent, currentResult });
+            }
+                window.expose.receiveDbData("receiveSaveStudentData", (points) => {
+                if (points == false) {
+                    showAlert(" אין לך מספיק נקודות בחשבון! ");                            
+                    return;
+                } else{
                     document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
                     currentStudent.points = points;
                     updateLines("תודה רבה " + currentStudent.name, " כעת יש בחשבונך " + currentStudent.points + " נקודות", "בהצלחה!")
-
 
                     if (systemConfig.hasPrint == 1) {
                         setTimeout(function () {
@@ -334,9 +338,7 @@
                     } else {
                         reset(2000);
                     }
-                } else {
-                        showAlert("  אין לך מספיק נקודות בשביל המתנה הזאת... ");                            
-                }
+                } 
             });
         }
 
@@ -378,7 +380,7 @@
                 <div>${systemConfig.buy == 0
                     ? "" + currentResult.name
                     : "זכאות למתנה: " + currentResult.name}</div>
-                <div>נקודות בחשבון: ${points}</div>
+                <div>נקודות בחשבון: ${currentStudent.points}</div>
             </div>
             <br>
             <div id="title">בהצלחה!</div>

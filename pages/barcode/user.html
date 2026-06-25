@@ -116,8 +116,8 @@
 
         else {
           if (!currentResult.multiple) {
-            window.expose.sendDbData("sendHasStudentDoneTask", { currentStudent, currentResult });
-            window.expose.receiveDbData("receiveHasStudentDoneTask", (alreadyDone) => {
+            window.expose.sendDbData("sendHasStudentDoneSelected", { currentStudent, currentResult });
+            window.expose.receiveDbData("receiveHasStudentDoneSelected", (alreadyDone) => {
               if (alreadyDone) {
                 showAlert("הי, אסור להגיש משימה פעמיים!");
                 return;

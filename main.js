@@ -3,7 +3,7 @@ const fs = require('fs')
 let mainWindow
 const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB,
   addStudents, updateStudents, addTask, updateTask, addProduct, updateProducts, getStudentsById, getTaskByCode,
-  isTaskUsed, hasStudentDoneTask,saveStudentTask, saveStudentProduct,saveStudentData, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
+  isTaskUsed, hasStudentDoneSelected,saveStudentTask, saveStudentProduct,saveStudentData, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
 
 function createWindow() {
   let ses = session.defaultSession
@@ -230,18 +230,19 @@ ipcMain.on("sendIsTaskUsed", async (event, args) => {
   }
 });
 
-ipcMain.on("sendHasStudentDoneTask", async (event, args) => {
+ipcMain.on("sendHasStudentDoneSelected", async (event, args) => {
   try {
     const { currentStudent, currentResult } = args;
-    const data = await hasStudentDoneTask(currentStudent.id, currentResult.id);
-    mainWindow.webContents.send("receiveHasStudentDoneTask", data);
+    
+    const data = await hasStudentDoneSelected(currentStudent.id, currentResult.id);
+    mainWindow.webContents.send("receiveHasStudentDoneSelected", data);
   } catch (error) {
     console.error(error);
-    mainWindow.webContents.send("receiveHasStudentDoneTask", null);
+    mainWindow.webContents.send("receiveHasStudentDoneSelected", null);
   }
 });
 
-ipcMain.on("sendSaveStudentData", async (event, args) => {
+ipcMain.on("sendSaveStudentTask", async (event, args) => {
   try {
     const { currentStudent, currentResult, currentTable } = args;
     const points = await saveStudentTask(currentStudent.id, currentResult.id, currentTable);
