@@ -179,9 +179,9 @@ function closeDatabase() {
 
 // -------------- system ---------------- //
 
-async function writeSystem(payload) {
+async function updateSystem(payload) {
   await waitDB();
-  const config = JSON.parse(payload) || {};
+  const config = payload || {};
   try {
     await run(`INSERT OR REPLACE INTO systemConfig (id, device, color, textColor, date, numPosition, type, hasPrint, hasBuy, hasParents, hasTests, buy, timer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
       [1, config.device, config.color, config.textColor, config.date, config.numPosition, config.type, config.hasPrint, config.hasBuy, config.hasParents, config.hasTests, config.buy, config.timer]);
@@ -465,7 +465,7 @@ async function saveStudentProduct(studentId, productId) {
 module.exports = {
   initDatabase,
   waitDB,
-  writeSystem,
+  updateSystem,
   readSystem,
   readData,
   closeDatabase,

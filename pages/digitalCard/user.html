@@ -36,13 +36,6 @@
           systemConfig = data
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, 0, step)
       })
-      fileName = 'products'
-      window.expose.SendExcel("sendReadExcel", fileName);
-      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-        if (data != 0) {
-          products = JSON.parse(data)
-        };
-      });
     }
 
     document.addEventListener("keypress", function (e) {
@@ -54,7 +47,7 @@
             else if (searchVal == '011429519')
               login('../main/system')
             else
-              searchInExcel();
+              searchProduct();
           }
         }
       } else {
@@ -62,14 +55,8 @@
       }
     });
 
-    function searchInExcel() {
-      for (var i = 0; i < products.length; i++) {
-        if (products[i]["code"] == searchVal) {
-          result = products[i];
-          break;
-        }
-      }
-
+    function searchProduct() {
+    
       let texts
       if (result != "") {
         step = Steps.step2;

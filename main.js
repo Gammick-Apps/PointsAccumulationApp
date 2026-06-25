@@ -1,9 +1,9 @@
 const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 let mainWindow
-const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB,
+const { initDatabase, waitDB, readData, readSystem, updateSystem, closeDatabase, insertExcelToDB,
   addStudents, updateStudents, addTask, updateTask, addProduct, updateProducts, getStudentsById, getTaskByCode,
-  isTaskUsed, hasStudentDoneSelected,saveStudentTask, saveStudentProduct,saveStudentData, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
+  isTaskUsed, hasStudentDoneSelected,saveStudentTask, saveStudentProduct, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
 
 function createWindow() {
   let ses = session.defaultSession
@@ -111,18 +111,13 @@ ipcMain.on("sendReadSystem", async (event, args) => {
 });
 
 ipcMain.on("sendUpdateSystem", async (event, args) => {
-  if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
     try {
-      JSON.parse(args[1]);
-      const data = await writeSystem(args[1]);
-      mainWindow.webContents.send("receiveUpdateSystem" + args[0], data);
-    } catch (e) {
-      console.error(e instanceof SyntaxError ? "Invalid JSON data:" : "Save failed:", e);
-      mainWindow.webContents.send("receiveUpdateSystem" + args[0], false);
-    }
-  } else {
-    console.error("Empty or invalid data.");
-    mainWindow.webContents.send("receiveUpdateSystem" + args[0], false);
+    const systemConfig = JSON.parse(args);
+    const data = await updateSystem(systemConfig);
+    mainWindow.webContents.send("receiveUpdateSystem", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveUpdateSystem", false);
   }
 });
 

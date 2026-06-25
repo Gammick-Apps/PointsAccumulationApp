@@ -327,8 +327,8 @@
             })
 
             tableName = "systemConfig"
-            window.expose.sendSystem("sendUpdateSystem", [tableName, JSON.stringify(systemConfig)]);
-            window.expose.receiveSystem("receiveUpdateSystem" + tableName, (data) => {
+            window.expose.sendSystem("sendUpdateSystem", JSON.stringify(systemConfig));
+            window.expose.receiveSystem("receiveUpdateSystem" , (data) => {
                 if (data === true) {
                     location.reload()
                 }

@@ -332,22 +332,20 @@
         }
 
         function swichChange() {
-            updateSystemConfig()
+            updateBuyStatus()
             showLabel()
         }
 
-        function updateSystemConfig() {
+        function updateBuyStatus() {
     systemConfig.buy = !systemConfig.buy;
     
-    window.expose.sendSystem("sendUpdateSystem", ['systemConfig', JSON.stringify(systemConfig)]);
-    window.expose.receiveSystem("receiveUpdateSystem" + 'systemConfig', (data) => {
-        if (data === true) {
-            location.reload(); 
-        } else {
+        window.expose.sendSystem("sendUpdateSystem", JSON.stringify(systemConfig));
+        window.expose.receiveSystem("receiveUpdateSystem", (data) => {
+        if (data === false) {
             alert("שמירת הגדרת מצב קנייה נכשלה");
             swich.checked = !systemConfig.buy;
             showLabel();
-        }
+        } 
     });
 }
 
