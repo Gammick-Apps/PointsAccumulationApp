@@ -25,7 +25,7 @@
     var tableName
     var classesPoints = ""
     // מספר הנקודות שמתווספות לכיתה בכל תיקוף
-    const POINTS_PER_SCAN = 6
+    const POINTS_PER_SCAN = 5
     // מספר הכיתות המוצגות בגרף ובכרטיסים
     const MAX_DISPLAYED_CLASSES = 8
     // ברקודי שכבה - כל ברקוד מוסיף נקודות לשתי הכיתות של אותה שכבה
@@ -345,8 +345,8 @@
         </div>
       </div>
       <div class="bottom-actions d-flex flex-row justify-content-center" style="gap: 24px;">
-        <button onclick="login('./graphology');" class="action-btn">גרפולוגית</button>
-        <button onclick="login('./videoQuiz');" class="action-btn">הסרטות</button>
+        <button onclick="login('./graphology'); this.blur();" class="action-btn">גרפולוגית</button>
+        <button onclick="login('./videoQuiz'); this.blur();" class="action-btn">הסרטות</button>
       </div>
     </div>
     <div id="position">עמדה</div>
