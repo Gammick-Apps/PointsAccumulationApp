@@ -103,7 +103,7 @@
         currentIndex = 0;
       }
       closeVideo();
-      updateLines(questions[currentIndex].question + "?", "!חושבת שזה את? אם יש לך אומץ עלי לבמה");
+      updateLines(questions[currentIndex].question, "!חושבת שזה את? אם יש לך אומץ עלי לבמה");
     }
 
     function handleScan() {
@@ -209,7 +209,7 @@
       <img onclick="expose.appClose()" src="../../resources/barcode/x-light.svg" />
     </div>
     <div class="text">
-      <div id="line1"></div>
+      <div id="line1" ></div>
       <div id="line2"></div>
       <div id="line3"></div>
       <div id="quizButtons" class="bottom-actions d-flex flex-row justify-content-center" style="gap: 24px;">

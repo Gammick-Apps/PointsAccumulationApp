@@ -13,7 +13,7 @@
   <script src="../../js/jquery.min.js"></script>
   <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
   <script src="../../js/shared.js"></script>
-   <script src="../../js/chart.js"></script>
+  <script src="../../js/chart.js"></script>
   <script src="../../js/chartjs-plugin-datalabels.js"></script>
 
   <script>
@@ -30,14 +30,10 @@
     const MAX_DISPLAYED_CLASSES = 8
     // ברקודי שכבה - כל ברקוד מוסיף נקודות לשתי הכיתות של אותה שכבה
     const gradeBarcodes = {
-      "331277925": "כיתה ט'",
-      "331277926": "כיתה ט'",
-      "331277927": "כיתה י'",
-      "331277928": "כיתה י'",
-      "331277929": 'כיתה י"א',
-      "331277930": 'כיתה י"א',
-      "331277931": 'כיתה י"ב',
-      "331277932": 'כיתה י"ב'
+      "315435445": "כיתה ט'",
+      "315435446": "כיתה י'",
+      "315435447": 'כיתה י"א',
+      "315435448": 'כיתה י"ב'
     };
     const colorPool = [
       { color: '#00a597', used: false },
@@ -120,11 +116,11 @@
           else if (searchVal == '011429519')
             login('../main/system')
           else if (searchVal == '207594581')
-              login('../parentsMeeting/user')
+            login('../parentsMeeting/user')
           else if (gradeBarcodes[searchVal])
-              addPointsToGrade(gradeBarcodes[searchVal]);//ברקוד שכבה
+            addPointsToGrade(gradeBarcodes[searchVal]);//ברקוד שכבה
           else
-              searchInExcel();//בת
+            searchInExcel();//בת
         }
       } else {
         buffer += e.key;
@@ -206,7 +202,7 @@
       }
         , 2500);
     }
-     function renderClassCards() {
+    function renderClassCards() {
       const cardsContainer = document.getElementById('cards-container');
       cardsContainer.innerHTML = '';
       cardsContainer.className = 'd-flex flex-row flex-wrap justify-content-center';

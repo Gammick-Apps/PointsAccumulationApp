@@ -32,6 +32,7 @@ html {
 .closeBtn {
     margin-right: 2.5%;
     float: right;
+    background-color:#fff
 }
 
 #position {
