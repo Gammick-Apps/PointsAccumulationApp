@@ -240,6 +240,12 @@ async function insertExcelToDB(tableName, payload) {
             [row.tz, row.idStudent, row.text]
           );
           break;
+           case 'tests':
+          await run(
+            'INSERT OR REPLACE INTO tests (code, question, answers1, answers2, answers3, correct) VALUES (?, ?, ?, ?, ?, ?);',
+            [row.code, row.question, row.answers1, row.answers2, row.answers3, row.correct]
+          );
+          break;
         default:
           throw new Error(`Unsupported table name for Excel import: ${tableName}`);
       }
@@ -388,6 +394,12 @@ async function updateProducts(code, field, value) {
   }
 }
 
+async function getProductByCode(code) {
+  await waitDB();
+  return get(`
+    SELECT id, code, name, multiple, points, used FROM products WHERE code = ?`, [code]);
+}
+
 //------------------ studentTask ----------------------//
 
 async function isTaskUsed(taskId) {
@@ -395,6 +407,26 @@ async function isTaskUsed(taskId) {
   const result = await get(`
     SELECT 1 FROM studentsTasks WHERE taskId = ? LIMIT 1`, [taskId]);
   return !!result;
+}
+
+async function isProductUsed(productId) {
+  await waitDB();
+  const result = await get(`
+    SELECT 1 FROM studentsProducts WHERE productId = ? LIMIT 1`, [productId]);
+  return !!result;
+}
+
+async function markProductAsUsed(productId) {
+  await waitDB();
+  try {
+    await run(
+      `UPDATE products SET "used" = 1 WHERE id = ?;`,
+      [productId]
+    );
+    return true;
+  } catch (error) {
+    throw error;
+  }
 }
 
 
@@ -460,6 +492,26 @@ async function saveStudentProduct(studentId, productId) {
   }
 }
 
+async function resetDatabase() {
+  await waitDB();
+  await run('BEGIN TRANSACTION;');
+  try {
+    await run('DELETE FROM studentsTasks;');
+    await run('DELETE FROM studentsProducts;');
+    await run('DELETE FROM parents;');
+    await run('DELETE FROM tests;');
+    await run('DELETE FROM questions;');
+    await run('DELETE FROM students;');
+    await run('DELETE FROM products;');
+    await run('DELETE FROM uniqTasks;');
+    await run('COMMIT;');
+    return true;
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
+}
+
 //----------------------------------------------------//
 
 module.exports = {
@@ -478,9 +530,13 @@ module.exports = {
   updateProducts,
   getStudentsById,
   getTaskByCode,
+  getProductByCode,
   isTaskUsed,
+  isProductUsed,
+  markProductAsUsed,
   hasStudentDoneSelected,
   saveStudentTask,
   saveStudentProduct,
+  resetDatabase,
   DB_FLAG_INCONSISTENT_ERROR_CODE
 };

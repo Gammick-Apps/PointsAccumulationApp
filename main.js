@@ -3,7 +3,7 @@ const fs = require('fs')
 let mainWindow
 const { initDatabase, waitDB, readData, readSystem, updateSystem, closeDatabase, insertExcelToDB,
   addStudents, updateStudents, addTask, updateTask, addProduct, updateProducts, getStudentsById, getTaskByCode,
-  isTaskUsed, hasStudentDoneSelected,saveStudentTask, saveStudentProduct, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
+  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
 
 function createWindow() {
   let ses = session.defaultSession
@@ -96,6 +96,16 @@ ipcMain.on("sendInsertExcelToDB", async (event, args) => {
   } else {
     console.error("Empty or invalid data.");
     mainWindow.webContents.send("receiveInsertExcelToDB" + args[0], false);
+  }
+});
+
+ipcMain.on("sendResetDatabase", async (event, args) => {
+  try {
+    const data = await resetDatabase();
+    mainWindow.webContents.send("receiveResetDatabase", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveResetDatabase", false);
   }
 });
 
@@ -210,6 +220,15 @@ ipcMain.on("sendUpdateProduct", async (event, args) => {
   }
 });
 
+ipcMain.on("sendGetProductByCode", async (event, args) => {
+  try {
+    const data = await getProductByCode(args);
+    mainWindow.webContents.send("receiveGetProductByCode", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveGetProductByCode", null);
+  }
+});
 // -------------- studentsTasks ---------------- //
 
 ipcMain.on("sendIsTaskUsed", async (event, args) => {
@@ -222,6 +241,26 @@ ipcMain.on("sendIsTaskUsed", async (event, args) => {
   } catch (error) {
     console.error(error);
     mainWindow.webContents.send("receiveIsTaskUsed", null);
+  }
+});
+
+ipcMain.on("sendIsProductUsed", async (event, args) => {
+  try {
+    const data = await isProductUsed(args);
+    mainWindow.webContents.send("receiveIsProductUsed", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveIsProductUsed", null);
+  }
+});
+
+ipcMain.on("sendMarkProductAsUsed", async (event, args) => {
+  try {
+    const data = await markProductAsUsed(args);
+    mainWindow.webContents.send("receiveMarkProductAsUsed", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveMarkProductAsUsed", false);
   }
 });
 

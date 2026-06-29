@@ -189,11 +189,19 @@
                 currentResult = cardData;
 
                 if(systemConfig.buy==1){
-                    updateLines("בחרת במתנה: " + currentResult.name, "")
-                } 
-                else 
-                {
-                    switch (currentResult.type) {
+                    window.expose.sendDbData("sendIsProductUsed", currentResult.id);
+                    window.expose.receiveDbData("receiveIsProductUsed", (isUsed) => {
+                        if (isUsed) {
+                            showAlert("הי, כרטיס זה כבר שומש!");
+                            return;
+                        }
+                        updateLines("בחרת במתנה: " + currentResult.name, "")
+                        updateLinesByDevice()
+                    });
+                    return;
+                }
+                
+                switch (currentResult.type) {
                     case 1: {
                     updateLines("בחרת ב: " + currentResult.name, "")
                     break;
@@ -205,7 +213,7 @@
                     }
                 }
                 updateLinesByDevice()
-            }}
+            }
         }
     
         //-------------tests-------------------//

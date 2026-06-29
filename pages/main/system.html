@@ -270,51 +270,14 @@
             return JSON.stringify(Object.values(tests));
         }
 
-        function resetExcel() {
-            if (systemConfig.device == 5) {
-                localStorage.removeItem("classesPoints");
-                location.reload();
-                return;
-            }
-            if (systemConfig.device == 1 || systemConfig.device == 2 || systemConfig.device == 4) {
-                if (students.length > 0 && uniqTasks.length > 0) {
-                    for (var i = 0; i < students.length; i++) {
-                        students[i].points = 0
-                        students[i].tasksNumber = ','
-                        students[i].tasks = ','
-                    }
-                    fileName = "students"
-                    window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
-                    window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                        if (systemConfig.type == 1) {
-                            for (var i = 0; i < uniqTasks.length; i++) {
-                                uniqTasks[i].used = 0
-                            }
-                            fileName = "uniqTasks"
-                            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(uniqTasks)]);
-                            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                                // alert("!הקבצים אופסו בהצלחה")
-                                location.reload()
-                            });
-                        }
-                        else {
-                            location.reload()
-                        }
 
-                    });
+        function resetDatabase() {
+            window.expose.sendDbData("sendResetDatabase", {});
+            window.expose.receiveDbData("receiveResetDatabase", (data) => {
+                if (!data) {
+                    alert("שגיאה באיפוס מסד הנתונים");
                 }
-            }
-            else {
-                for (var i = 0; i < products.length; i++) {
-                    products[i].used = 0
-                }
-                fileName = "products"
-                window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(products)]);
-                window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                    // alert("!הקבצים אופסו בהצלחה")
-                    location.reload()
-                });
-            }
+            });
         }
 
         function updateSystem() {
@@ -469,7 +432,7 @@
                 <div class="row">
                     <div class="col-md-2">
                         <label class="form-label">.</label>
-                        <button id="reset" onclick="resetExcel()" class="form-control"> איפוס </button>
+                        <button id="reset" onclick="resetDatabase()" class="form-control"> איפוס </button>
                     </div>
                 </div>
             </form>
