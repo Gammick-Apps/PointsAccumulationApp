@@ -27,6 +27,7 @@
     const wrongVideos = ["0", "1", "2", "3", "4"]
     var wrongPool = []
     var lastWrong = ""
+    var wrongMarkTimer = null
 
     const correctPath = "../../resources/dailyActivity/correct/"
     const wrongPath = "../../resources/dailyActivity/wrong/"
@@ -115,18 +116,28 @@
       var correctBarcodes = String(current.tz).split(",").map(b => b.trim());
       var correctVideos = String(current.video).split(",").map(v => v.trim());
       var matchIndex = correctBarcodes.indexOf(searchVal);
-      // אם נסרק ברקוד של אחת התלמידות הנכונות - מנגן ישירות את ההסרטה התואמת; אחרת מגריל סרטון שגוי
+      // אם נסרק ברקוד של אחת התלמידות הנכונות - מנגן ישירות את ההסרטה התואמת; אחרת מציג איקס אדום גדול
       if (matchIndex != -1) {
         playVideo(correctPath + correctVideos[matchIndex] + ".mp4");
       } else {
-        var wrong = pickWrongVideo();
-        if (wrong != "") {
-          playVideo(wrongPath + wrong + ".mp4");
-        }
+       showWrongMark();
       }
     }
 
+     // מציג בפופאפ איקס אדום גדול במקום הסרטון השגוי
+    function showWrongMark() {
+      stopVideo();
+      document.getElementById("quizVideo").style.display = "none";
+      document.getElementById("wrongMark").style.display = "flex";
+      document.getElementById("videoWrapper").classList.add("show");
+      // סוגר את הפופאפ אוטומטית לאחר 3 שניות
+      clearTimeout(wrongMarkTimer);
+      wrongMarkTimer = setTimeout(closeVideo, 3000);
+    }
+
     function playVideo(src) {
+       document.getElementById("wrongMark").style.display = "none";
+      document.getElementById("quizVideo").style.display = "block";
       document.getElementById("videoWrapper").classList.add("show");
       var video = document.getElementById("quizVideo");
       video.src = src;
@@ -136,7 +147,10 @@
 
     // סוגר את פופאפ ההסרטה וחוזר לשאלה
     function closeVideo() {
+     clearTimeout(wrongMarkTimer);
       stopVideo();
+      document.getElementById("wrongMark").style.display = "none";
+      document.getElementById("quizVideo").style.display = "block";
       document.getElementById("videoWrapper").classList.remove("show");
     }
 
@@ -224,6 +238,7 @@
   <div id="videoWrapper">
     <img id="videoClose" onclick="closeVideo()" src="../../resources/barcode/x-light.svg" />
     <video id="quizVideo" controls></video>
+    <div id="wrongMark">✗</div>
   </div>
 
   <div class="modal fade" style="direction: rtl" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel"
