@@ -73,7 +73,7 @@
         document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
 
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color)
-        document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
+        document.querySelector(".text").style.color = getTextColor("#ed3193");
 
         if (systemConfig.numPosition.length > 0) {
           document.getElementById("position").innerHTML += ' ' + systemConfig.numPosition
@@ -214,7 +214,7 @@
           document.querySelector(".text").style.color = getTextColor("#f7ed3d");
         } else {
           updateLines("גם אני לוקחת חלק", "!בקמפיין למען עצמי");
-          document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
+          document.querySelector(".text").style.color = getTextColor("#ed3193");
         }
       }, time);
     }
@@ -363,7 +363,7 @@
       } else {
         campaign = 1;
         updateLines("גם אני לוקחת חלק", "!בקמפיין למען עצמי");
-        document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
+        document.querySelector(".text").style.color = getTextColor("#ed3193");
       }
     }
   </script>
