@@ -179,16 +179,13 @@ function closeDatabase() {
 
 // -------------- system ---------------- //
 
-async function writeSystem(payload) {
+async function updateSystem(payload) {
   await waitDB();
-  const config = JSON.parse(payload) || {};
-  await run('BEGIN TRANSACTION;');
+  const config = payload || {};
   try {
     await run(`INSERT OR REPLACE INTO systemConfig (id, device, color, textColor, date, numPosition, type, hasPrint, hasBuy, hasParents, hasTests, buy, timer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
       [1, config.device, config.color, config.textColor, config.date, config.numPosition, config.type, config.hasPrint, config.hasBuy, config.hasParents, config.hasTests, config.buy, config.timer]);
-    await run('COMMIT;');
   } catch (error) {
-    await run('ROLLBACK;');
     throw error;
   }
   return true;
@@ -243,6 +240,12 @@ async function insertExcelToDB(tableName, payload) {
             [row.tz, row.idStudent, row.text]
           );
           break;
+           case 'tests':
+          await run(
+            'INSERT OR REPLACE INTO tests (code, question, answers1, answers2, answers3, correct) VALUES (?, ?, ?, ?, ?, ?);',
+            [row.code, row.question, row.answers1, row.answers2, row.answers3, row.correct]
+          );
+          break;
         default:
           throw new Error(`Unsupported table name for Excel import: ${tableName}`);
       }
@@ -263,6 +266,12 @@ async function readData(tableName) {
 
 // -------------- students ---------------- //
 
+async function getStudentsById(id) {
+  await waitDB();
+  const student = await get('SELECT * FROM students WHERE tz = ? OR code = ? LIMIT 1;', [id, id]);
+  return student || null;
+}
+
 async function generateUniqueStudentTz() {
   while (true) {
     const tz = Math.floor(Math.random() * (399999999 - 200000000 + 1) + 200000000);
@@ -276,16 +285,13 @@ async function generateUniqueStudentTz() {
 async function addStudents() {
   await waitDB();
   const tz = await generateUniqueStudentTz();
-  await run('BEGIN TRANSACTION;');
   try {
     await run(
       'INSERT INTO students (tz) VALUES (?);',
       [tz]
     );
-    await run('COMMIT;');
     return true;
   } catch (error) {
-    await run('ROLLBACK;');
     throw error;
   }
 }
@@ -293,55 +299,68 @@ async function addStudents() {
 async function updateStudents(tz, field, value){
   await waitDB();
   const correctValue = field === 'points' ? Number(value) : value;
-  await run('BEGIN TRANSACTION;');
   try {
     await run(
       `UPDATE students SET ${quoteIdentifier(field)} = ? WHERE tz = ?;`,
       [correctValue, tz]
     );
-    await run('COMMIT;');
     return true;
   } catch (error) {
-    await run('ROLLBACK;');
     throw error;
   }
 }
+
+async function hasStudentDoneSelected(studentId, taskId) {
+  await waitDB();
+  
+  const condition = await get('SELECT buy from systemConfig')
+  let result = ''
+  if(condition.buy === 1){
+    result = await get(`
+      SELECT 1 FROM studentsProducts WHERE studentId = ? AND productId = ? LIMIT 1`, [studentId, taskId]);
+  } else{
+    result = await get(`
+    SELECT 1 FROM studentsTasks WHERE studentId = ? AND taskId = ? LIMIT 1`, [studentId, taskId]);
+  }
+    return !!result;
+}
+
 
 // -------------- uniqTasks ---------------- //
 
 async function addTask() {
   await waitDB();
   const lastTask = await get('SELECT MAX(code) AS code FROM uniqtasks;');
-  const code = Number(lastTask ?.code || 0) + 1;
-  await run('BEGIN TRANSACTION;');
+  const code = Number(lastTask?.code || 0) + 1;
   try {
     await run(
       'INSERT INTO uniqtasks (code) VALUES (?);',
       [code]
     );
-    await run('COMMIT;');
     return true;
   } catch (error) {
-    await run('ROLLBACK;');
     throw error;
   }
 }
 
-async function updateTasks(code, field, value){  
+async function updateTask(code, field, value) {
   await waitDB();
   const correctValue = field === 'name' ? value : Number(value);
-  await run('BEGIN TRANSACTION;');
   try {
     await run(
       `UPDATE uniqtasks SET ${quoteIdentifier(field)} = ? WHERE code = ?;`,
       [correctValue, code]
     );
-    await run('COMMIT;');
     return true;
   } catch (error) {
-    await run('ROLLBACK;');
     throw error;
   }
+}
+
+async function getTaskByCode(code) {
+  await waitDB();
+  return get(`
+    SELECT id, code, name, multiple, points FROM uniqTasks WHERE code = ?`, [code]);
 }
 
 // -------------- products ---------------- //
@@ -349,30 +368,142 @@ async function updateTasks(code, field, value){
 async function addProduct() {
   await waitDB();
   const lastProduct = await get('SELECT MAX(code) AS code FROM products;');
-  const code = Number(lastProduct ?.code || 0) + 1;
-  await run('BEGIN TRANSACTION;');
+  const code = Number(lastProduct?.code || 0) + 1;
   try {
     await run(
       'INSERT INTO products (code) VALUES (?);',
       [code]
     );
-    await run('COMMIT;');
     return true;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function updateProducts(code, field, value) {
+  await waitDB();
+  const correctValue = field === 'name' ? value : Number(value);
+  try {
+    await run(
+      `UPDATE products SET ${quoteIdentifier(field)} = ? WHERE code = ?;`,
+      [correctValue, code]
+    );
+    return true;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function getProductByCode(code) {
+  await waitDB();
+  return get(`
+    SELECT id, code, name, multiple, points, used FROM products WHERE code = ?`, [code]);
+}
+
+//------------------ studentTask ----------------------//
+
+async function isTaskUsed(taskId) {
+  await waitDB();
+  const result = await get(`
+    SELECT 1 FROM studentsTasks WHERE taskId = ? LIMIT 1`, [taskId]);
+  return !!result;
+}
+
+async function isProductUsed(productId) {
+  await waitDB();
+  const result = await get(`
+    SELECT 1 FROM studentsProducts WHERE productId = ? LIMIT 1`, [productId]);
+  return !!result;
+}
+
+async function markProductAsUsed(productId) {
+  await waitDB();
+  try {
+    await run(
+      `UPDATE products SET "used" = 1 WHERE id = ?;`,
+      [productId]
+    );
+    return true;
+  } catch (error) {
+    throw error;
+  }
+}
+
+
+async function saveStudentTask(studentId, taskId) {
+  await waitDB();
+
+  const getPoints = await get('SELECT points FROM uniqTasks WHERE id = ? LIMIT 1;', [taskId]);
+  if (!getPoints) {
+    throw new Error(`Task with id ${taskId} not found`);
+  }
+  const points = getPoints.points;
+
+  await run('BEGIN TRANSACTION;');
+  try {
+    await run(
+      'INSERT INTO studentsTasks (studentId, taskId, createDateTime) VALUES (?, ?, DATETIME(\'now\', \'localtime\'));',
+      [studentId, taskId]
+    );
+    await run(
+      'UPDATE students SET points = points + ? WHERE id = ?;', [points, studentId]
+    );
+    await run('COMMIT;');
+    const studentRow = await get('SELECT points FROM students WHERE id = ? LIMIT 1;', [studentId]);
+    return studentRow ? studentRow.points : false;
+
   } catch (error) {
     await run('ROLLBACK;');
     throw error;
   }
 }
 
-async function updateProducts(code, field, value){  
+//------------------ studentProduct ----------------------//
+
+async function saveStudentProduct(studentId, productId) {
   await waitDB();
-  const correctValue = field === 'name' ? value : Number(value);
+
+  const getPoints = await get(`SELECT points FROM products WHERE id = ? LIMIT 1;`, [productId]);
+  const studentRow = await get('SELECT points FROM students WHERE id = ? LIMIT 1;', [studentId]);
+  const productPoints = getPoints.points
+  const studentPoints = studentRow.points
+
+  if (studentPoints < productPoints) {
+      return false;
+  }
+
   await run('BEGIN TRANSACTION;');
   try {
     await run(
-      `UPDATE products SET ${quoteIdentifier(field)} = ? WHERE code = ?;`,
-      [correctValue, code]
+      'INSERT INTO studentsProducts (studentId, productId, createDateTime) VALUES (?, ?, DATETIME(\'now\', \'localtime\'));',
+      [studentId, productId]
     );
+    await run(
+      'UPDATE students SET points = points - ? WHERE id = ?;', [productPoints, studentId]
+    );
+    
+    const newPoints = await get('SELECT points FROM students WHERE id = ? LIMIT 1;', [studentId]);
+    await run('COMMIT;');
+    return newPoints ? newPoints.points : false;
+
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
+}
+
+async function resetDatabase() {
+  await waitDB();
+  await run('BEGIN TRANSACTION;');
+  try {
+    await run('DELETE FROM studentsTasks;');
+    await run('DELETE FROM studentsProducts;');
+    await run('DELETE FROM parents;');
+    await run('DELETE FROM tests;');
+    await run('DELETE FROM questions;');
+    await run('DELETE FROM students;');
+    await run('DELETE FROM products;');
+    await run('DELETE FROM uniqTasks;');
     await run('COMMIT;');
     return true;
   } catch (error) {
@@ -383,11 +514,10 @@ async function updateProducts(code, field, value){
 
 //----------------------------------------------------//
 
-
 module.exports = {
   initDatabase,
   waitDB,
-  writeSystem,
+  updateSystem,
   readSystem,
   readData,
   closeDatabase,
@@ -395,8 +525,18 @@ module.exports = {
   addStudents,
   updateStudents,
   addTask,
-  updateTasks,
+  updateTask,
   addProduct,
   updateProducts,
+  getStudentsById,
+  getTaskByCode,
+  getProductByCode,
+  isTaskUsed,
+  isProductUsed,
+  markProductAsUsed,
+  hasStudentDoneSelected,
+  saveStudentTask,
+  saveStudentProduct,
+  resetDatabase,
   DB_FLAG_INCONSISTENT_ERROR_CODE
 };

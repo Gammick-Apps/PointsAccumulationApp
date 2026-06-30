@@ -1,7 +1,9 @@
 const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 let mainWindow
-const { initDatabase, waitDB, readData, readSystem, writeSystem, closeDatabase, insertExcelToDB, addStudents, updateStudents, addTask, updateTasks,addProduct,updateProducts, DB_FLAG_INCONSISTENT_ERROR_CODE} = require('./sqlite-storage');
+const { initDatabase, waitDB, readData, readSystem, updateSystem, closeDatabase, insertExcelToDB,
+  addStudents, updateStudents, addTask, updateTask, addProduct, updateProducts, getStudentsById, getTaskByCode,
+  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
 
 function createWindow() {
   let ses = session.defaultSession
@@ -97,6 +99,16 @@ ipcMain.on("sendInsertExcelToDB", async (event, args) => {
   }
 });
 
+ipcMain.on("sendResetDatabase", async (event, args) => {
+  try {
+    const data = await resetDatabase();
+    mainWindow.webContents.send("receiveResetDatabase", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveResetDatabase", false);
+  }
+});
+
 // -------------- system ---------------- //
 
 ipcMain.on("sendReadSystem", async (event, args) => {
@@ -109,18 +121,13 @@ ipcMain.on("sendReadSystem", async (event, args) => {
 });
 
 ipcMain.on("sendUpdateSystem", async (event, args) => {
-  if (args[1] && typeof args[1] === "string" && args[1].trim() !== "") {
     try {
-      JSON.parse(args[1]);
-      const data = await writeSystem(args[1]);
-      mainWindow.webContents.send("receiveUpdateSystem" + args[0], data);
-    } catch (e) {
-      console.error(e instanceof SyntaxError ? "Invalid JSON data:" : "Save failed:", e);
-      mainWindow.webContents.send("receiveUpdateSystem" + args[0], false);
-    }
-  } else {
-    console.error("Empty or invalid data.");
-    mainWindow.webContents.send("receiveUpdateSystem" + args[0], false);
+    const systemConfig = JSON.parse(args);
+    const data = await updateSystem(systemConfig);
+    mainWindow.webContents.send("receiveUpdateSystem", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveUpdateSystem", false);
   }
 });
 
@@ -147,6 +154,16 @@ ipcMain.on("sendUpdateStudent", async (event, args) => {
   }
 });
 
+ipcMain.on("sendGetStudentById", async (event, args) => {
+  try {
+    const data = await getStudentsById(args);   
+    mainWindow.webContents.send("receiveGetStudentById", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveGetStudentById", null);
+  }
+});
+
 // -------------- uniqTasks ---------------- //
 
 ipcMain.on("sendInsertTask", async () => {
@@ -162,11 +179,21 @@ ipcMain.on("sendInsertTask", async () => {
 ipcMain.on("sendUpdateTask", async (event, args) => {  
   try {
     const payload = JSON.parse(args);
-    const data = await updateTasks(payload.code, payload.field, payload.value);
+    const data = await updateTask(payload.code, payload.field, payload.value);
     mainWindow.webContents.send("receiveUpdateTask", data);
   } catch (error) {
     console.error(error);
     mainWindow.webContents.send("receiveUpdateTask", false);
+  }
+});
+
+ipcMain.on("sendGetTaskByCode", async (event, args) => {
+  try {
+    const data = await getTaskByCode(args);
+    mainWindow.webContents.send("receiveGetTaskByCode", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveGetTaskByCode", null);
   }
 });
 
@@ -190,6 +217,85 @@ ipcMain.on("sendUpdateProduct", async (event, args) => {
   } catch (error) {
     console.error(error);
     mainWindow.webContents.send("receiveUpdateProduct", false);
+  }
+});
+
+ipcMain.on("sendGetProductByCode", async (event, args) => {
+  try {
+    const data = await getProductByCode(args);
+    mainWindow.webContents.send("receiveGetProductByCode", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveGetProductByCode", null);
+  }
+});
+// -------------- studentsTasks ---------------- //
+
+ipcMain.on("sendIsTaskUsed", async (event, args) => {
+  try {
+    const { currentResult } = args;
+    
+    const data = await isTaskUsed(currentResult.id);
+    mainWindow.webContents.send("receiveIsTaskUsed", data);
+    
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveIsTaskUsed", null);
+  }
+});
+
+ipcMain.on("sendIsProductUsed", async (event, args) => {
+  try {
+    const data = await isProductUsed(args);
+    mainWindow.webContents.send("receiveIsProductUsed", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveIsProductUsed", null);
+  }
+});
+
+ipcMain.on("sendMarkProductAsUsed", async (event, args) => {
+  try {
+    const data = await markProductAsUsed(args);
+    mainWindow.webContents.send("receiveMarkProductAsUsed", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveMarkProductAsUsed", false);
+  }
+});
+
+ipcMain.on("sendHasStudentDoneSelected", async (event, args) => {
+  try {
+    const { currentStudent, currentResult } = args;
+    
+    const data = await hasStudentDoneSelected(currentStudent.id, currentResult.id);
+    mainWindow.webContents.send("receiveHasStudentDoneSelected", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveHasStudentDoneSelected", null);
+  }
+});
+
+ipcMain.on("sendSaveStudentTask", async (event, args) => {
+  try {
+    const { currentStudent, currentResult, currentTable } = args;
+    const points = await saveStudentTask(currentStudent.id, currentResult.id, currentTable);
+    mainWindow.webContents.send("receiveSaveStudentData", points);
+  } catch (error) {
+    console.error("Error saving student data:", error);
+    mainWindow.webContents.send("receiveSaveStudentData", false);
+  }
+});
+
+
+ipcMain.on("sendSaveStudentProduct", async (event, args) => {
+  try {
+    const { currentStudent, currentResult} = args;
+    const points = await saveStudentProduct(currentStudent.id, currentResult.id);
+    mainWindow.webContents.send("receiveSaveStudentData", points);
+  } catch (error) {
+    console.error("Error saving student product:", error);
+    mainWindow.webContents.send("receiveSaveStudentData", false);
   }
 });
 
@@ -240,12 +346,12 @@ ipcMain.on("sendPrint", (event, args) => {
   };
 
   printWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(args));
-  printWindow.webContents.once('did-finish-load', () => {
+  printWindow.webContents.once('did-finish-load', async () => {
     // רשת ביטחון: אם ההדפסה לא מחזירה תשובה (למשל כשהמדפסת מנותקת),
     // נחזיר receivePrint בכל מקרה אחרי 5 שניות.
     setTimeout(() => finishPrint(false), 5000);
     try {
-      const printers = printWindow.webContents.getPrinters();
+      const printers = await printWindow.webContents.getPrintersAsync();
       if (!printers || printers.length === 0) {
         finishPrint(false);
         return;

@@ -41,7 +41,7 @@
         { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
         { "name": "studentId", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "taskId", "type": "INTEGER", "nullable": false, "default": "0" },
-        { "name": "amount", "type": "INTEGER", "nullable": false, "default": "0" }
+        {"name": "createDateTime", "type": "DATETIME", "nullable": false, "default": "(datetime('now'))" }
       ],
       "foreignKeys": [
         {
@@ -77,7 +77,8 @@
         { "name": "name", "type": "TEXT", "nullable": false, "default": "'--------'" },
         { "name": "points", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "multiple", "type": "INTEGER", "nullable": false, "default": "0" },
-        { "name": "show", "type": "BOOLEAN", "nullable": false, "default": false } 
+        { "name": "show", "type": "BOOLEAN", "nullable": false, "default": false },
+        { "name": "used", "type": "INTEGER", "nullable": false, "default": "0" }
       ],
       "foreignKeys": []
     },
@@ -87,7 +88,7 @@
         { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
         { "name": "studentId", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "productId", "type": "INTEGER", "nullable": false, "default": "0" },
-        { "name": "amount", "type": "INTEGER", "nullable": false, "default": "0" }
+        {"name": "createDateTime", "type": "DATETIME", "nullable": false, "default": "(datetime('now'))" }
       ],
       "foreignKeys": [
         {
@@ -127,7 +128,26 @@
         { "name": "answers", "type": "TEXT", "nullable": false , "default": "''"},
         { "name": "videos", "type": "TEXT", "nullable": false, "default": "''" }
       ]
+    },
+{
+  "name": "tests",
+  "columns": [
+    { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
+    { "name": "code", "type": "INTEGER", "nullable": false, "default": "0" },
+    { "name": "question", "type": "TEXT", "nullable": false , "default": "''" },
+    { "name": "answers1", "type": "TEXT", "nullable": false , "default": "''"},
+    { "name": "answers2", "type": "TEXT", "nullable": false , "default": "''"},
+    { "name": "answers3", "type": "TEXT", "nullable": false , "default": "''"},
+    { "name": "correct", "type": "INTEGER", "nullable": false , "default": "0"}
+  ],
+  "foreignKeys": [
+    {
+      "columns": ["code"],
+      "referencesTable": "uniqTasks",
+      "referencesColumns": ["code"]
     }
+  ]
+}
 
   ]
 }

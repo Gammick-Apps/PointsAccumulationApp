@@ -332,17 +332,22 @@
         }
 
         function swichChange() {
-            updateSystemConfig()
+            updateBuyStatus()
             showLabel()
         }
 
-        function updateSystemConfig() {
-            systemConfig.buy = swich.checked
-            fileName = 'systemConfig'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(systemConfig)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-            });
-        }
+        function updateBuyStatus() {
+    systemConfig.buy = !systemConfig.buy;
+    
+        window.expose.sendSystem("sendUpdateSystem", JSON.stringify(systemConfig));
+        window.expose.receiveSystem("receiveUpdateSystem", (data) => {
+        if (data === false) {
+            alert("שמירת הגדרת מצב קנייה נכשלה");
+            swich.checked = !systemConfig.buy;
+            showLabel();
+        } 
+    });
+}
 
         function printChange() {
             updatePrintConfig();
