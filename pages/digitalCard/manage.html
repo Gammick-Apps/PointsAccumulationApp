@@ -114,6 +114,23 @@
             });
         }
 
+        function exportToExcel(name) {
+            var params = {
+                fileName: currentDate + ' ' + name,
+                columnKeys: ['name', 'code', 'used'],
+                processHeaderCallback: function (params) {
+                    return params.column.getColId();
+                },
+                processCellCallback: function (params) {
+                    if (params.column.getColId() == 'used') {
+                        return params.node.data.used;
+                    }
+                    return params.value;
+                }
+            };
+            gridOptions.api.exportDataAsCsv(params);
+        }
+
     </script>
     <div class="background" id="background">
         <div class="closeBtn">
@@ -123,6 +140,8 @@
             <div id="line1">ברוכים הבאים הבאה לממשק ניהול</div>
             <div id="line2">כאן אפשר להוסיף ולשנות מתנות</div>
             <br>
+            <img style="margin-left: 10px;" onclick="exportToExcel('products')"
+                src="../../resources/barcode/download-simple-light.svg" />
             <img style="margin-left: 10px;" onclick="newProducts()" src="../../resources/barcode/plus-light.svg" />
             <div id="productsGrid" style="width:100%" class="ag-theme-alpine"></div>
         </div>
