@@ -102,7 +102,7 @@ function getExcelFiles() {
 }
 
 function getWonTexts() {
-    return ["!איזה כיף", "---כן, כן, זה קרה", "...וואו, איזה חלום", "---קולולולולו"];
+    return ["!איזה כיף", "---כן, כן, זה קרה", "...וואו, איזה חלום"];
 }
 
 function getLossTexts() {
