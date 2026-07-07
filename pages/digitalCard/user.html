@@ -90,8 +90,12 @@
         step = Steps.step3;
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, 0, step)
         texts = getLossTexts()
-        updateLines(texts[Math.floor(Math.random() * texts.length)],"!...אולי בפעם הבאה")
-        reset(2500)
+        const lossLine1 = texts[Math.floor(Math.random() * texts.length)]
+        const lossLine2 = "!...אולי בפעם הבאה"
+        updateLines(lossLine1, lossLine2)
+        setTimeout(function () {
+          toLossPrint(lossLine1, lossLine2);
+        }, 2000);
       }
     }
 
@@ -134,7 +138,7 @@
                     margin: 10px 0;
                 }
                 #footer {
-                    font-size: 10px;
+                    font-size: 15px;
                     text-align: center;
                     margin-top: 20px;
                 }
@@ -147,6 +151,58 @@
                 <div>וואו, איזה כיף!!</div>
                 <div>זכית ב ${result.name}</div>
                 <div>יש לגשת לאחראית לקבלת המתנה</div>
+                <div>קבלה זו מהווה כרטיס הגרלה ביום הסיום, שמרי אותה היטב</div>
+            </div>
+            <br>
+            <div id="title">בהנאה!</div>
+            <br>
+            <br>
+            <div id="footer">להזמנות: אפרת מלכה 0504167969 office@gammick.co.il</div>
+        </body>
+        </html>
+    `;
+      window.expose.send("sendPrint", dynamicHTML);
+      window.expose.receive("receivePrint", () => {
+        reset();
+      });
+    }
+
+    function toLossPrint(lossLine1, lossLine2) {
+      const dynamicHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8" />
+            <title>Print</title>
+            <style>
+                body {
+                    font-family: 'Arial', sans-serif;;
+                    direction: rtl;
+                    margin: 0;
+                    padding: 0;
+                }
+                #title {
+                    font-size: 40px;
+                    text-align: center;
+                }
+                #content div {
+                    font-size: 20px;
+                    margin: 10px 0;
+                }
+                #footer {
+                    font-size: 15px;
+                    text-align: center;
+                    margin-top: 20px;
+                }
+            </style>
+        </head>
+        <body>
+            <div id="title">שובר</div>
+            <br>
+            <div id="content">
+                <div>${lossLine1}</div>
+                <div>${lossLine2}</div>
+                <div>קבלה זו מהווה כרטיס הגרלה ביום הסיום, שמרי אותה היטב</div>
             </div>
             <br>
             <div id="title">בהנאה!</div>
