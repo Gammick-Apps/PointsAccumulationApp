@@ -25,12 +25,16 @@
         var getV = function (params) {
             return params.data.used == 1 ? "V" : ""
         };
+        var setUsedValue = function (params) {
+            params.data.used = params.newValue == 1 || params.newValue == "V" || params.newValue == "v" || params.newValue == "כן" ? "1" : "0"
+            return true
+        };
         var gridOptions
         var columnDefs = [
             { headerName: "שם", field: "name", editable: true },
             { headerName: "קוד", field: "code", editable: true },
             {
-                headerName: "האם שומש", valueGetter: getV,
+                headerName: "האם שומש", field: "used", editable: true, valueGetter: getV, valueSetter: setUsedValue,
             },
         ];
 
