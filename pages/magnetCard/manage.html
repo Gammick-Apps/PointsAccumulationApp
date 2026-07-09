@@ -337,15 +337,15 @@
         }
 
         function updateBuyStatus() {
-    systemConfig.buy = !systemConfig.buy;
+            systemConfig.buy = swich.checked;
     
-        window.expose.sendSystem("sendUpdateSystem", JSON.stringify(systemConfig));
-        window.expose.receiveSystem("receiveUpdateSystem", (data) => {
-        if (data === false) {
-            alert("שמירת הגדרת מצב קנייה נכשלה");
-            swich.checked = !systemConfig.buy;
-            showLabel();
-        } 
+            window.expose.sendSystem("sendUpdateSystem", JSON.stringify(systemConfig));
+            window.expose.receiveSystem("receiveUpdateSystem", (data) => {
+            if (data === false) {
+                alert("שמירת הגדרת מצב קנייה נכשלה");
+                swich.checked = !systemConfig.buy;
+                showLabel();
+            } 
     });
 }
 

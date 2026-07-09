@@ -1,4 +1,3 @@
-systemConfig.txt
 node_modules
 dist/
 parents.txt
@@ -6,9 +5,9 @@ products.txt
 students.txt
 uniqTasks.txt
 videoQuiz.txt
+systemConfig.txt
 
 dist/builder-debug.yml
 dist/latest.yml
 dist/win-unpacked/resources/app-update.yml
 dist/win-unpacked/resources/app.asar
-systemConfig.txt

@@ -226,13 +226,7 @@
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
                 const name = checkFileName(file.name)
-                let json_object;
-                if (name == "tests") {
-                    json_object = convertTestToJSON(XLSX.utils.sheet_to_json(sheet));
-                }
-                else {
-                    json_object = JSON.stringify(XLSX.utils.sheet_to_json(sheet));
-                }
+                const json_object = JSON.stringify(XLSX.utils.sheet_to_json(sheet));
                 if (name != "") {
                     tableName = name;
                     window.expose.sendDbData("sendInsertExcelToDB", [tableName, json_object]);
@@ -243,32 +237,6 @@
             };
             reader.readAsArrayBuffer(file);
         };
-
-        function convertTestToJSON(rows) {
-            const tests = {};
-
-            rows.forEach((row) => {
-                const { code, question, answer1, answer2, answer3, correct } = row;
-
-                // אם המבחן עם ה-ID הזה לא קיים, צור אותו
-                if (!tests[code]) {
-                    tests[code] = {
-                        id: code,
-                        questions: []
-                    };
-                }
-
-                // הוספת שאלה למבחן
-                tests[code].questions.push({
-                    question: question,
-                    answers: [answer1, answer2, answer3],
-                    correctIndex: correct - 1 // המרת תשובה נכונה לאינדקס
-                });
-            });
-
-            // החזרת המבחנים כמערך
-            return JSON.stringify(Object.values(tests));
-        }
 
 
         function resetDatabase() {

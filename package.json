@@ -9,7 +9,6 @@
     "watch": "nodemon --exec electron .",
     "postinstall": "electron-builder install-app-deps",
     "pack:win": "electron-builder --win --x64 -c.npmRebuild=false",
-    "reset": "git reset --hard",
     "build": "electron-builder --help"
   },
   "repository": "https://github.com/EfratVardi/ElectronBarcode.git",

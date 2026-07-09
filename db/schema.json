@@ -23,7 +23,7 @@
       "name": "uniqTasks",
       "columns": [
         { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
-        { "name": "code", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "code", "type": "INTEGER", "unique": true, "nullable": false },
         { "name": "name", "type": "TEXT", "nullable": false, "default": "'--------'" },
         { "name": "points", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "multiple", "type": "INTEGER", "nullable": false, "default": "0" },
@@ -135,9 +135,9 @@
     { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
     { "name": "code", "type": "INTEGER", "nullable": false, "default": "0" },
     { "name": "question", "type": "TEXT", "nullable": false , "default": "''" },
-    { "name": "answers1", "type": "TEXT", "nullable": false , "default": "''"},
-    { "name": "answers2", "type": "TEXT", "nullable": false , "default": "''"},
-    { "name": "answers3", "type": "TEXT", "nullable": false , "default": "''"},
+    { "name": "answer1", "type": "TEXT", "nullable": false , "default": "''"},
+    { "name": "answer2", "type": "TEXT", "nullable": false , "default": "''"},
+    { "name": "answer3", "type": "TEXT", "nullable": false , "default": "''"},
     { "name": "correct", "type": "INTEGER", "nullable": false , "default": "0"}
   ],
   "foreignKeys": [

@@ -3,7 +3,7 @@ const fs = require('fs')
 let mainWindow
 const { initDatabase, waitDB, readData, readSystem, updateSystem, closeDatabase, insertExcelToDB,
   addStudents, updateStudents, addTask, updateTask, addProduct, updateProducts, getStudentsById, getTaskByCode,
-  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
+  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
 
 function createWindow() {
   let ses = session.defaultSession
@@ -227,6 +227,18 @@ ipcMain.on("sendGetProductByCode", async (event, args) => {
   } catch (error) {
     console.error(error);
     mainWindow.webContents.send("receiveGetProductByCode", null);
+  }
+});
+
+// -------------- tests ---------------- //
+
+ipcMain.on("sendGetTestByCode", async (event, args) => {
+  try {
+    const data = await getTestByCode(args);
+    mainWindow.webContents.send("receiveGetTestByCode", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveGetTestByCode", null);
   }
 });
 // -------------- studentsTasks ---------------- //

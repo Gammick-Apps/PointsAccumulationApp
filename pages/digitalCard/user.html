@@ -71,7 +71,8 @@
       texts = getWonTexts();
       updateLines(texts[Math.floor(Math.random() * texts.length)], "זכית ב" + result.name);
       saveData();
-    } else {
+    }
+    else {
       step = Steps.step3;
       document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, 0, step);
       texts = getLossTexts();

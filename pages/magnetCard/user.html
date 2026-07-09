@@ -185,14 +185,14 @@
         function selectAction(cardData) {
             if (step != Steps.step3) {
                 step = Steps.step2;
-                
+
                 currentResult = cardData;
 
-                if(systemConfig.buy==1){
+                if (systemConfig.buy == 1) {
                     window.expose.sendDbData("sendIsProductUsed", currentResult.id);
                     window.expose.receiveDbData("receiveIsProductUsed", (isUsed) => {
                         if (isUsed) {
-                            showAlert("הי, כרטיס זה כבר שומש!");
+                            showAlert("הי, כרטיס זה כבר מומש!");
                             return;
                         }
                         updateLines("בחרת במתנה: " + currentResult.name, "")
@@ -200,11 +200,11 @@
                     });
                     return
                 }
-                
+
                 switch (currentResult.type) {
                     case 1: {
-                    updateLines("בחרת ב: " + currentResult.name, "")
-                    break;
+                        updateLines("בחרת ב: " + currentResult.name, "")
+                        break;
                     }
                     case 2: {
                         updateLines("בחרת ב: " + currentResult.name, "")
@@ -215,22 +215,28 @@
                 updateLinesByDevice()
             }
         }
-    
+
         //-------------tests-------------------//
 
         function openTest() {
             isModalOpen = true;
             document.getElementById("cards").style.display = "none"
-            currentTest = tests.find(test => test.id == currentResult.code);
-            currentQuestionIndex = 0;
-            correctCount = 0;
-            testNameElement.innerText = `${currentResult.name}`;
-            questions = shuffleArray(currentTest.questions);
-            displayQuestion();
+            window.expose.sendDbData("sendGetTestByCode", currentResult.code);
+            window.expose.receiveDbData("receiveGetTestByCode", (test) => {
+                if (!test || !Array.isArray(test.questions) || test.questions.length == 0) {
+                    showAlert("שגיאה בטעינת המבחן");
+                    return;
+                }
+                currentTest = test;
+                currentQuestionIndex = 0;
+                correctCount = 0;
+                testNameElement.innerText = `${currentResult.name}`;
+                questions = shuffleArray(currentTest.questions);
+                displayQuestion();
 
-            // Show Modal
-            const triviaModal = new bootstrap.Modal(document.getElementById('triviaModal'));
-            triviaModal.show();
+                const triviaModal = new bootstrap.Modal(document.getElementById('triviaModal'));
+                triviaModal.show();
+            });
         }
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -311,9 +317,9 @@
                 if (!currentResult.multiple) {
                     window.expose.sendDbData("sendHasStudentDoneSelected", { currentStudent, currentResult });
                     window.expose.receiveDbData("receiveHasStudentDoneSelected", (alreadyDone) => {
-                        if (alreadyDone){
-                            showAlert("הי, משימה זו כבר תוקפה!");                            
-                        }            
+                        if (alreadyDone) {
+                            showAlert("הי, משימה זו כבר תוקפה!");
+                        }
                         else
                             saveStudentData();
                     });
@@ -325,16 +331,16 @@
         }
 
         async function saveStudentData() {
-            if(systemConfig.buy==1){
+            if (systemConfig.buy == 1) {
                 window.expose.sendDbData("sendSaveStudentProduct", { currentStudent, currentResult });
-            } else{
+            } else {
                 window.expose.sendDbData("sendSaveStudentTask", { currentStudent, currentResult });
             }
-                window.expose.receiveDbData("receiveSaveStudentData", (points) => {
+            window.expose.receiveDbData("receiveSaveStudentData", (points) => {
                 if (points == false) {
-                    showAlert(" אין לך מספיק נקודות בחשבון! ");                            
+                    showAlert(" אין לך מספיק נקודות בחשבון! ");
                     return;
-                } else{
+                } else {
                     document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
                     currentStudent.points = points;
                     updateLines("תודה רבה " + currentStudent.name, " כעת יש בחשבונך " + currentStudent.points + " נקודות", "בהצלחה!")
@@ -346,7 +352,7 @@
                     } else {
                         reset(2000);
                     }
-                } 
+                }
             });
         }
 

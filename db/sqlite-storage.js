@@ -69,7 +69,7 @@ async function initDatabase(electronApp) {
 
     // save the DB in folder   
     const userDataPath = electronApp.getPath('userData');
-    dbPath = path.join(userDataPath, 'points-accumulation.sqlite');
+    dbPath = path.join(userDataPath, 'GammickDB.sqlite');
     fs.mkdirSync(userDataPath, { recursive: true });
 
     //open the DB 
@@ -116,6 +116,9 @@ function buildColumnSql(column) {
   const parts = [quoteIdentifier(column.name), String(column.type || 'TEXT')];
   if (column.primaryKey) {
     parts.push('PRIMARY KEY');
+  }
+  if (column.unique) {
+    parts.push('UNIQUE');
   }
   if (column.nullable === false) {
     parts.push('NOT NULL');
@@ -242,8 +245,8 @@ async function insertExcelToDB(tableName, payload) {
           break;
            case 'tests':
           await run(
-            'INSERT OR REPLACE INTO tests (code, question, answers1, answers2, answers3, correct) VALUES (?, ?, ?, ?, ?, ?);',
-            [row.code, row.question, row.answers1, row.answers2, row.answers3, row.correct]
+              'INSERT OR REPLACE INTO tests (code, question, answer1, answer2, answer3, correct) VALUES (?, ?, ?, ?, ?, ?);',
+              [row.code, row.question, row.answer1, row.answer2, row.answer3, row.correct]
           );
           break;
         default:
@@ -400,6 +403,25 @@ async function getProductByCode(code) {
     SELECT id, code, name, multiple, points, used FROM products WHERE code = ?`, [code]);
 }
 
+// -------------- tests ---------------- //
+
+async function getTestByCode(code) {
+  await waitDB();
+  const rows = await all(`
+    SELECT code, question, answer1, answer2, answer3, correct FROM tests WHERE code = ? ORDER BY id`, [code]);
+  if (!rows.length) {
+    return null;
+  }
+  return {
+    id: Number(code),
+    questions: rows.map((row) => ({
+      question: row.question,
+      answers: [row.answer1, row.answer2, row.answer3],
+      correctIndex: Number(row.correct) - 1
+    }))
+  };
+}
+
 //------------------ studentTask ----------------------//
 
 async function isTaskUsed(taskId) {
@@ -531,6 +553,7 @@ module.exports = {
   getStudentsById,
   getTaskByCode,
   getProductByCode,
+  getTestByCode,
   isTaskUsed,
   isProductUsed,
   markProductAsUsed,
