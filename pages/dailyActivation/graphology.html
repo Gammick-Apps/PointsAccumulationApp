@@ -17,7 +17,6 @@
 
   <script>
     var systemConfig = ""
-    var students = ""
     var searchVal = ""
     var tableName
     var result = "";
@@ -33,13 +32,13 @@
       step = Steps.step1;
       updateLines("ברוכות הבאות!", "מה הגרפולוגית רשמה על...?");
       tableName = 'systemConfig'
-      window.expose.SendSystem("sendReadSystem", tableName);
-      window.expose.ReceiveSystem("receiveReadSystem" + tableName, (data) => {
-        if (data == 0) {
+      window.expose.sendSystem("sendReadSystem", tableName);
+      window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
+        if (!data || Object.keys(data).length == 0) {
           systemConfig = getDefaultConfig()
         }
         else {
-          systemConfig = JSON.parse(data)
+          systemConfig = data
         }
         document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
         document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
@@ -52,13 +51,6 @@
         else {
           document.getElementById("position").style.display = "none";
         }
-        tableName = 'students'
-        window.expose.sendDbData("sendGetDataByTable", tableName);
-        window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
-          if (data != 0) {
-            students = JSON.parse(data)
-          }
-        })
       })
     }
 
@@ -82,17 +74,15 @@
     });
 
     function searchInExcel() {
-      for (var i = 0; i < students.length; i++) {
-        if (students[i]["tz"] == searchVal) {
-          result = students[i];
-          break;
+      window.expose.sendDbData("sendGetStudentById", searchVal);
+      window.expose.receiveDbData("receiveGetStudentById", (student) => {
+        result = student;
+        if (result == null) {
+          showAlert(" הברקוד לא מופיע ברשימות. גשו למורה!")
+          return;
         }
-      }
-      if (result == "") {
-        showAlert(" הברקוד לא מופיע ברשימות. גשו למורה!")
-        return;
-      }
-      showResult()
+        showResult()
+      });
     }
 
     function showResult() {

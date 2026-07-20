@@ -31,8 +31,8 @@
       step = Steps.step1;
       updateLines("יש לסרוק את כרטיס ההפתעה", "...אולי הכרטיס שלך יזכה")
       tableName = 'systemConfig'
-      window.expose.SendExcel("sendReadSystem", tableName);
-      window.expose.ReceiveExcel("receiveReadSystem" + tableName, (data) => {
+      window.expose.sendSystem("sendReadSystem", tableName);
+      window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
           systemConfig = data
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, 0, step)
       })

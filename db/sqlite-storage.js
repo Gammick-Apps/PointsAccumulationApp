@@ -263,7 +263,7 @@ async function readData(tableName) {
 
 // -------------- students ---------------- //
 
-async function getStudentsById(id) {
+async function getStudentById(id) {
   await waitDB();
   const student = await get('SELECT * FROM students WHERE tz = ? OR code = ? LIMIT 1;', [id, id]);
   return student || null;
@@ -290,7 +290,7 @@ async function generateUniqueStudentTz() {
   }
 }
 
-async function addStudents() {
+async function addStudent() {
   await waitDB();
   const tz = await generateUniqueStudentTz();
   try {
@@ -304,7 +304,7 @@ async function addStudents() {
   }
 }
 
-async function updateStudents(tz, field, value){
+async function updateStudent(tz, field, value){
   await waitDB();
   const correctValue = field === 'points' ? Number(value) : value;
   try {
@@ -401,7 +401,7 @@ async function addProduct() {
   }
 }
 
-async function updateProducts(code, field, value) {
+async function updateProduct(code, field, value) {
   await waitDB();
   const correctValue = field === 'name' ? value : Number(value);
   try {
@@ -561,13 +561,13 @@ module.exports = {
   readData,
   closeDatabase,
   insertExcelToDB,
-  addStudents,
-  updateStudents,
+  addStudent,
+  updateStudent,
   addTask,
   updateTask,
   addProduct,
-  updateProducts,
-  getStudentsById,
+  updateProduct,
+  getStudentById,
   getStudentParentByCode,
   updateStudentText,
   getTaskByCode,

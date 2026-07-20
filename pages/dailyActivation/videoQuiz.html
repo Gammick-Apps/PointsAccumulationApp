@@ -33,13 +33,13 @@
 
     function onLoad() {
       fileName = 'systemConfig';
-      window.expose.SendExcel("sendReadExcel", fileName);
-      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-        if (data == 0) {
+      window.expose.sendSystem("sendReadSystem", fileName);
+      window.expose.receiveSystem("receiveReadSystem" + fileName, (data) => {
+        if (!data || Object.keys(data).length == 0) {
           systemConfig = getDefaultConfig()
         }
         else {
-          systemConfig = JSON.parse(data)
+          systemConfig = data
         }
         document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
         document.getElementById("position").style.color = getPosition(systemConfig.color)[1]

@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 let mainWindow
 const { initDatabase, waitDB, readData, readSystem, updateSystem, closeDatabase, insertExcelToDB,
-  addStudents, updateStudents, addTask, updateTask, addProduct, updateProducts, getStudentsById, getTaskByCode,
+  addStudent, updateStudent, addTask, updateTask, addProduct, updateProduct, getStudentById, getTaskByCode,
   isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, getStudentParentByCode, updateStudentText, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
 
 function createWindow() {
@@ -135,7 +135,7 @@ ipcMain.on("sendUpdateSystem", async (event, args) => {
 
 ipcMain.on("sendInsertStudent", async () => {
   try {
-    const data = await addStudents();
+    const data = await addStudent();
     mainWindow.webContents.send("receiveInsertStudent", data);
   } catch (error) {
     console.error(error);
@@ -146,7 +146,7 @@ ipcMain.on("sendInsertStudent", async () => {
 ipcMain.on("sendUpdateStudent", async (event, args) => {
   try {
     const payload = JSON.parse(args);
-    const data = await updateStudents(payload.tz, payload.field, payload.value);
+    const data = await updateStudent(payload.tz, payload.field, payload.value);
     mainWindow.webContents.send("receiveUpdateStudent", data);
   } catch (error) {
     console.error(error);
@@ -156,7 +156,7 @@ ipcMain.on("sendUpdateStudent", async (event, args) => {
 
 ipcMain.on("sendGetStudentById", async (event, args) => {
   try {
-    const data = await getStudentsById(args);   
+    const data = await getStudentById(args);   
     mainWindow.webContents.send("receiveGetStudentById", data);
   } catch (error) {
     console.error(error);
@@ -232,7 +232,7 @@ ipcMain.on("sendInsertProduct", async () => {
 ipcMain.on("sendUpdateProduct", async (event, args) => {  
   try {
     const payload = JSON.parse(args);
-    const data = await updateProducts(payload.code, payload.field, payload.value);
+    const data = await updateProduct(payload.code, payload.field, payload.value);
     mainWindow.webContents.send("receiveUpdateProduct", data);
   } catch (error) {
     console.error(error);
