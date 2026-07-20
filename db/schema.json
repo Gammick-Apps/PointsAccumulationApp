@@ -65,7 +65,9 @@
         { "name": "grade", "type": "TEXT", "nullable": false, "default": "'--------'" },
         { "name": "name", "type": "TEXT", "nullable": false, "default": "'--------'" },
         { "name": "points", "type": "INTEGER", "nullable": false, "default": "0" },
-        { "name": "position", "type": "TEXT", "nullable": false, "default": "'--------'" }
+        { "name": "position", "type": "TEXT", "nullable": false, "default": "'--------'" },
+        { "name": "tzParent", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "text", "type": "TEXT", "nullable": false, "default": "''" }
       ],
       "foreignKeys": []
     },
@@ -99,22 +101,6 @@
         {
           "columns": ["productId"],
           "referencesTable": "products",
-          "referencesColumns": ["id"]
-        }
-      ]
-    },
-    {
-      "name": "parents",
-      "columns": [
-        { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
-        { "name": "tz", "type": "INTEGER", "nullable": false, "default": "0" },
-        { "name": "idStudent", "type": "INTEGER", "nullable": false, "default": "0" },
-        { "name": "text", "type": "TEXT", "nullable": false, "default": "''" }
-      ],
-      "foreignKeys": [
-        {
-          "columns": ["idStudent"],
-          "referencesTable": "students",
           "referencesColumns": ["id"]
         }
       ]

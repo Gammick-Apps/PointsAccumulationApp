@@ -43,8 +43,6 @@
             const hasBuy = document.getElementById('hasBuy');
             const uploadProductsWrapper = document.getElementById('uploadProductsWrapper');
             const uploadProducts = document.getElementById('uploadProducts');
-            const uploadParentsWrapper = document.getElementById('uploadParentsWrapper');
-            const uploadParents = document.getElementById('uploadParents');
             const uploadBackgroundWrapper = document.getElementById('uploadBackgroundWrapper');
             const uploadBackground = document.getElementById('uploadBackground');
             const uploadTestsWrapper = document.getElementById('uploadTestsWrapper');
@@ -106,17 +104,6 @@
                     questions = JSON.parse(data)
                 }
             })
-
-
-            hasParents.addEventListener('change', function () {
-                const selectedOption = hasParents.value;
-                if (selectedOption == '1') {
-                    uploadParentsWrapper.style.display = "unset";
-                }
-                else {
-                    uploadParentsWrapper.style.display = "none";
-                }
-            });
 
             hasTests.addEventListener('change', function () {
                 const selectedOption = hasTests.value;
@@ -380,10 +367,6 @@
                         <label for="uploadBackground" class="form-label">בחר רקע אישי</label>
                         <input type="file" class="form-control" id="uploadBackground" accept="image/png">
                     </div>
-                    <div class="col-md-2" id="uploadParentsWrapper" style="display: none;">
-                        <label for="uploadParents" class="form-label">הורים </label>
-                        <input type=file class="form-control" id="uploadParents" name="files[]">
-                    </div>
                     <div class="col-md-2" id="uploadTestsWrapper" style="display: none;">
                         <label for="uploadTest" class="form-label">מבחנים</label>
                         <input type="file" class="form-control" id="uploadTest">
@@ -418,7 +401,6 @@
         document.getElementById('uploadStudents').addEventListener('change', insertExcelToDB, false);
         document.getElementById('uploaduniqTasks').addEventListener('change', insertExcelToDB, false);
         document.getElementById('uploadProducts').addEventListener('change', insertExcelToDB, false);
-        document.getElementById('uploadParents').addEventListener('change', insertExcelToDB, false);
         document.getElementById('uploadTest').addEventListener('change', insertExcelToDB, false);
         document.getElementById('uploadVideoQuiz').addEventListener('change', insertExcelToDB, false);
 

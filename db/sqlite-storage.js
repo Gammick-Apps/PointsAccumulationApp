@@ -215,8 +215,8 @@ async function insertExcelToDB(tableName, payload) {
       switch (tableName) {
         case 'students':
           await run(
-            'INSERT OR REPLACE INTO students (tz, code, grade, name, points, position) VALUES (?, ?, ?, ?, ?, ?);',
-            [row.tz, row.code, row.grade, row.name, row.points, row.position]
+            'INSERT OR REPLACE INTO students (tz, code, grade, name, points, position, tzParent, text) VALUES (?, ?, ?, ?, ?, ?, ?, ?);',
+            [row.tz, row.code, row.grade, row.name, row.points, row.position, row.tzParent, row.text]
           );
           break;
         case 'uniqTasks':
@@ -235,12 +235,6 @@ async function insertExcelToDB(tableName, payload) {
           await run(
             'INSERT OR REPLACE INTO questions (code, question, answers, videos) VALUES (?, ?, ?, ?);',
             [row.code, row.question, row.answers, row.videos]
-          );
-          break;
-        case 'parents':
-          await run(
-            'INSERT OR REPLACE INTO parents (tz, idStudent, text) VALUES (?, ?, ?);',
-            [row.tz, row.idStudent, row.text]
           );
           break;
            case 'tests':
@@ -275,6 +269,17 @@ async function getStudentsById(id) {
   return student || null;
 }
 
+async function getStudentParentByCode(code) {
+  await waitDB();
+  const student = await get(`
+    SELECT *,
+      CASE WHEN tzParent = ? THEN 'parent' ELSE 'student' END AS scanType
+    FROM students
+    WHERE tzParent = ? OR tz = ? OR code = ?
+    LIMIT 1;`, [code, code, code, code]);
+  return student || null;
+}
+
 async function generateUniqueStudentTz() {
   while (true) {
     const tz = Math.floor(Math.random() * (399999999 - 200000000 + 1) + 200000000);
@@ -306,6 +311,19 @@ async function updateStudents(tz, field, value){
     await run(
       `UPDATE students SET ${quoteIdentifier(field)} = ? WHERE tz = ?;`,
       [correctValue, tz]
+    );
+    return true;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function updateStudentText(studentId, text) {
+  await waitDB();
+  try {
+    await run(
+      'UPDATE students SET text = ? WHERE id = ?;',
+      [text, studentId]
     );
     return true;
   } catch (error) {
@@ -520,7 +538,6 @@ async function resetDatabase() {
   try {
     await run('DELETE FROM studentsTasks;');
     await run('DELETE FROM studentsProducts;');
-    await run('DELETE FROM parents;');
     await run('DELETE FROM tests;');
     await run('DELETE FROM questions;');
     await run('DELETE FROM students;');
@@ -551,6 +568,8 @@ module.exports = {
   addProduct,
   updateProducts,
   getStudentsById,
+  getStudentParentByCode,
+  updateStudentText,
   getTaskByCode,
   getProductByCode,
   getTestByCode,

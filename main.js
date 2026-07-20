@@ -3,7 +3,7 @@ const fs = require('fs')
 let mainWindow
 const { initDatabase, waitDB, readData, readSystem, updateSystem, closeDatabase, insertExcelToDB,
   addStudents, updateStudents, addTask, updateTask, addProduct, updateProducts, getStudentsById, getTaskByCode,
-  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
+  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, getStudentParentByCode, updateStudentText, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
 
 function createWindow() {
   let ses = session.defaultSession
@@ -161,6 +161,26 @@ ipcMain.on("sendGetStudentById", async (event, args) => {
   } catch (error) {
     console.error(error);
     mainWindow.webContents.send("receiveGetStudentById", null);
+  }
+});
+
+ipcMain.on("sendGetStudentParentByCode", async (event, args) => {
+  try {
+    const data = await getStudentParentByCode(args);
+    mainWindow.webContents.send("receiveGetStudentParentByCode", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveGetStudentParentByCode", null);
+  }
+});
+
+ipcMain.on("sendSaveStudentParentText", async (event, args) => {
+  try {
+    const data = await updateStudentText(args.studentId, args.text);
+    mainWindow.webContents.send("receiveSaveStudentParentText", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveSaveStudentParentText", false);
   }
 });
 

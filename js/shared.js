@@ -98,7 +98,7 @@ function getTextColor(color) {
 }
 
 function getExcelFiles() {
-    return ["students", "uniqTasks", "products", "parents", "tests", "questions"];
+    return ["students", "uniqTasks", "products", "tests", "questions"];
 }
 
 function getWonTexts() {
