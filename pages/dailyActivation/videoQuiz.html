@@ -21,7 +21,7 @@
     var searchVal = ""
     var buffer = "";
     var questions = ""
-    var fileName
+    var tableName
     var currentIndex = 0
     // הסרטונים השגויים ממוספרים 0 עד 4
     const wrongVideos = ["0", "1", "2", "3", "4"]
@@ -32,9 +32,9 @@
     const wrongPath = "../../resources/dailyActivity/wrong/"
 
     function onLoad() {
-      fileName = 'systemConfig';
-      window.expose.sendSystem("sendReadSystem", fileName);
-      window.expose.receiveSystem("receiveReadSystem" + fileName, (data) => {
+      tableName = 'systemConfig';
+      window.expose.sendSystem("sendReadSystem", tableName);
+      window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
         if (!data || Object.keys(data).length == 0) {
           systemConfig = getDefaultConfig()
         }
@@ -54,19 +54,19 @@
         }
       })
 
-      fileName = 'students'
-      window.expose.SendExcel("sendReadExcel", fileName);
-      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-        if (data != 0) {
-          students = JSON.parse(data)
+      tableName = 'students'
+      window.expose.sendDbData("sendGetDataByTable", tableName);
+      window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
+        if (Array.isArray(data)) {
+          students = data
         }
       })
 
-      fileName = 'videoQuiz'
-      window.expose.SendExcel("sendReadExcel", fileName);
-      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-        if (data != 0) {
-          questions = JSON.parse(data)
+      tableName = 'questions'
+      window.expose.sendDbData("sendGetDataByTable", tableName);
+      window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
+        if (Array.isArray(data)) {
+          questions = data
           showQuestion()
         }
       })
@@ -112,8 +112,8 @@
       }
       var current = questions[currentIndex];
       // תמיכה במספר תשובות נכונות: tz ו-video מופרדים בפסיק ומיושרים לפי סדר
-      var correctBarcodes = String(current.tz).split(",").map(b => b.trim());
-      var correctVideos = String(current.video).split(",").map(v => v.trim());
+      var correctBarcodes = String(current.answers).split(",").map(b => b.trim());
+      var correctVideos = String(current.videos).split(",").map(v => v.trim());
       var matchIndex = correctBarcodes.indexOf(searchVal);
       // אם נסרק ברקוד של אחת התלמידות הנכונות - מנגן ישירות את ההסרטה התואמת; אחרת מגריל סרטון שגוי
       if (matchIndex != -1) {

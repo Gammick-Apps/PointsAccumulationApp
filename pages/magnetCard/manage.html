@@ -356,9 +356,8 @@
 
         function updatePrintConfig() {
             systemConfig.hasPrint = printSwitch.checked ? "1" : "0";
-            fileName = 'systemConfig';
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(systemConfig)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => { });
+            window.expose.sendSystem("sendUpdateSystem", JSON.stringify(systemConfig));
+            window.expose.receiveSystem("receiveUpdateSystem", (data) => { });
         }
 
         function showLabel() {

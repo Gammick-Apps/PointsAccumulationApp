@@ -17,13 +17,13 @@ function ExportUniqTasks() {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    fileName = 'uniqTasks'
-    window.expose.SendExcel("sendReadExcel", fileName);
-    window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-        if (data != 0) {
+    tableName = 'uniqTasks'
+    window.expose.sendDbData("sendGetDataByTable", tableName);
+    window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
+        if (Array.isArray(data)) {
             gridOptions = {
                 columnDefs: columnDefs,
-                rowData: JSON.parse(data),
+                rowData: data,
             };
             var gridDiv = document.querySelector('#tasksGrid');
             new agGrid.Grid(gridDiv, gridOptions);

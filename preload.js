@@ -9,12 +9,6 @@ contextBridge.exposeInMainWorld('expose', {
     receive: (channel, func) => {
             ipcRenderer.on(channel, (event, ...args) => func(...args));
     },
-    SendExcel: (channel, data) => {
-        ipcRenderer.send(channel, data);
-    },
-    ReceiveExcel: (channel, func) => {
-        ipcRenderer.on(channel, (event, ...args) => func(...args));
-    },
      sendImage: (channel, data) => {
         ipcRenderer.send(channel, data);
     },

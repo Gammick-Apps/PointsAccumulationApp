@@ -17,11 +17,6 @@
     <script src="../../js/shared.js"></script>
 
     <script>
-        var students = ""
-        var uniqTasks = ""
-        var products = ""
-        var questions = ""
-        var tasks = ""
         var systemConfig = ""
         var excelFiles = getExcelFiles();
         var fileName
@@ -71,38 +66,6 @@
                 hasTests.dispatchEvent(changeEvent);
                 color.dispatchEvent(changeEvent);
                 textColor.dispatchEvent(changeEvent);
-            })
-
-            fileName = 'students'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                if (data != 0) {
-                    students = JSON.parse(data);
-                }
-            })
-
-            fileName = 'uniqTasks'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                if (data != 0) {
-                    uniqTasks = JSON.parse(data)
-                }
-            })
-
-            fileName = 'products'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                if (data != 0) {
-                    products = JSON.parse(data)
-                }
-            })
-
-            fileName = 'questions'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                if (data != 0) {
-                    questions = JSON.parse(data)
-                }
             })
 
             hasTests.addEventListener('change', function () {
