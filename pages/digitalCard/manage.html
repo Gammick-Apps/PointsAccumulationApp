@@ -104,7 +104,7 @@
                 value: params.newValue
             };
             window.expose.sendDbData("sendUpdateProduct", JSON.stringify(payload));
-            window.expose.receiveDbData("receiveUpdateProduct");
+            window.expose.receiveDbData("receiveUpdateProduct", () => {});
         }
 
         function exportToExcel(name) {
