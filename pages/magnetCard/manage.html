@@ -251,7 +251,7 @@
                 value: params.newValue
             };
             window.expose.sendDbData("sendUpdateTask", JSON.stringify(payload));
-            window.expose.receiveDbData("receiveUpdateTask");
+            window.expose.receiveDbData("receiveUpdateTask", () => {});
         }
 
         function updateProduct(params) {
