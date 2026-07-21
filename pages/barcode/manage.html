@@ -99,7 +99,7 @@
                 value: params.newValue
             };
             window.expose.sendDbData("sendUpdateStudent", JSON.stringify(payload));
-            window.expose.receiveDbData("receiveUpdateStudent");
+            window.expose.receiveDbData("receiveUpdateStudent", () => {});
         }
 
         function exportToExcel(name) {
