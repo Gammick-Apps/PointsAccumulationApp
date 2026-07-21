@@ -175,7 +175,11 @@
                     tableName = name;
                     window.expose.sendDbData("sendInsertExcelToDB", [tableName, json_object]);
                     window.expose.receiveDbData("receiveInsertExcelToDB" + tableName, (data) => {
-                        location.reload()
+                        if (!data) {
+                            alert("העלאת הקובץ נכשלה");
+                            return;
+                        }
+                        location.reload();
                     });
                 }
             };
