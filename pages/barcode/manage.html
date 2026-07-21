@@ -27,9 +27,7 @@
             { headerName: "שם", field: "name", editable: true },
             { headerName: "תעודת זהות", field: "tz", editable: true },
             { headerName: "קוד", field: "code", editable: true },
-            { headerName: "מספרי משימות", field: "tasksNumber", hide: true },
-            { headerName: "סך נקודות", field: "points", editable: true },
-            { headerName: "שמות המשימות", field: "tasks" }];
+            { headerName: "סך נקודות", field: "points", editable: true }];
 
         function onLoad() {
             tableName = 'systemConfig'
@@ -91,7 +89,6 @@
         function onFirstDataRendered(params) {
             gridOptions.api.sizeColumnsToFit({
                 defaultMinWidth: 100,
-                columnLimits: [{ key: 'tasks', minWidth: 600 }],
             });
         }
 

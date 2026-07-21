@@ -35,9 +35,7 @@
             { headerName: "שם", field: "name", editable: true },
             { headerName: "תעודת זהות", field: "tz", editable: true },
             { headerName: "קוד", field: "code", editable: true },
-            { headerName: "מספרי משימות", field: "tasksNumber", hide: true },
-            { headerName: "נקודות", field: "points", editable: true },
-            { headerName: "שמות המשימות", field: "tasks" }];
+            { headerName: "נקודות", field: "points", editable: true }];
 
         var productsGridOptions
         var productsColumnDefs = [
@@ -223,7 +221,7 @@
 
         function onStudentsFirstRendered(params) {
             gridOptions.api.sizeColumnsToFit({
-                columnLimits: [{ key: 'tasks', minWidth: 300 }, { key: 'points', maxWidth: 100 }, { key: 'grade', maxWidth: 100 }],
+                columnLimits: [{ key: 'points', maxWidth: 100 }, { key: 'grade', maxWidth: 100 }],
             });
         }
 
