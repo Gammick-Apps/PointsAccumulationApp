@@ -63,12 +63,11 @@ app.on('ready', async () => {
   try {
     await initDatabase(app);
   } catch (error) {
-    if (error && error.code === DB_FLAG_INCONSISTENT_ERROR_CODE) {
-      if (mainWindow && mainWindow.webContents) {
-        mainWindow.loadFile('pages/main/dbError.html');
-      }
-      return;
+    console.error('Failed to initialize SQLite database.', error);
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.loadFile('pages/main/dbError.html');
     }
+    return;
   }
 })
 
