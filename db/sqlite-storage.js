@@ -216,14 +216,14 @@ async function insertExcelToDB(tableName, payload) {
       switch (tableName) {
         case 'students':
           await run(
-            'INSERT OR REPLACE INTO students (tz, code, grade, name, points, position, tzParent, text) VALUES (?, ?, ?, ?, ?, ?, ?, ?);',
-            [row.tz, row.code, row.grade, row.name, row.points, row.position, row.tzParent, row.text]
+            'INSERT OR REPLACE INTO students (tz, code, grade, name, points, tzParent, text) VALUES (?, ?, ?, ?, ?, ?, ?);',
+            [row.tz, row.code, row.grade, row.name, row.points, row.tzParent, row.text]
           );
           break;
         case 'tasks':
           await run(
-            'INSERT OR REPLACE INTO tasks (code, name, points, multiple, type, class, position, show) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?);',
-            [row.code, row.name, row.points, row.multiple, row.type, row.class, row.position, row.show]
+            'INSERT OR REPLACE INTO tasks (code, name, points, multiple, type, class, show) VALUES ( ?, ?, ?, ?, ?, ?, ?);',
+            [row.code, row.name, row.points, row.multiple, row.type, row.class, row.show]
           );
           break;
         case 'products':
