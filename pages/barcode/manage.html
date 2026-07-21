@@ -25,7 +25,8 @@
         var columnDefs = [
             { headerName: "כיתה", field: "grade", editable: true },
             { headerName: "שם", field: "name", editable: true },
-            { headerName: "תעודת זהות", field: "tz" },
+            { headerName: "תעודת זהות", field: "tz", editable: true },
+            { headerName: "קוד", field: "code", editable: true },
             { headerName: "מספרי משימות", field: "tasksNumber", hide: true },
             { headerName: "סך נקודות", field: "points", editable: true },
             { headerName: "שמות המשימות", field: "tasks" }];
@@ -96,7 +97,7 @@
 
         function updateStudent(params) {
             const payload = {
-                tz: params.data.tz,
+                id: params.data.id,
                 field: params.colDef.field,
                 value: params.newValue
             };

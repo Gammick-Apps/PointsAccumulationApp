@@ -146,7 +146,7 @@ ipcMain.on("sendInsertStudent", async () => {
 ipcMain.on("sendUpdateStudent", async (event, args) => {
   try {
     const payload = JSON.parse(args);
-    const data = await updateStudent(payload.tz, payload.field, payload.value);
+    const data = await updateStudent(payload.id, payload.field, payload.value);
     mainWindow.webContents.send("receiveUpdateStudent", data);
   } catch (error) {
     console.error(error);

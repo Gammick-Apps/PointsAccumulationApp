@@ -129,7 +129,6 @@
     }
 
 async function saveStudentData() {
-
     window.expose.sendDbData("sendSaveStudentData", { currentStudent, currentResult });
     window.expose.receiveDbData("receiveSaveStudentData", (points) => {
       if (points !== false) {

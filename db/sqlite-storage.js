@@ -305,13 +305,13 @@ async function addStudent() {
   }
 }
 
-async function updateStudent(tz, field, value){
+async function updateStudent(id, field, value){
   await waitDB();
   const correctValue = field === 'points' ? Number(value) : value;
   try {
     await run(
-      `UPDATE students SET ${quoteIdentifier(field)} = ? WHERE tz = ?;`,
-      [correctValue, tz]
+      `UPDATE students SET ${quoteIdentifier(field)} = ? WHERE id = ?;`,
+      [correctValue, id]
     );
     return true;
   } catch (error) {
