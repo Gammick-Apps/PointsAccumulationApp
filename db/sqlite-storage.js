@@ -2,7 +2,6 @@ const fs = require('fs');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 
-let appInstance;
 let db;
 let dbPath;
 let initPromise;
@@ -63,6 +62,8 @@ async function initDatabase(electronApp) {
           reject(error);
           return;
         }
+        connection.configure('busyTimeout', 5000);
+        connection.serialize();
         resolve(connection);
       });
     });
@@ -233,8 +234,8 @@ async function insertExcelToDB(tableName, payload) {
           break;
         case 'questions':
           await run(
-            'INSERT OR REPLACE INTO questions (code, question, answers, videos) VALUES (?, ?, ?, ?);',
-            [row.code, row.question, row.answers, row.videos]
+            'INSERT OR REPLACE INTO questions (question, answers, videos) VALUES (?, ?, ?);',
+            [row.question, row.answers, row.videos]
           );
           break;
            case 'tests':

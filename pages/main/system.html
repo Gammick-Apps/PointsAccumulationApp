@@ -19,7 +19,6 @@
     <script>
         var systemConfig = ""
         var excelFiles = getExcelFiles();
-        var fileName
         var tableName
         var searchVal = ""
 
@@ -37,15 +36,11 @@
             const hasParents = document.getElementById('hasParents');
             const hasBuy = document.getElementById('hasBuy');
             const uploadProductsWrapper = document.getElementById('uploadProductsWrapper');
-            const uploadProducts = document.getElementById('uploadProducts');
             const uploadBackgroundWrapper = document.getElementById('uploadBackgroundWrapper');
             const uploadBackground = document.getElementById('uploadBackground');
             const uploadTestsWrapper = document.getElementById('uploadTestsWrapper');
-            const uploadTests = document.getElementById('uploadTests');
             const uploadPollsWrapper = document.getElementById('uploadPollsWrapper');
-            const uploadPolls = document.getElementById('uploadPolls');
-            const uploadVideoQuizWrapper = document.getElementById('uploadVideoQuizWrapper');
-            const uploadVideoQuiz = document.getElementById('uploadVideoQuiz');
+            const uploadQuestionsWrapper = document.getElementById('uploadQuestionsWrapper');
 
             tableName = 'systemConfig'
             window.expose.sendSystem("sendReadSystem", tableName);
@@ -113,8 +108,7 @@
                     hasParents.value = "0";
                     hasParents.dispatchEvent(changeEvent);
                 }
-                // שדה העלאת שאלות הסרטות - גלוי רק בהפעלה יומית (device 5)
-                uploadVideoQuizWrapper.style.display = (selectedOption == '5') ? "unset" : "none";
+                uploadQuestionsWrapper.style.display = (selectedOption == '5') ? "unset" : "none";
             });
 
             color.addEventListener('change', function () {
@@ -338,9 +332,9 @@
                         <label for="uploadPolls" class="form-label">סקרים</label>
                         <input type="file" class="form-control" id="uploadPolls" accept="image/png">
                     </div>
-                    <div class="col-md-2" id="uploadVideoQuizWrapper" style="display: none;">
-                        <label for="uploadVideoQuiz" class="form-label">שאלות</label>
-                        <input type=file class="form-control" id="uploadVideoQuiz" name="files[]">
+                    <div class="col-md-2" id="uploadQuestionsWrapper" style="display: none;">
+                        <label for="uploadQuestions" class="form-label">שאלות</label>
+                        <input type=file class="form-control" id="uploadQuestions" name="files[]">
                     </div>
                 </div>
                 <div class="row">
@@ -365,7 +359,7 @@
         document.getElementById('uploaduniqTasks').addEventListener('change', insertExcelToDB, false);
         document.getElementById('uploadProducts').addEventListener('change', insertExcelToDB, false);
         document.getElementById('uploadTest').addEventListener('change', insertExcelToDB, false);
-        document.getElementById('uploadVideoQuiz').addEventListener('change', insertExcelToDB, false);
+        document.getElementById('uploadQuestions').addEventListener('change', insertExcelToDB, false);
 
     </script>
 </body>
