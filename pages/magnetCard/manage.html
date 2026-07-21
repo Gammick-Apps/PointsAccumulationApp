@@ -16,7 +16,7 @@
     <script src="../../js/shared.js"></script>
 
     <script>
-        var uniqTasks = ""
+        var tasks = ""
         var systemConfig = ""
         var products = ""
         var students = "";
@@ -94,12 +94,12 @@
                 printSwitch.checked = systemConfig.hasPrint == "1" ? true : false;
                 showLabel();
                 showPrintLabel();
-                tableName = 'uniqTasks'
+                tableName = 'tasks'
                 window.expose.sendDbData("sendGetDataByTable", tableName);
                 window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
                 if (Array.isArray(data) && data.length > 0) {
                             if (systemConfig.device != "1" || (systemConfig.device == "1" && systemConfig.type =="2") ) {
-                            uniqTasks = data
+                            tasks = data
                             createTasksGrid()
                         }
                         if (systemConfig.hasBuy == 1) {
@@ -142,7 +142,7 @@
         function createTasksGrid() {
             tasksGridOptions = {
                 columnDefs: tasksColumnDefs,
-                rowData: uniqTasks,
+                rowData: tasks,
                 enableRtl: true,
                 rowSelection: 'multiple',
                 suppressRowClickSelection: true,

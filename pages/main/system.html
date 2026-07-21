@@ -317,8 +317,8 @@
                         <input type=file class="form-control" id="uploadStudents" name="files[]">
                     </div>
                     <div class="col-md-2">
-                        <label for="uploaduniqTasks" class="form-label">משימות </label>
-                        <input type=file class="form-control" id="uploaduniqTasks" name="files[]">
+                        <label for="uploadTasks" class="form-label">משימות </label>
+                        <input type=file class="form-control" id="uploadTasks" name="files[]">
                     </div>
                     <div class="col-md-2" id="uploadProductsWrapper" style="display: none;">
                         <label for="uploadProducts" class="form-label">מתנות </label>
@@ -360,7 +360,7 @@
 
     <script>
         document.getElementById('uploadStudents').addEventListener('change', insertExcelToDB, false);
-        document.getElementById('uploaduniqTasks').addEventListener('change', insertExcelToDB, false);
+        document.getElementById('uploadTasks').addEventListener('change', insertExcelToDB, false);
         document.getElementById('uploadProducts').addEventListener('change', insertExcelToDB, false);
         document.getElementById('uploadTest').addEventListener('change', insertExcelToDB, false);
         document.getElementById('uploadQuestions').addEventListener('change', insertExcelToDB, false);

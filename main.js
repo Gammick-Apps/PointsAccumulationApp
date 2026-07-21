@@ -183,7 +183,7 @@ ipcMain.on("sendSaveStudentParentText", async (event, args) => {
   }
 });
 
-// -------------- uniqTasks ---------------- //
+// -------------- tasks ---------------- //
 
 ipcMain.on("sendInsertTask", async () => {
   try {

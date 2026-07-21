@@ -101,7 +101,7 @@
                 else {
                     document.getElementById("position").style.display = "none";
                 }
-                currentTable = systemConfig.buy ? 'products' : 'uniqTasks';
+                currentTable = systemConfig.buy ? 'products' : 'tasks';
                 if (systemConfig.buy) {
                     updateLines("שלום...!", "יש לבחור מתנה לקנייה")
                 }
@@ -188,16 +188,7 @@
                 currentResult = cardData;
 
                 if (systemConfig.buy == 1) {
-                    window.expose.sendDbData("sendIsProductUsed", currentResult.id);
-                    window.expose.receiveDbData("receiveIsProductUsed", (isUsed) => {
-                        if (isUsed) {
-                            showAlert("הי, כרטיס זה כבר מומש!");
-                            return;
-                        }
-                        updateLines("בחרת במתנה: " + currentResult.name, "")
-                        updateLinesByDevice()
-                    });
-                    return
+                    updateLines("בחרת במתנה: " + currentResult.name, "")
                 }
 
                 switch (currentResult.type) {
@@ -317,7 +308,7 @@
                     window.expose.sendDbData("sendHasStudentDoneSelected", { currentStudent, currentResult });
                     window.expose.receiveDbData("receiveHasStudentDoneSelected", (alreadyDone) => {
                         if (alreadyDone) {
-                            showAlert("הי, משימה זו כבר תוקפה!");
+                            showAlert("הי, בחירה זו כבר קיימת בחשבונך!");
                         }
                         else
                             saveStudentData();

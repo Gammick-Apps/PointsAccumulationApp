@@ -1,11 +1,6 @@
 node_modules
 dist/
-parents.txt
-products.txt
-students.txt
-uniqTasks.txt
-videoQuiz.txt
-systemConfig.txt
+
 
 dist/builder-debug.yml
 dist/latest.yml

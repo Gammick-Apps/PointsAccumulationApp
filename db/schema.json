@@ -10,7 +10,7 @@
         { "name": "date", "type": "DATE", "nullable": false, "default": "(date('now','-1 day'))" },
         { "name": "numPosition", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "type", "type": "INTEGER", "nullable": false, "default": "0" },
-        { "name": "hasPrint", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "hasPrint", "type": "INTEGER", "nullable": false, "default": "1" },
         { "name": "hasBuy", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "hasParents", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "hasTests", "type": "INTEGER", "nullable": false, "default": "0" },
@@ -20,7 +20,7 @@
       "foreignKeys": []
     },
     {
-      "name": "uniqTasks",
+      "name": "tasks",
       "columns": [
         { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
         { "name": "code", "type": "INTEGER", "unique": true, "nullable": false },
@@ -51,7 +51,7 @@
         },
         {
           "columns": ["taskId"],
-          "referencesTable": "uniqTasks",
+          "referencesTable": "tasks",
           "referencesColumns": ["id"]
         }
       ]
@@ -128,7 +128,7 @@
   "foreignKeys": [
     {
       "columns": ["code"],
-      "referencesTable": "uniqTasks",
+      "referencesTable": "tasks",
       "referencesColumns": ["code"]
     }
   ]

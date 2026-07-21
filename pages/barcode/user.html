@@ -16,13 +16,13 @@
 
   <script>
     var students = ""
-    var uniqTasks = ""
+    var tasks = ""
     var systemConfig = ""
     var searchVal = ""
     var buffer = "";
     var step
-    var currentStudent 
-    var currentResult 
+    var currentStudent
+    var currentResult
     var tableName
     const Steps = {
       step1: "1",
@@ -82,13 +82,13 @@
       window.expose.sendDbData("sendGetStudentById", searchVal);
       window.expose.receiveDbData("receiveGetStudentById", (student) => {
         currentStudent = student
-        
+
         if (currentStudent == null) {
           showAlert("הברקוד לא מופיע ברשימות. גשו למורה!")
           return;
         }
-      document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step)
-      updateLines("(: שלום  " + currentStudent.name, "יש לסרוק את הברקוד לעדכון משימה", "עד כה צברת " + currentStudent.points + " נקודות")
+        document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step)
+        updateLines("(: שלום  " + currentStudent.name, "יש לסרוק את הברקוד לעדכון משימה", "עד כה צברת " + currentStudent.points + " נקודות")
       });
     }
 
@@ -101,9 +101,9 @@
           showAlert("קוד לא תקין, גשו למורה!");
           return;
         }
-        currentResult=task        
+        currentResult = task
         if (systemConfig.type === 1) {
-          window.expose.sendDbData("sendIsTaskUsed", {currentResult});
+          window.expose.sendDbData("sendIsTaskUsed", { currentResult });
           window.expose.receiveDbData("receiveIsTaskUsed", (used) => {
             if (used) {
               showAlert("הי, משימה זו כבר תוקפה!");
@@ -118,7 +118,7 @@
             window.expose.sendDbData("sendHasStudentDoneSelected", { currentStudent, currentResult });
             window.expose.receiveDbData("receiveHasStudentDoneSelected", (alreadyDone) => {
               if (alreadyDone) {
-                showAlert("הי, אסור להגיש משימה פעמיים!");
+                showAlert("הי, בחירה זו כבר קיימת בחשבונך!");
                 return;
               }
               saveStudentData();
@@ -128,28 +128,28 @@
       });
     }
 
-async function saveStudentData() {
-    window.expose.sendDbData("sendSaveStudentTask", { currentStudent, currentResult });
-    window.expose.receiveDbData("receiveSaveStudentData", (points) => {
-      if (points !== false) {
-        document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step); 
-        currentStudent.points = points;
-        updateLines("ביצעת את משימה " + currentResult.name, "כעת יש בחשבונך " + currentStudent.points + " נקודות", "...לא לשכוח לקחת את האישור מהמדפסת");
+    async function saveStudentData() {
+      window.expose.sendDbData("sendSaveStudentTask", { currentStudent, currentResult });
+      window.expose.receiveDbData("receiveSaveStudentData", (points) => {
+        if (points !== false) {
+          document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
+          currentStudent.points = points;
+          updateLines("ביצעת את משימה " + currentResult.name, "כעת יש בחשבונך " + currentStudent.points + " נקודות", "...לא לשכוח לקחת את האישור מהמדפסת");
 
-        if (systemConfig.hasPrint == 1) {
-          setTimeout(function () {
-            toPrint();
-          }, 2000);
+          if (systemConfig.hasPrint == 1) {
+            setTimeout(function () {
+              toPrint();
+            }, 2000);
+          } else {
+            reset(2000);
+          }
         } else {
-          reset(2000);
+          console.error("שגיאה: השמירה במסד הנתונים נכשלה.");
         }
-      } else {
-        console.error("שגיאה: השמירה במסד הנתונים נכשלה.");
-      }
-    });
-  
-}
-    
+      });
+
+    }
+
 
 
     function toPrint() {
