@@ -129,7 +129,7 @@
     }
 
 async function saveStudentData() {
-    window.expose.sendDbData("sendSaveStudentData", { currentStudent, currentResult });
+    window.expose.sendDbData("sendSaveStudentTask", { currentStudent, currentResult });
     window.expose.receiveDbData("receiveSaveStudentData", (points) => {
       if (points !== false) {
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step); 

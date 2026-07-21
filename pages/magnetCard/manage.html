@@ -252,7 +252,7 @@
                 value: params.newValue
             };
             window.expose.sendDbData("sendUpdateTask", JSON.stringify(payload));
-            window.expose.receiveDbData("receiveUpdateTask");
+            window.expose.receiveDbData("receiveUpdateTask", () => {});
         }
 
         function updateProduct(params) {
@@ -262,7 +262,7 @@
                 value: params.newValue
             };
             window.expose.sendDbData("sendUpdateProduct", JSON.stringify(payload));
-            window.expose.receiveDbData("receiveUpdateProduct");
+            window.expose.receiveDbData("receiveUpdateProduct", () => {});
         }
 
         function updateStudent(params) {
@@ -272,7 +272,7 @@
                 value: params.newValue
             };
             window.expose.sendDbData("sendUpdateStudent", JSON.stringify(payload));
-            window.expose.receiveDbData("receiveUpdateStudent");
+            window.expose.receiveDbData("receiveUpdateStudent", () => {});
         }
 
         function onTaskRowSelected(event) {
@@ -337,17 +337,19 @@
         }
 
         function updateBuyStatus() {
+            const previousBuy = systemConfig.buy;
             systemConfig.buy = swich.checked;
-    
+
             window.expose.sendSystem("sendUpdateSystem", JSON.stringify(systemConfig));
             window.expose.receiveSystem("receiveUpdateSystem", (data) => {
-            if (data === false) {
-                alert("שמירת הגדרת מצב קנייה נכשלה");
-                swich.checked = !systemConfig.buy;
-                showLabel();
-            } 
-    });
-}
+                if (data === false) {
+                    alert("שמירת הגדרת מצב קנייה נכשלה");
+                    systemConfig.buy = previousBuy;
+                    swich.checked = !!previousBuy;
+                    showLabel();
+                }
+            });
+        }
 
         function printChange() {
             updatePrintConfig();
