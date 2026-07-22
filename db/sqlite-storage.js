@@ -88,10 +88,18 @@ async function initDatabase(electronApp) {
       throw inconsistentDbError;
     }
 
-    fs.writeFileSync(flagPath, JSON.stringify({ dbCreated: true }),
-      { encoding: 'utf8', flag: 'wx' });
-    db = await openDatabase(dbPath);
-    await createSchema();
+    try {
+      db = await openDatabase(dbPath);
+      await createSchema();
+      fs.writeFileSync(flagPath, JSON.stringify({ dbCreated: true }),
+        { encoding: 'utf8', flag: 'wx' });
+    } catch (error) {
+      closeDatabase();
+      if (fs.existsSync(dbPath)) {
+        fs.unlinkSync(dbPath);
+      }
+      throw error;
+    }
     console.log('SQLite backend active: sqlite3');
     return true;
 
