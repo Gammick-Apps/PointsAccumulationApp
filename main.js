@@ -1,13 +1,12 @@
 const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
+const path = require('path')
 let mainWindow
 const { initDatabase, waitDB, readData, readSystem, updateSystem, closeDatabase, insertExcelToDB,
   addStudent, updateStudent, addTask, updateTask, addProduct, updateProduct, getStudentById, getTaskByCode,
   isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, getStudentParentByCode, updateStudentText, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
 
 function createWindow() {
-  let ses = session.defaultSession
-
   mainWindow = new BrowserWindow({
     width: 800, height: 600,
     webPreferences: {
@@ -23,36 +22,6 @@ function createWindow() {
     mainWindow.menuBarVisible = true
   }
 
-  ses.on('will-download', (e, downloadItem, webContents) => {
-    let name = downloadItem.getFilename()
-    const existingFilePath = app.getPath('desktop') + `\\ניקוד תלמידים` + `/${name}`
-
-    if (fs.existsSync(existingFilePath)) {
-      fs.unlink(existingFilePath, (err) => {
-        if (err) {
-          console.error('Error removing the file:', err);
-        } else {
-          downloadItem.setSavePath(existingFilePath)
-        }
-      });
-    }
-    else {
-      downloadItem.setSavePath(existingFilePath)
-    }
-
-    downloadItem.once('done', (event, state) => {
-      if (state === 'completed') {
-        dialog.showMessageBox({
-          type: 'info',
-          title: 'הודעת מערכת',
-          message: 'הקובץ נשמר בהצלחה בשולחן העבודה בתקיית ניקוד תלמידים! '
-        })
-      } else {
-        dialog.showErrorBox('הודעת מערכת', 'הקובץ לא נשמר')
-      }
-    })
-  })
-
   mainWindow.on('closed', () => {
     mainWindow = null
   })
@@ -60,6 +29,7 @@ function createWindow() {
 
 app.on('ready', async () => {
   createWindow();
+  registerDownloadHandler();
   try {
     await initDatabase(app);
   } catch (error) {
@@ -359,8 +329,31 @@ ipcMain.on("sendUploadBackground", (event, args) => {
 });
 
 ipcMain.on("sendPrint", (event, args) => {
-  let printWindow = new BrowserWindow({ show: false });
+  let printWindow = new BrowserWindow({ show: false, width: 302, height: 600 });
   let printFinished = false;
+  const fontData = fs.readFileSync(path.join(__dirname, 'fonts', 'FbMagnolia-Regular.otf')).toString('base64');
+  const receiptHtml = String(args).replace('</head>', `
+    <style>
+      @font-face {
+        font-family: mainFont;
+        src: url("data:font/otf;base64,${fontData}") format("opentype");
+      }
+      @page { size: 80mm auto; margin: 0; }
+      html, body {
+        width: 80mm;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+      body {
+        box-sizing: border-box;
+        padding: 2mm 5mm 2mm 2mm;
+        direction: rtl;
+        font-family: mainFont, Arial, sans-serif;
+      }
+      * { box-sizing: border-box; }
+    </style>
+  </head>`);
 
   const finishPrint = (success) => {
     if (printFinished) {
@@ -376,19 +369,26 @@ ipcMain.on("sendPrint", (event, args) => {
     }
   };
 
-  printWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(args));
+  printWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(receiptHtml));
   printWindow.webContents.once('did-finish-load', async () => {
     // רשת ביטחון: אם ההדפסה לא מחזירה תשובה (למשל כשהמדפסת מנותקת),
     // נחזיר receivePrint בכל מקרה אחרי 5 שניות.
     setTimeout(() => finishPrint(false), 5000);
     try {
+      await printWindow.webContents.executeJavaScript('document.fonts ? document.fonts.ready : Promise.resolve()');
       const printers = await printWindow.webContents.getPrintersAsync();
       if (!printers || printers.length === 0) {
         finishPrint(false);
         return;
       }
       printWindow.webContents.print(
-        { silent: true, printBackground: true },
+        {
+          silent: true,
+          printBackground: true,
+          margins: { marginType: 'none' },
+          pageSize: { width: 80000, height: 200000 },
+          scaleFactor: 100
+        },
         (success, errorType) => {
           finishPrint(success);
         }
@@ -399,6 +399,38 @@ ipcMain.on("sendPrint", (event, args) => {
     }
   });
 });
+
+function registerDownloadHandler() {
+  session.defaultSession.on('will-download', (e, downloadItem, webContents) => {
+    let name = downloadItem.getFilename()
+    const existingFilePath = app.getPath('desktop') + `\\ניקוד תלמידים` + `/${name}`
+
+    if (fs.existsSync(existingFilePath)) {
+      fs.unlink(existingFilePath, (err) => {
+        if (err) {
+          console.error('Error removing the file:', err);
+        } else {
+          downloadItem.setSavePath(existingFilePath)
+        }
+      });
+    }
+    else {
+      downloadItem.setSavePath(existingFilePath)
+    }
+
+    downloadItem.once('done', (event, state) => {
+      if (state === 'completed') {
+        dialog.showMessageBox({
+          type: 'info',
+          title: 'הודעת מערכת',
+          message: 'הקובץ נשמר בהצלחה בשולחן העבודה בתקיית ניקוד תלמידים! '
+        })
+      } else {
+        dialog.showErrorBox('הודעת מערכת', 'הקובץ לא נשמר')
+      }
+    })
+  })
+}
 
 // -------------- electron ---------------- //
 
