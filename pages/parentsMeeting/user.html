@@ -52,6 +52,7 @@
     var parents = ""
     var searchVal = ""
     var step
+    var tableName
     const Steps = {
       step1: "1",
       step2: "2",
@@ -60,15 +61,10 @@
 
     function onLoad() {
       step = Steps.step1;
-      fileName = 'systemConfig'
-      window.expose.SendExcel("sendReadExcel", fileName);
-      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-        if (data == 0) {
-          systemConfig = getDefaultConfig()
-        }
-        else {
-          systemConfig = JSON.parse(data)
-        }
+      tableName = 'systemConfig'
+      window.expose.SendExcel("sendReadSystem", tableName);
+      window.expose.ReceiveExcel("receiveReadSystem" + tableName, (data) => {
+        systemConfig = JSON.parse(data)
         document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
         document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color)
@@ -109,7 +105,7 @@
 
     function searchInExcel() {
       for (var i = 0; i < parents.length; i++) {
-        if (parents[i]["tz"] == searchVal || parents[i]["tzParent"] == searchVal) {
+        if (parents[i]["tz"] == searchVal || parents[i]["idStudent"] == searchVal) {
           result = parents[i];
           break;
         }
@@ -119,9 +115,9 @@
         return;
       }
       if (result.tz == searchVal)
-        studentStart()
-      else if (result.tzParent == searchVal)
         paretntStart()
+      else if (result.idStudent == searchVal)
+        studentStart()
     }
 
     function paretntStart() {
@@ -144,7 +140,7 @@
     function saveData() {
       result.text = document.getElementById("content").value;
       for (var i = 0; i < parents.length; i++) {
-        if (parents[i]["tzParent"] == result.tzParent) {
+        if (parents[i]["tz"] == result.tz) {
           parents[i] = result;
           break;
         }

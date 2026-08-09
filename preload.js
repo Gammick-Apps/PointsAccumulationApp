@@ -20,7 +20,13 @@ contextBridge.exposeInMainWorld('expose', {
     },
     appClose: () => {
         ipc.send('close')
-    }
+    },
+    SendSystem: (channel, data) => {
+        ipcRenderer.send(channel, data);
+    },
+    ReceiveSystem: (channel, func) => {
+        ipcRenderer.on(channel, (event, ...args) => func(...args));
+    },
 });
 
 
