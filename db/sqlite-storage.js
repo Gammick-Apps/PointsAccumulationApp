@@ -13,6 +13,14 @@ function quoteIdentifier(identifier) {
   return `"${String(identifier).replace(/"/g, '""')}"`;
 }
 
+function normalizeCodeValue(value) {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  return String(value).trim();
+}
+
 function run(sql, params = []) {
   return new Promise((resolve, reject) => {
     db.run(sql, params, function onRun(error) {
@@ -315,7 +323,16 @@ async function addStudent() {
 
 async function updateStudent(id, field, value) {
   await waitDB();
-  const correctValue = field === 'points' ? Number(value) : value;
+  let correctValue;
+
+  if (field === 'points') {
+    correctValue = Number(value);
+  } else if (field === 'code') {
+    correctValue = normalizeCodeValue(value);
+  } else {
+    correctValue = value;
+  }
+
   try {
     await run(
       `UPDATE students SET ${quoteIdentifier(field)} = ? WHERE id = ?;`,
