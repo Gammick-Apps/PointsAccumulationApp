@@ -17,8 +17,8 @@
 
   <script>
     var systemConfig = ""
-    var students = ""
     var searchVal = ""
+    var tableName
     var result = "";
     var step
     const Steps = {
@@ -31,14 +31,14 @@
     function onLoad() {
       step = Steps.step1;
       updateLines("ברוכות הבאות!", "מה הגרפולוגית רשמה על...?");
-      fileName = 'systemConfig'
-      window.expose.SendExcel("sendReadExcel", fileName);
-      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-        if (data == 0) {
+      tableName = 'systemConfig'
+      window.expose.sendSystem("sendReadSystem", tableName);
+      window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
+        if (!data || Object.keys(data).length == 0) {
           systemConfig = getDefaultConfig()
         }
         else {
-          systemConfig = JSON.parse(data)
+          systemConfig = data
         }
         document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
         document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
@@ -51,13 +51,6 @@
         else {
           document.getElementById("position").style.display = "none";
         }
-        fileName = 'students'
-        window.expose.SendExcel("sendReadExcel", fileName);
-        window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-          if (data != 0) {
-            students = JSON.parse(data)
-          }
-        })
       })
     }
 
@@ -81,17 +74,15 @@
     });
 
     function searchInExcel() {
-      for (var i = 0; i < students.length; i++) {
-        if (students[i]["tz"] == searchVal) {
-          result = students[i];
-          break;
+      window.expose.sendDbData("sendGetStudentById", searchVal);
+      window.expose.receiveDbData("receiveGetStudentById", (student) => {
+        result = student;
+        if (result == null) {
+          showAlert(" הברקוד לא מופיע ברשימות. גשו למורה!")
+          return;
         }
-      }
-      if (result == "") {
-        showAlert(" הברקוד לא מופיע ברשימות. גשו למורה!")
-        return;
-      }
-      showResult()
+        showResult()
+      });
     }
 
     function showResult() {
@@ -115,22 +106,16 @@
         <meta charset="utf-8" />
         <title>Print</title>
         <style>
-          body {
-            font-family: 'Arial', sans-serif;
-            direction: rtl;
-            margin: 0;
-            padding: 0;
-          }
           #title {
             font-size: 40px;
             text-align: center;
           }
           #content div {
-            font-size: 20px;
+            font-size: 17px;
             margin: 10px 0;
           }
           #footer {
-            font-size: 15px;
+            font-size: 12px;
             text-align: center;
             margin-top: 20px;
           }

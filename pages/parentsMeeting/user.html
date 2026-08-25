@@ -49,26 +49,22 @@
     var currentDate = getTodayDate()
     var currentDateTime = getTodayDateTime()
     var systemConfig = ""
-    var parents = ""
     var searchVal = ""
     var step
+    var tableName
     const Steps = {
       step1: "1",
       step2: "2",
       step3: "3"
-    }; var result = "";
+    }; 
+    var result = "";
 
     function onLoad() {
       step = Steps.step1;
-      fileName = 'systemConfig'
-      window.expose.SendExcel("sendReadExcel", fileName);
-      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-        if (data == 0) {
-          systemConfig = getDefaultConfig()
-        }
-        else {
-          systemConfig = JSON.parse(data)
-        }
+      tableName = 'systemConfig'
+      window.expose.sendSystem("sendReadSystem", tableName);
+      window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
+        systemConfig = data
         document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
         document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color)
@@ -80,13 +76,6 @@
         else {
           document.getElementById("position").style.display = "none";
         }
-        fileName = 'parents'
-        window.expose.SendExcel("sendReadExcel", fileName);
-        window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-          if (data != 0) {
-            parents = JSON.parse(data)
-          }
-        })
       })
     }
 
@@ -99,7 +88,7 @@
             else if (searchVal == '207594581')
               login('../main/user')
             else //כיתה או בת
-              searchInExcel();
+              SearchStudentParent();
           }
         }
       } else {
@@ -107,24 +96,22 @@
       }
     });
 
-    function searchInExcel() {
-      for (var i = 0; i < parents.length; i++) {
-        if (parents[i]["tz"] == searchVal || parents[i]["tzParent"] == searchVal) {
-          result = parents[i];
-          break;
+    function SearchStudentParent() {
+      window.expose.sendDbData("sendGetStudentParentByCode", searchVal);
+      window.expose.receiveDbData("receiveGetStudentParentByCode", (studentParent) => {
+        result = studentParent;
+        if (result == null) {
+          showAlert(" הברקוד לא מופיע ברשימות. גשו למורה!")
+          return;
         }
-      }
-      if (result == "") {
-        showAlert(" הברקוד לא מופיע ברשימות. גשו למורה!")
-        return;
-      }
-      if (result.tz == searchVal)
-        studentStart()
-      else if (result.tzParent == searchVal)
-        paretntStart()
+        if (result.scanType == 'parent')
+          parentStart()
+        else
+          studentStart()
+      });
     }
 
-    function paretntStart() {
+    function parentStart() {
       step = Steps.step2;
       updateLines("", " שלום " + " אמא של " + result.name, "כתבי כאן כמה מילים טובות לביתך")
       document.getElementById("line2").style.fontSize = "4.5vw"
@@ -143,15 +130,12 @@
 
     function saveData() {
       result.text = document.getElementById("content").value;
-      for (var i = 0; i < parents.length; i++) {
-        if (parents[i]["tzParent"] == result.tzParent) {
-          parents[i] = result;
-          break;
+      window.expose.sendDbData("sendSaveStudentParentText", { studentId: result.id, text: result.text });
+      window.expose.receiveDbData("receiveSaveStudentParentText", (data) => {
+        if (!data) {
+          showAlert("שמירת המכתב נכשלה");
+          return;
         }
-      }
-      fileName = 'parents'
-      window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(parents)]);
-      window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
         document.getElementById("form").style.display = "none"
         document.getElementById("text").style.top = "30%";
         updateLines("", "!המכתב נשמר", "...תודה רבה על שיתוף הפעולה")
@@ -167,22 +151,16 @@
         <meta charset="utf-8" />
         <title>Print</title>
         <style>
-          body {
-            font-family: 'Arial', sans-serif;
-            direction: rtl;
-            margin: 0;
-            padding: 0;
-          }
           #title {
             font-size: 40px;
             text-align: center;
           }
           #content div {
-            font-size: 20px;
+            font-size: 17px;
             margin: 10px 0;
           }
           #footer {
-            font-size: 15px;
+            font-size: 12px;
             text-align: center;
             margin-top: 20px;
           }
