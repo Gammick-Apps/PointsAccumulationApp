@@ -1,0 +1,43 @@
+.text {
+    position: absolute;
+    left: 5%;
+    top: 15%;
+    bottom: 10%;
+    width: 90%;
+    text-align: center;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+#line1 {
+    font-size: 5vw;
+    line-height: 3.5vw;
+    direction: rtl;
+}
+
+#line2 {
+    font-size: 2.5vw;
+    direction: rtl;
+    max-height: 70vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: auto;
+}
+
+#line2::-webkit-scrollbar {
+  width: 24px;
+}
+
+#line2::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+}
+
+#line2::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 12px;
+}
+
+#line2::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.7);
+}

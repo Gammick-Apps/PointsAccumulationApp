@@ -1,0 +1,108 @@
+.text {
+    position: absolute;
+    left: 10%;
+    top: 10%;
+    bottom: 20%;
+    width: 80%;
+    text-align: center;
+    margin-right: auto;
+    margin-left: auto;
+    line-height: 4vw;
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.blink-text {
+    font-size: 24px;
+    font-weight: bold;
+    animation: blink 3s infinite;
+}
+
+#line1 {
+    font-size: 3vw;
+}
+
+#line2 {
+    font-size: 4vw;
+    font-weight: 800;
+}
+
+#line3 {
+    font-size: 2vw;
+}
+
+#content {
+    background-color: #3196BD;
+    font-size: 2vw;
+    color: white
+}
+
+#btnSave {
+    background-color: #75DDB4;
+    color: white;
+}
+
+#cards-scroll {
+    direction: rtl;
+    scrollbar-width: thin;
+    scrollbar-gutter: right;
+}
+
+#cards-scroll::-webkit-scrollbar {
+    width: 8px;
+    background: #e0e0e0;
+}
+
+#cards-scroll::-webkit-scrollbar-thumb {
+    background: #00a597;
+    border-radius: 8px;
+}
+
+#chart-container {
+    width: 100%;
+    max-width: 1000px;
+    min-width: 220px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+}
+
+#chart-container canvas {
+    width: 100% !important;
+    height: 600px !important;
+    max-width: 1000px;
+    max-height: 800px;
+    min-width: 220px;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 2px 8px #00a59733;
+    padding: 25px;
+    display: block;
+    margin: auto;
+}
+
+@media (max-width: 700px) {
+    #chart-container {
+        max-width: 98vw;
+        min-width: 0;
+        padding: 0;
+    }
+
+    #chart-container canvas {
+        max-width: 98vw;
+        min-width: 0;
+        padding: 8px;
+    }
+}
