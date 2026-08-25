@@ -57,14 +57,14 @@
 
     <script>
         var actions = ""
-        var systemConfig = ""
+        var systemConfig
         var students = ""
         var tests = ""
-        var studentResult = ""
-        var result = "";
+        var currentStudent = ""
+        var currentResult = "";
         var searchVal = ""
         var buffer = "";
-        var fileName
+        var tableName
         var isModalOpen = false;
         var questions
         var step
@@ -78,6 +78,7 @@
         const questionProgress = document.getElementById('questionProgress');
         const testNameElement = document.getElementById('testName');
         const timerElement = document.getElementById('timer');
+        let currentTable = "";
         let currentTest = null;
         let currentQuestionIndex = 0;
         let correctCount = 0;
@@ -85,15 +86,10 @@
 
         function onLoad() {
             step = Steps.step1;
-            fileName = 'systemConfig'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                if (data == 0) {
-                    systemConfig = getDefaultConfig()
-                }
-                else {
-                    systemConfig = JSON.parse(data)
-                }
+            tableName = 'systemConfig'
+            window.expose.sendSystem("sendReadSystem", tableName);
+            window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
+                systemConfig = data
                 document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
                 document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
                 document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color)
@@ -105,39 +101,21 @@
                 else {
                     document.getElementById("position").style.display = "none";
                 }
+                currentTable = systemConfig.buy ? 'products' : 'tasks';
                 if (systemConfig.buy) {
                     updateLines("שלום...!", "יש לבחור מתנה לקנייה")
                 }
                 else {
                     updateLines(" שלום...! ", "יש לבחור משימה לתיקוף ")
                 }
-                fileName = 'students'
-                window.expose.SendExcel("sendReadExcel", fileName);
-                window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                    if (data != 0) {
-                        students = JSON.parse(data)
-                        systemConfig.buy ?
-                            fileName = 'products' : fileName = 'uniqTasks';
-                        window.expose.SendExcel("sendReadExcel", fileName);
-                        window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                            if (data != 0) {
-                                actions = JSON.parse(data)
-                                createCards()
-                            }
-                        })
-
-                        if (systemConfig.hasTests == "1") {
-                            fileName = 'tests';
-                            window.expose.SendExcel("sendReadExcel", fileName);
-                            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                                if (data != 0) {
-                                    tests = JSON.parse(data)
-                                }
-                            })
-                        }
+                window.expose.receiveDbData("receiveGetDataByTable" + currentTable, (data) => {
+                    if (Array.isArray(data) && data.length > 0) {
+                        actions = data;
+                        createCards();
                     }
                 });
-            })
+                window.expose.sendDbData("sendGetDataByTable", currentTable);
+            });
         }
 
         document.addEventListener("keypress", function (e) {
@@ -158,7 +136,7 @@
                         }
                     }
                     else if (step == Steps.step2) {
-                        searchInExcel();
+                        searchStudent();
                     }
                 }
             } else {
@@ -206,41 +184,49 @@
         function selectAction(cardData) {
             if (step != Steps.step3) {
                 step = Steps.step2;
-                result = cardData;
-                switch (result.type) {
+
+                currentResult = cardData;
+
+                if (systemConfig.buy == 1) {
+                    updateLines("בחרת במתנה: " + currentResult.name, "")
+                }
+
+                switch (currentResult.type) {
                     case 1: {
-                        if (systemConfig.buy == 1) {
-                            updateLines("בחרת במתנה: " + result.name, "")
-                        }
-                        else {
-                            updateLines("בחרת ב: " + result.name, "")
-                        }
-                        updateLinesByDevice()
+                        updateLines("בחרת ב: " + currentResult.name, "")
                         break;
                     }
                     case 2: {
-                        updateLines("בחרת ב: " + result.name, "")
+                        updateLines("בחרת ב: " + currentResult.name, "")
                         openTest();
-                        break;
+                        return;
                     }
                 }
-
+                updateLinesByDevice()
             }
         }
+
+        //-------------tests-------------------//
 
         function openTest() {
             isModalOpen = true;
             document.getElementById("cards").style.display = "none"
-            currentTest = tests.find(test => test.id == result.code);
-            currentQuestionIndex = 0;
-            correctCount = 0;
-            testNameElement.innerText = `${result.name}`;
-            questions = shuffleArray(currentTest.questions);
-            displayQuestion();
+            window.expose.sendDbData("sendGetTestByCode", currentResult.code);
+            window.expose.receiveDbData("receiveGetTestByCode", (test) => {
+                if (!test || !Array.isArray(test.questions) || test.questions.length == 0) {
+                    showAlert("שגיאה בטעינת המבחן");
+                    return;
+                }
+                currentTest = test;
+                currentQuestionIndex = 0;
+                correctCount = 0;
+                testNameElement.innerText = `${currentResult.name}`;
+                questions = shuffleArray(currentTest.questions);
+                displayQuestion();
 
-            // Show Modal
-            const triviaModal = new bootstrap.Modal(document.getElementById('triviaModal'));
-            triviaModal.show();
+                const triviaModal = new bootstrap.Modal(document.getElementById('triviaModal'));
+                triviaModal.show();
+            });
         }
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -296,68 +282,67 @@
 
         function showResults() {
             isModalOpen = false;
-            const score = correctCount * result.points;
+            const score = correctCount * currentResult.points;
             updateLines("הציון שלך: " + score)
             updateLinesByDevice()
-            result.points = score;
+            currentResult.points = score;
             const triviaModalEl = document.getElementById('triviaModal');
             const triviaModal = bootstrap.Modal.getInstance(triviaModalEl);
             triviaModal.hide();
         }
 
-        function searchInExcel() {
-            document.getElementById("cards").style.display = "none"
-            step = Steps.step3
-            for (var i = 0; i < students.length; i++) {
-                if (students[i]["tz"] == searchVal || students[i]["code"] == searchVal) {
-                    studentResult = students[i];
-                    break;
-                }
-            }
-            if (studentResult == "") {
-                showAlert("  קוד לא קיים. גשו למורה!")
-                return;
-            }
+        //---------------------------//
 
-            if (!result.multiple && studentResult.tasksNumber.includes(result.code)) {
-                showAlert("הי, בחירה זו כבר קיימת בחשבונך!");
-                return;
-            }
-            finishSession()
-        }
+        function searchStudent() {
+            document.getElementById("cards").style.display = "none";
+            step = Steps.step3;
 
-        function finishSession() {
-            studentResult.tasks += result.name + ',';
-            studentResult.tasksNumber += result.code + ',';
-            if (systemConfig.buy == 0)
-                studentResult.points = parseInt(result.points) + parseInt(studentResult.points);
-            else {
-                studentResult.points = parseInt(studentResult.points) - parseInt(result.points);
-                if (studentResult.points < 0) {
-                    showAlert("אין לך מספיק נקודות בחשבון!")
+            window.expose.sendDbData("sendGetStudentById", searchVal);
+            window.expose.receiveDbData("receiveGetStudentById", (student) => {
+                currentStudent = student;
+                if (currentStudent == null) {
+                    showAlert("הברקוד לא מופיע ברשימות. גשו למורה!");
                     return;
                 }
-            }
-            saveData();
+                if (!currentResult.multiple) {
+                    window.expose.sendDbData("sendHasStudentDoneSelected", { currentStudent, currentResult });
+                    window.expose.receiveDbData("receiveHasStudentDoneSelected", (alreadyDone) => {
+                        if (alreadyDone) {
+                            showAlert("הי, בחירה זו כבר קיימת בחשבונך!");
+                        }
+                        else
+                            saveStudentData();
+                    });
+                }
+                else {
+                    saveStudentData();
+                }
+            })
         }
 
-        function saveData() {
-            for (var i = 0; i < students.length; i++) {
-                if (students[i]["tz"] == studentResult.tz) {
-                    students[i] = studentResult;
-                    break;
-                }
+        async function saveStudentData() {
+            if (systemConfig.buy == 1) {
+                window.expose.sendDbData("sendSaveStudentProduct", { currentStudent, currentResult });
+            } else {
+                window.expose.sendDbData("sendSaveStudentTask", { currentStudent, currentResult });
             }
-            fileName = 'students'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                updateLines("תודה רבה " + studentResult.name, " כעת יש בחשבונך " + studentResult.points + " נקודות", "בהצלחה!")
-                if (systemConfig.hasPrint == 1)
-                    setTimeout(function () {
-                        toPrint();
-                    }, 2500);
-                else
-                    reset(2500);
+            window.expose.receiveDbData("receiveSaveStudentData", (points) => {
+                if (points == false) {
+                    showAlert(" אין לך מספיק נקודות בחשבון! ");
+                    return;
+                } else {
+                    document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
+                    currentStudent.points = points;
+                    updateLines("תודה רבה " + currentStudent.name, " כעת יש בחשבונך " + currentStudent.points + " נקודות", "בהצלחה!")
+
+                    if (systemConfig.hasPrint == 1) {
+                        setTimeout(function () {
+                            toPrint();
+                        }, 2000);
+                    } else {
+                        reset(2000);
+                    }
+                }
             });
         }
 
@@ -369,22 +354,16 @@
             <meta charset="utf-8" />
             <title>Print</title>
             <style>
-                body {
-                    font-family: 'Arial', sans-serif;;
-                    direction: rtl;
-                    margin: 0;
-                    padding: 0;
-                }
                 #title {
                     font-size: 40px;
                     text-align: center;
                 }
                 #content div {
-                    font-size: 20px;
+                    font-size: 17px;
                     margin: 10px 0;
                 }
                 #footer {
-                    font-size: 15px;
+                    font-size: 12px;
                     text-align: center;
                     margin-top: 20px;
                 }
@@ -394,12 +373,12 @@
             <div id="title">אישור</div>
             <br>
             <div id="content">
-                <div>${studentResult.name}</div>
-                <div>${studentResult.grade}</div>
+                <div>${currentStudent.name}</div>
+                <div>${currentStudent.grade}</div>
                 <div>${systemConfig.buy == 0
-                    ? "" + result.name
-                    : "זכאות למתנה: " + result.name}</div>
-                <div>נקודות בחשבון: ${studentResult.points}</div>
+                    ? "" + currentResult.name
+                    : "זכאות למתנה: " + currentResult.name}</div>
+                <div>נקודות בחשבון: ${currentStudent.points}</div>
             </div>
             <br>
             <div id="title">בהצלחה!</div>
@@ -442,10 +421,10 @@
                 $('#modal').modal('show')
             });
             setTimeout(function () {
-            $(document).ready(function () {
-                $('#modal').modal('hide')
-            });
-            reset(0)
+                $(document).ready(function () {
+                    $('#modal').modal('hide')
+                });
+                reset(0)
             }
                 , 2500);
         }
