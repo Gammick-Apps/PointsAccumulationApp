@@ -2,14 +2,13 @@
     position: absolute;
     left: 10%;
     right: 10%;
-    top: 10%;
+    top: 2.5%;
     bottom: 10%;
-    width: 30%;
+    width: 80%;
     text-align: center;
     margin-right: auto;
     margin-left: auto;
     line-height: 2vw;
-    color: white;
 }
 
 #line1 {
@@ -18,7 +17,7 @@
 }
 
 #line2 {
-    font-size: 1vw;
+    font-size: 1.5vw;
     font-weight: 300;
 }
 
@@ -38,6 +37,7 @@ img {
 .ag-cell-value {
     direction: rtl;
 }
-.closeBtn {
-    height: auto !important;
+
+#checkboxList{
+    direction: rtl;
 }

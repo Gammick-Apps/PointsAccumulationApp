@@ -15,13 +15,11 @@
   <script src="../../js/shared.js"></script>
 
   <script>
-    var currentDate = getTodayDate();
-    var currentDateTime = getTodayDateTime();
     var systemConfig = ""
     var products = ""
     var searchVal = ""
     var result = "";
-    var fileName
+    var tableName
     const Steps = {
       step1: "1",
       step2: "2",
@@ -31,24 +29,12 @@
     function onLoad() {
       step = Steps.step1;
       updateLines("יש לסרוק את כרטיס ההפתעה", "...אולי הכרטיס שלך יזכה")
-      fileName = 'systemConfig'
-      window.expose.SendExcel("sendReadExcel", fileName);
-      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-        if (data == 0) {
-          systemConfig = getDefaultConfig()
-        }
-        else {
-          systemConfig = JSON.parse(data)
-        }
+      tableName = 'systemConfig'
+      window.expose.sendSystem("sendReadSystem", tableName);
+      window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
+          systemConfig = data
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, 0, step)
       })
-      fileName = 'products'
-      window.expose.SendExcel("sendReadExcel", fileName);
-      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-        if (data != 0) {
-          products = JSON.parse(data)
-        };
-      });
     }
 
     document.addEventListener("keypress", function (e) {
@@ -60,7 +46,7 @@
             else if (searchVal == '011429519')
               login('../main/system')
             else
-              searchInExcel();
+              searchProduct();
           }
         }
       } else {
@@ -68,45 +54,36 @@
       }
     });
 
-    function searchInExcel() {
-      for (var i = 0; i < products.length; i++) {
-        if (products[i]["code"] == searchVal) {
-          result = products[i];
-          break;
-        }
-      }
+ function searchProduct() {
+    window.expose.sendDbData("sendGetProductByCode", searchVal);
+    window.expose.receiveDbData("receiveGetProductByCode", (product) => {
+    result = product;
 
-      let texts
-      if (result != "") {
-        step = Steps.step2;
-        if (result.used == "1") {
-          showAlert("הי, שובר זה כבר הודפס!");
-          return;
-        }
-        document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, 0, step)
-        texts = getWonTexts();
-        updateLines(texts[Math.floor(Math.random() * texts.length)], "זכית ב" + result.name)
-        saveData();
+    let texts;
+    if (result && result != "") {
+      step = Steps.step2;
+      if (result.used == "1") {
+        showAlert("הי, שובר זה כבר הודפס!");
+        return;
       }
-      else {
-        step = Steps.step3;
-        document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, 0, step)
-        texts = getLossTexts()
-        updateLines(texts[Math.floor(Math.random() * texts.length)],"!...אולי בפעם הבאה")
-        reset(2500)
-      }
+      document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, 0, step);
+      texts = getWonTexts();
+      updateLines(texts[Math.floor(Math.random() * texts.length)], "זכית ב" + result.name);
+      saveData();
     }
+    else {
+      step = Steps.step3;
+      document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, 0, step);
+      texts = getLossTexts();
+      updateLines(texts[Math.floor(Math.random() * texts.length)], "!...אולי בפעם הבאה");
+      reset(2500);
+    }
+  });
+}
 
     function saveData() {
-      for (var i = 0; i < products.length; i++) {
-        if (products[i]["code"] == result.code) {
-          products[i].used = 1
-          break;
-        }
-      }
-      fileName = 'products'
-      window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(products)]);
-      window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+      window.expose.sendDbData("sendMarkProductAsUsed", result.id);
+      window.expose.receiveDbData("receiveMarkProductAsUsed", () => {
         setTimeout(function () {
           toPrint();
         }, 2000);
@@ -121,22 +98,16 @@
             <meta charset="utf-8" />
             <title>Print</title>
             <style>
-                body {
-                    font-family: 'Arial', sans-serif;;
-                    direction: rtl;
-                    margin: 0;
-                    padding: 0;
-                }
                 #title {
                     font-size: 40px;
                     text-align: center;
                 }
                 #content div {
-                    font-size: 20px;
+                    font-size: 17px;
                     margin: 10px 0;
                 }
                 #footer {
-                    font-size: 10px;
+                  font-size: 12px;
                     text-align: center;
                     margin-top: 20px;
                 }

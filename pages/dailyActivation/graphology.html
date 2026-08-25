@@ -1,70 +1,45 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 
 <head>
   <meta charset="utf-8" />
-  <title>אסיפת הורים</title>
-  <style>
-    @font-face {
-      font-family: printFont;
-      src: url("../../fonts/FbMagnolia-Regular.otf");
-    }
-
-    #textContent {
-      font-family: printFont;
-      direction: rtl;
-      font-size: 20px;
-    }
-
-    #contact {
-      font-size: 10px;
-      font-family: Arial, Helvetica, sans-serif;
-      direction: rtl;
-    }
-
-    #title {
-      font-family: printFont;
-      direction: rtl;
-      font-size: 25px;
-    }
-
-    #header {
-      font-family: printFont;
-      direction: rtl;
-      font-size: 35px;
-    }
-  </style>
+  <title> גרפולוגיה</title>   
 </head>
 
 <body onload="onLoad()">
   <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
-  <link href="../../styleSheets/parentsMeetingStyleSheet.css" rel="stylesheet" />
+  <link href="../../styleSheets/dailyActivationUserStyleSheet.css" rel="stylesheet" />
   <link href="../../styleSheets/mainStyleSheet.css" rel="stylesheet" />
-  <script src="../../js/ag-grid-community.min.js"></script>
+  <link href="../../styleSheets/graphologyStyleSheet.css" rel="stylesheet" />
   <script src="../../js/jquery.min.js"></script>
   <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
   <script src="../../js/shared.js"></script>
 
   <script>
-    var currentDate = getTodayDate()
-    var currentDateTime = getTodayDateTime()
     var systemConfig = ""
     var searchVal = ""
-    var step
     var tableName
+    var result = "";
+    var step
     const Steps = {
       step1: "1",
       step2: "2",
       step3: "3"
     }; 
-    var result = "";
+    
 
     function onLoad() {
       step = Steps.step1;
+      updateLines("ברוכות הבאות!", "מה הגרפולוגית רשמה על...?");
       tableName = 'systemConfig'
       window.expose.sendSystem("sendReadSystem", tableName);
       window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
-        systemConfig = data
+        if (!data || Object.keys(data).length == 0) {
+          systemConfig = getDefaultConfig()
+        }
+        else {
+          systemConfig = data
+        }
         document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
         document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color)
@@ -87,8 +62,10 @@
               login('../main/system')
             else if (searchVal == '207594581')
               login('../main/user')
+            else if (searchVal == '999999999')
+              login('./manage')
             else //כיתה או בת
-              SearchStudentParent();
+              searchInExcel();
           }
         }
       } else {
@@ -96,51 +73,29 @@
       }
     });
 
-    function SearchStudentParent() {
-      window.expose.sendDbData("sendGetStudentParentByCode", searchVal);
-      window.expose.receiveDbData("receiveGetStudentParentByCode", (studentParent) => {
-        result = studentParent;
+    function searchInExcel() {
+      window.expose.sendDbData("sendGetStudentById", searchVal);
+      window.expose.receiveDbData("receiveGetStudentById", (student) => {
+        result = student;
         if (result == null) {
           showAlert(" הברקוד לא מופיע ברשימות. גשו למורה!")
           return;
         }
-        if (result.scanType == 'parent')
-          parentStart()
-        else
-          studentStart()
+        showResult()
       });
     }
 
-    function parentStart() {
+    function showResult() {
       step = Steps.step2;
-      updateLines("", " שלום " + " אמא של " + result.name, "כתבי כאן כמה מילים טובות לביתך")
-      document.getElementById("line2").style.fontSize = "4.5vw"
-      document.getElementById("text").style.top = "15%";
-      document.getElementById("content").value = result.text ? result.text : ""
-      document.getElementById("form").style.display = "inline"
-    }
-
-    function studentStart() {
-      step = Steps.step2;
-      updateLines("", "שלום " + result.name, "!המכתב מאמא מודפס עכשיו. בהנאה");
-      setTimeout(function () {
-        toPrint();
-      }, 2500);
-    }
-
-    function saveData() {
-      result.text = document.getElementById("content").value;
-      window.expose.sendDbData("sendSaveStudentParentText", { studentId: result.id, text: result.text });
-      window.expose.receiveDbData("receiveSaveStudentParentText", (data) => {
-        if (!data) {
-          showAlert("שמירת המכתב נכשלה");
-          return;
-        }
-        document.getElementById("form").style.display = "none"
-        document.getElementById("text").style.top = "30%";
-        updateLines("", "!המכתב נשמר", "...תודה רבה על שיתוף הפעולה")
-        reset(2000);
-      });
+      updateLines(
+        result.name + " " + result.grade,
+        result.text ? result.text : "לצערנו אין גרפולוגיה זמינה עבורך. יכול להיות שלא הבאת כתב יד לפענוח? ממש סליחה!"
+      );
+      if (result.text) {
+        setTimeout(function () {
+          toPrint();
+        }, 2500);
+      }
     }
 
     function toPrint() {
@@ -167,12 +122,14 @@
         </style>
       </head>
       <body>
-        <div id="title">פתק מאמא</div>
+        <div id="title"><b>במיוחד בשבילך</b></div>
         <br>
         <div id="content">
           <div>${result.name}</div>
           <div>${result.grade}</div>
-          <div>${result.text || "הנחת ממך בוודאי אשמע, את הדש תקבלי בפעם הבאה!"}</div>
+          <br>
+          <div><b>ניתוח מהגרפולוגית:</b></div>
+          <div>${result.text}</div>
         </div>
         <br>
         <div id="footer">להזמנות: אפרת מלכה 0504167969 office@gammick.co.il</div>
@@ -182,7 +139,7 @@
 
       window.expose.send("sendPrint", dynamicHTML);
       window.expose.receive("receivePrint", () => {
-        reset(2500);
+        reset(8000);
       });
     }
 
@@ -214,26 +171,20 @@
   </script>
 
   <div class="background" id="background">
-    <div class="text" id="text">
-      <div id="line1">ברוכה הבאה</div>
-      <div id="line2">לאסיפת הורים</div>
-      <div id="line3">יש לתקף את הכרטיס האישי בסורק הברקוד</div>
-
-      <form id="form" style="display: none;direction: rtl;">
-        <div class="form-group col-md-10" style="padding-left: 16.666%; ">
-          <textarea id="content" class="form-control" rows="6"></textarea>
-        </div>
-        <div class="form-group col-md-8" style="padding-left: 33.33%; margin-top: 4%;">
-          <button type="button" onclick="saveData()" id="btnSave" class="form-control">
-            שמירת המכתב</button>
-        </div>
-      </form>
+     <div class="closeBtn">
+      <img onclick="expose.appClose()" src="../../resources/barcode/x-light.svg" />
+    </div>
+    <div class="text">
+      <div id="line1"> </div>
+      <div id="line2"> </div>
+      <div id="line3"> </div>
 
     </div>
     <div id="position">עמדה</div>
   </div>
 
-  <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
+  <div class="modal fade" style="direction: rtl" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel"
+    aria-hidden="true">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">

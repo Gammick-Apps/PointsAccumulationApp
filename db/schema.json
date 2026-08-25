@@ -1,0 +1,137 @@
+{
+  "tables": [
+    {
+      "name": "systemConfig",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
+        { "name": "device", "type": "TEXT", "nullable": false , "default": "'0'" },
+        { "name": "color", "type": "TEXT", "nullable": false, "default": "'0'" },
+        { "name": "textColor", "type": "TEXT", "nullable": false, "default": "'1'" },
+        { "name": "date", "type": "DATE", "nullable": false, "default": "(date('now','-1 day'))" },
+        { "name": "numPosition", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "type", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "hasPrint", "type": "INTEGER", "nullable": false, "default": "1" },
+        { "name": "hasBuy", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "hasParents", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "hasTests", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "buy", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "timer", "type": "INTEGER", "nullable": false, "default": "0" }
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "tasks",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
+        { "name": "code", "type": "INTEGER", "unique": true, "nullable": false },
+        { "name": "name", "type": "TEXT", "nullable": false, "default": "'--------'" },
+        { "name": "points", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "multiple", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "type", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "class", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "show", "type": "BOOLEAN", "nullable": false, "default": false } 
+
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "studentsTasks",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
+        { "name": "studentId", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "taskId", "type": "INTEGER", "nullable": false, "default": "0" },
+        {"name": "createDateTime", "type": "DATETIME", "nullable": false, "default": "(datetime('now'))" }
+      ],
+      "foreignKeys": [
+        {
+          "columns": ["studentId"],
+          "referencesTable": "students",
+          "referencesColumns": ["id"]
+        },
+        {
+          "columns": ["taskId"],
+          "referencesTable": "tasks",
+          "referencesColumns": ["id"]
+        }
+      ]
+    },
+    {
+      "name": "students",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
+        { "name": "tz", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "code", "type": "TEXT", "nullable": false, "default": "'0'" },
+        { "name": "grade", "type": "TEXT", "nullable": false, "default": "'--------'" },
+        { "name": "name", "type": "TEXT", "nullable": false, "default": "'--------'" },
+        { "name": "points", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "tzParent", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "text", "type": "TEXT", "nullable": false, "default": "''" }
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "products",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
+        { "name": "code", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "name", "type": "TEXT", "nullable": false, "default": "'--------'" },
+        { "name": "points", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "multiple", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "show", "type": "BOOLEAN", "nullable": false, "default": false },
+        { "name": "used", "type": "INTEGER", "nullable": false, "default": "0" }
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "studentsProducts",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
+        { "name": "studentId", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "productId", "type": "INTEGER", "nullable": false, "default": "0" },
+        {"name": "createDateTime", "type": "DATETIME", "nullable": false, "default": "(datetime('now'))" }
+      ],
+      "foreignKeys": [
+        {
+          "columns": ["studentId"],
+          "referencesTable": "students",
+          "referencesColumns": ["id"]
+        },
+        {
+          "columns": ["productId"],
+          "referencesTable": "products",
+          "referencesColumns": ["id"]
+        }
+      ]
+    },
+    {
+      "name": "questions",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
+        { "name": "question", "type": "TEXT", "nullable": false , "default": "''" },
+        { "name": "answers", "type": "TEXT", "nullable": false , "default": "''"},
+        { "name": "videos", "type": "TEXT", "nullable": false, "default": "''" }
+      ]
+    },
+{
+  "name": "tests",
+  "columns": [
+    { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
+    { "name": "code", "type": "INTEGER", "nullable": false, "default": "0" },
+    { "name": "question", "type": "TEXT", "nullable": false , "default": "''" },
+    { "name": "answer1", "type": "TEXT", "nullable": false , "default": "''"},
+    { "name": "answer2", "type": "TEXT", "nullable": false , "default": "''"},
+    { "name": "answer3", "type": "TEXT", "nullable": false , "default": "''"},
+    { "name": "correct", "type": "INTEGER", "nullable": false , "default": "0"}
+  ],
+  "foreignKeys": [
+    {
+      "columns": ["code"],
+      "referencesTable": "tasks",
+      "referencesColumns": ["code"]
+    }
+  ]
+}
+
+  ]
+}
+  
