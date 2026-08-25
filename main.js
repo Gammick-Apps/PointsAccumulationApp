@@ -4,7 +4,7 @@ const path = require('path')
 let mainWindow
 const { initDatabase, waitDB, readData, readSystem, updateSystem, closeDatabase, insertExcelToDB,
   addStudent, updateStudent, addTask, updateTask, addProduct, updateProduct, getStudentById, getTaskByCode,
-  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, getStudentParentByCode, updateStudentText, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
+  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, saveStudentTask, saveTaskText, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, getStudentParentByCode, updateStudentText, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -289,6 +289,17 @@ ipcMain.on("sendSaveStudentTask", async (event, args) => {
   }
 });
 
+
+ipcMain.on("sendSaveTaskText", async (event, args) => {
+  try {
+    const { tz, studentName, grade, taskName, text } = args;
+    const data = await saveTaskText(tz, studentName, grade, taskName, text);
+    mainWindow.webContents.send("receiveSaveTaskText", data);
+  } catch (error) {
+    console.error("Error saving task text:", error);
+    mainWindow.webContents.send("receiveSaveTaskText", false);
+  }
+});
 
 ipcMain.on("sendSaveStudentProduct", async (event, args) => {
   try {

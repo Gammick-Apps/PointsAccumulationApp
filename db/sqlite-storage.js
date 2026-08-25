@@ -87,6 +87,7 @@ async function initDatabase(electronApp) {
 
     if (fs.existsSync(dbPath)) {
       db = await openDatabase(dbPath);
+      await createSchema();
       return true;
     }
 
@@ -496,6 +497,15 @@ async function markProductAsUsed(productId) {
 }
 
 
+async function saveTaskText(tz, studentName, grade, taskName, text) {
+  await waitDB();
+  await run(
+    'INSERT INTO taskTexts (tz, studentName, grade, taskName, text, createDateTime) VALUES (?, ?, ?, ?, ?, DATETIME(\'now\', \'localtime\'));',
+    [tz, studentName, grade, taskName, text]
+  );
+  return true;
+}
+
 async function saveStudentTask(studentId, taskId) {
   await waitDB();
 
@@ -604,6 +614,7 @@ module.exports = {
   markProductAsUsed,
   hasStudentDoneSelected,
   saveStudentTask,
+  saveTaskText,
   saveStudentProduct,
   resetDatabase,
   DB_FLAG_INCONSISTENT_ERROR_CODE

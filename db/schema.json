@@ -130,8 +130,20 @@
       "referencesColumns": ["code"]
     }
   ]
-}
-
+},
+    {
+      "name": "taskTexts",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
+        { "name": "tz", "type": "TEXT", "nullable": false, "default": "''" },
+        { "name": "studentName", "type": "TEXT", "nullable": false, "default": "''" },
+        { "name": "grade", "type": "TEXT", "nullable": false, "default": "''" },
+        { "name": "taskName", "type": "TEXT", "nullable": false, "default": "''" },
+        { "name": "text", "type": "TEXT", "nullable": false, "default": "''" },
+        { "name": "createDateTime", "type": "DATETIME", "nullable": false, "default": "(datetime('now'))" }
+      ],
+      "foreignKeys": []
+    }
   ]
 }
   

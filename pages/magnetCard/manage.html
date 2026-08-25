@@ -20,6 +20,7 @@
         var systemConfig = ""
         var products = ""
         var students = "";
+        var shares = "";
         var tableName
         var searchVal = ""
         var currentDate = getTodayDate();
@@ -77,6 +78,23 @@
             }
         ];
 
+        var sharesGridOptions
+        var sharesGridCreated = false;
+        var sharesModalInstance = null;
+        var sharesColumnDefs = [
+            { headerName: "שם", field: "studentName", width: 120, maxWidth: 150 },
+            { headerName: "כיתה", field: "grade", width: 90, maxWidth: 110 },
+            { headerName: "תאריך", field: "createDateTime", width: 150, maxWidth: 170 },
+            {
+                headerName: "שיתוף",
+                field: "text",
+                flex: 1,
+                wrapText: true,
+                autoHeight: true,
+                cellStyle: { 'white-space': 'normal', 'line-height': '1.5' }
+            }
+        ];
+
         function onLoad() {
             tableName = 'systemConfig'
             window.expose.sendSystem("sendReadSystem", tableName);
@@ -121,6 +139,20 @@
                 if (Array.isArray(data) && data.length > 0) {
                     students = data
                     createStudentsGrid()
+                }
+            });
+            tableName = 'taskTexts'
+            window.expose.sendDbData("sendGetDataByTable", tableName);
+            window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
+                shares = Array.isArray(data) ? data : [];
+            });
+
+            document.getElementById('sharesModal').addEventListener('shown.bs.modal', function () {
+                if (!sharesGridCreated) {
+                    createSharesGrid();
+                    sharesGridCreated = true;
+                } else {
+                    sharesGridOptions.api.sizeColumnsToFit({});
                 }
             });
         }
@@ -177,6 +209,28 @@
             var productsGridDiv = document.querySelector('#productsGrid');
             new agGrid.Grid(productsGridDiv, productsGridOptions);
             document.getElementById("productsSec").style.visibility = "visible"
+        }
+
+        function openSharesModal() {
+            if (!sharesModalInstance) {
+                sharesModalInstance = new bootstrap.Modal(document.getElementById('sharesModal'));
+            }
+            sharesModalInstance.show();
+        }
+
+        function createSharesGrid() {
+            sharesGridOptions = {
+                columnDefs: sharesColumnDefs,
+                rowData: shares,
+                enableRtl: true,
+                defaultColDef: {
+                    sortable: true,
+                    resizable: true,
+                    filter: 'agTextColumnFilter'
+                },
+            };
+            var sharesGridDiv = document.querySelector('#sharesGrid');
+            new agGrid.Grid(sharesGridDiv, sharesGridOptions);
         }
 
         function createStudentsGrid() {
@@ -410,8 +464,23 @@
                             src="../../resources/barcode/download-simple-light.svg" class="cursor-pointer" />
                         <img onclick="addStudent()" src="../../resources/barcode/plus-light.svg"
                             class="cursor-pointer" />
+                        <button type="button" class="btn btn-outline-primary" onclick="openSharesModal()">שיתופים</button>
                     </div>
                     <div id="studentsGrid" class="ag-theme-alpine w-100 h-100"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="sharesModal" tabindex="-1" aria-labelledby="sharesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="sharesModalLabel">שיתופים</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="sharesGrid" class="ag-theme-alpine" style="height: 100%; width: 100%;"></div>
                 </div>
             </div>
         </div>

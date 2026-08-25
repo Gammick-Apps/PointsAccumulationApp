@@ -55,6 +55,25 @@
         </div>
     </div>
 
+    <!-- Modal for free text entry (type 3 tasks) -->
+    <div class="modal fade" id="textModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false"
+        aria-labelledby="textModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="textModalLabel">נשמח לשיתוף אישי שלך!</h5>
+                </div>
+                <div class="modal-body">
+                    <textarea id="taskTextInput" class="form-control" rows="6" dir="rtl"></textarea>
+                    <div id="taskTextError" class="text-danger mt-2" style="display: none;">יש להזין טקסט</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="confirmTaskText()">אישור</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         var actions = ""
         var systemConfig
@@ -201,9 +220,41 @@
                         openTest();
                         return;
                     }
+                    case 3: {
+                        updateLines("בחרת ב: " + currentResult.name, "")
+                        openTextModal();
+                        return;
+                    }
                 }
                 updateLinesByDevice()
             }
+        }
+
+        //-------------free text-------------------//
+
+        let textModalInstance = null;
+
+        function openTextModal() {
+            isModalOpen = true;
+            document.getElementById("cards").style.display = "none";
+            document.getElementById("taskTextInput").value = "";
+            document.getElementById("taskTextError").style.display = "none";
+            if (!textModalInstance) {
+                textModalInstance = new bootstrap.Modal(document.getElementById('textModal'));
+            }
+            textModalInstance.show();
+        }
+
+        function confirmTaskText() {
+            const text = document.getElementById("taskTextInput").value.trim();
+            if (!text) {
+                document.getElementById("taskTextError").style.display = "block";
+                return;
+            }
+            currentResult.freeText = text;
+            textModalInstance.hide();
+            isModalOpen = false;
+            updateLinesByDevice();
         }
 
         //-------------tests-------------------//
@@ -334,6 +385,16 @@
                     document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
                     currentStudent.points = points;
                     updateLines("תודה רבה " + currentStudent.name, " כעת יש בחשבונך " + currentStudent.points + " נקודות", "בהצלחה!")
+
+                    if (currentResult.type == 3 && currentResult.freeText) {
+                        window.expose.sendDbData("sendSaveTaskText", {
+                            tz: currentStudent.tz,
+                            studentName: currentStudent.name,
+                            grade: currentStudent.grade,
+                            taskName: currentResult.name,
+                            text: currentResult.freeText
+                        });
+                    }
 
                     if (systemConfig.hasPrint == 1) {
                         setTimeout(function () {
