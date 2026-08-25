@@ -16,6 +16,7 @@ function createWindow() {
   })
   mainWindow.loadFile('pages/main/user.html')
   mainWindow.fullScreen = true;
+  mainWindow.menuBarVisible = false;
 
   if (!app.isPackaged) {
     mainWindow.menuBarVisible = true
