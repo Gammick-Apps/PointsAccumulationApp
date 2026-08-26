@@ -25,11 +25,12 @@
         { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
         { "name": "code", "type": "INTEGER", "unique": true, "nullable": false },
         { "name": "name", "type": "TEXT", "nullable": false, "default": "'--------'" },
+        { "name": "description", "type": "TEXT", "nullable": false, "default": "''" },
         { "name": "points", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "multiple", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "type", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "class", "type": "INTEGER", "nullable": false, "default": "0" },
-        { "name": "show", "type": "BOOLEAN", "nullable": false, "default": false } 
+        { "name": "show", "type": "BOOLEAN", "nullable": false, "default": false }
 
       ],
       "foreignKeys": []
@@ -40,6 +41,7 @@
         { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
         { "name": "studentId", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "taskId", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "duration", "type": "TEXT", "nullable": false, "default": "''" },
         {"name": "createDateTime", "type": "DATETIME", "nullable": false, "default": "(datetime('now'))" }
       ],
       "foreignKeys": [

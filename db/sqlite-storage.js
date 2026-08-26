@@ -87,6 +87,7 @@ async function initDatabase(electronApp) {
 
     if (fs.existsSync(dbPath)) {
       db = await openDatabase(dbPath);
+      await createSchema();
       return true;
     }
 
@@ -238,8 +239,8 @@ async function insertExcelToDB(tableName, payload) {
           break;
         case 'tasks':
           await run(
-            'INSERT OR REPLACE INTO tasks (code, name, points, multiple, type, class, show) VALUES ( ?, ?, ?, ?, ?, ?, ?);',
-            [row.code, row.name, row.points, row.multiple, row.type, row.class, row.show]
+            'INSERT OR REPLACE INTO tasks (code, name, description, points, multiple, type, class, show) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?);',
+            [row.code, row.name, row.description, row.points, row.multiple, row.type, row.class, row.show]
           );
           break;
         case 'products':
@@ -357,7 +358,7 @@ async function updateStudentText(studentId, text) {
   }
 }
 
-async function hasStudentDoneSelected(studentId, taskId) {
+async function hasStudentDoneSelected(studentId, taskId, duration = '') {
   await waitDB();
 
   const condition = await get('SELECT buy from systemConfig')
@@ -367,7 +368,7 @@ async function hasStudentDoneSelected(studentId, taskId) {
     SELECT 1 FROM studentsProducts WHERE studentId = ? AND productId = ? LIMIT 1`, [studentId, taskId]);
   } else {
     result = await get(`
-    SELECT 1 FROM studentsTasks WHERE studentId = ? AND taskId = ? LIMIT 1`, [studentId, taskId]);
+    SELECT 1 FROM studentsTasks WHERE studentId = ? AND taskId = ? AND duration = ? LIMIT 1`, [studentId, taskId, duration]);
   }
   return !!result;
 }
@@ -392,7 +393,8 @@ async function addTask() {
 
 async function updateTask(code, field, value) {
   await waitDB();
-  const correctValue = field === 'name' ? value : Number(value);
+  const textFields = ['name', 'description'];
+  const correctValue = textFields.includes(field) ? value : Number(value);
   try {
     await run(
       `UPDATE tasks SET ${quoteIdentifier(field)} = ? WHERE code = ?;`,
@@ -496,23 +498,26 @@ async function markProductAsUsed(productId) {
 }
 
 
-async function saveStudentTask(studentId, taskId) {
+async function saveStudentTask(studentId, taskId, points, duration = '') {
   await waitDB();
 
-  const getPoints = await get('SELECT points FROM tasks WHERE id = ? LIMIT 1;', [taskId]);
-  if (!getPoints) {
-    throw new Error(`Task with id ${taskId} not found`);
+  let resolvedPoints = points;
+  if (resolvedPoints === undefined || resolvedPoints === null) {
+    const getPoints = await get('SELECT points FROM tasks WHERE id = ? LIMIT 1;', [taskId]);
+    if (!getPoints) {
+      throw new Error(`Task with id ${taskId} not found`);
+    }
+    resolvedPoints = getPoints.points;
   }
-  const points = getPoints.points;
 
   await run('BEGIN TRANSACTION;');
   try {
     await run(
-      'INSERT INTO studentsTasks (studentId, taskId, createDateTime) VALUES (?, ?, DATETIME(\'now\', \'localtime\'));',
-      [studentId, taskId]
+      'INSERT INTO studentsTasks (studentId, taskId, duration, createDateTime) VALUES (?, ?, ?, DATETIME(\'now\', \'localtime\'));',
+      [studentId, taskId, duration]
     );
     await run(
-      'UPDATE students SET points = points + ? WHERE id = ?;', [points, studentId]
+      'UPDATE students SET points = points + ? WHERE id = ?;', [resolvedPoints, studentId]
     );
     await run('COMMIT;');
     const studentRow = await get('SELECT points FROM students WHERE id = ? LIMIT 1;', [studentId]);

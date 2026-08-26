@@ -61,7 +61,14 @@
         var tasksColumnDefs = [
             { checkboxSelection: true },
             { headerName: "שם", field: "name", editable: true },
+            { headerName: "תיאור", field: "description", editable: true, cellEditor: 'agLargeTextCellEditor', flex: 2 },
             { headerName: "נקודות", field: "points", editable: true },
+            {
+                headerName: "סוג",
+                field: "type",
+                editable: true,
+                cellStyle: { textAlign: 'center' }
+            },
             {
                 headerName: "תיקוף מרובה",
                 field: "multiple",

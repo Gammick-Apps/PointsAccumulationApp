@@ -19,13 +19,22 @@
             <div id="line1"></div>
             <div id="line2"></div>
             <div id="line3"></div>
-            <br>
-            <br>
-            <div class="row row-cols-md-5 g-3 pb-2 justify-content-md-center" id="cards">
+                        <br>
+                        <br>
+                        <br>
+            <div id="wingsSection"></div>
+            <div class="row row-cols-md-3 g-3 pb-2 justify-content-md-center" id="cards">
             </div>
         </div>
         <div id="position">עמדה</div>
     </div>
+
+    <div id="successScreen" class="success-screen">
+        <div id="successLine1" class="success-screen-line1"></div>
+        <div id="successLine2" class="success-screen-line2"></div>
+        <div id="successLine3" class="success-screen-line3"></div>
+    </div>
+
     <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -74,6 +83,17 @@
             step3: "3"
         };
 
+        const WINGS_TYPE = 5;
+        const WINGS_DURATIONS = [
+            { key: 'day', name: 'יום', points: 10, multiple: 1 },
+            { key: 'week', name: 'שבוע', points: 100, multiple: 0 },
+            { key: 'twoWeeks', name: 'שבועיים', points: 200, multiple: 0 },
+            { key: 'threeWeeks', name: '3 שבועות', points: 300, multiple: 0 },
+            { key: 'month', name: 'חודש', points: 400, multiple: 0 },
+            { key: 'fortyDays', name: '40 יום', points: 500, multiple: 0 }
+        ];
+        var wingsTask = null;
+
         const questionContainer = document.getElementById('questionContainer');
         const questionProgress = document.getElementById('questionProgress');
         const testNameElement = document.getElementById('testName');
@@ -94,6 +114,7 @@
                 document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
                 document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color)
                 document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
+                document.getElementById("successScreen").style.color = getTextColor(systemConfig.textColor);
 
                 if (systemConfig.numPosition.length > 0) {
                     document.getElementById("position").innerHTML += ' ' + systemConfig.numPosition
@@ -103,10 +124,10 @@
                 }
                 currentTable = systemConfig.buy ? 'products' : 'tasks';
                 if (systemConfig.buy) {
-                    updateLines("שלום...!", "יש לבחור מתנה לקנייה")
+                    updateLines("עמדת תיקוף כרטיסים FLYCARD", "יש לבחור מתנה לקנייה")
                 }
                 else {
-                    updateLines(" שלום...! ", "יש לבחור משימה לתיקוף ")
+                    updateLines("עמדת תיקוף כרטיסים FLYCARD", "יש לבחור משימה לתיקוף ")
                 }
                 window.expose.receiveDbData("receiveGetDataByTable" + currentTable, (data) => {
                     if (Array.isArray(data) && data.length > 0) {
@@ -146,13 +167,22 @@
 
         function createCards() {
             const cardContainer = document.getElementById("cards");
+            const wingsContainer = document.getElementById("wingsSection");
 
-            actions.filter(item => item.show).forEach(cardData => {
+            const visibleActions = actions.filter(item => item.show);
+            wingsTask = (currentTable === 'tasks') ? visibleActions.find(item => Number(item.type) === WINGS_TYPE) : null;
+            const regularActions = wingsTask ? visibleActions.filter(item => item !== wingsTask) : visibleActions;
+
+            if (wingsTask) {
+                createWingsSection(wingsContainer, wingsTask);
+            }
+
+            regularActions.forEach(cardData => {
                 const cardColumn = document.createElement("div");
                 cardColumn.classList.add("col");
 
                 const cardElement = document.createElement("a");
-                cardElement.classList.add("card", "focus-ring", "text-decoration-none", "rounded-2", "h-100");
+                cardElement.classList.add("card", "glass-card", "focus-ring", "text-decoration-none", "rounded-2", "h-100");
                 cardElement.addEventListener("click", function () {
                     selectAction(cardData);
                 });
@@ -173,12 +203,73 @@
                 cardTitle.textContent = cardData.name
 
                 cardBody.appendChild(cardTitle);
+
+                if (cardData.description) {
+                    const cardDesc = document.createElement("p");
+                    cardDesc.classList.add("card-text", "wing-card-desc");
+                    cardDesc.textContent = cardData.description;
+                    cardBody.appendChild(cardDesc);
+                }
+
                 cardElement.appendChild(cardBody);
                 cardFooter.appendChild(footerSmall)
                 cardElement.appendChild(cardFooter);
                 cardColumn.appendChild(cardElement);
                 cardContainer.appendChild(cardColumn);
             });
+        }
+
+        function createWingsSection(container, task) {
+            const hero = document.createElement("div");
+            hero.classList.add("glass-card", "wing-hero-card");
+
+            const heroTitle = document.createElement("h3");
+            heroTitle.classList.add("wing-hero-title");
+            heroTitle.textContent = task.name;
+            hero.appendChild(heroTitle);
+
+            if (task.description) {
+                const heroDesc = document.createElement("div");
+                heroDesc.classList.add("wing-hero-desc");
+                heroDesc.textContent = task.description;
+                hero.appendChild(heroDesc);
+            }
+
+            container.appendChild(hero);
+
+            const grid = document.createElement("div");
+            grid.classList.add("wing-duration-grid");
+
+            WINGS_DURATIONS.forEach(duration => {
+                const btn = document.createElement("div");
+                btn.classList.add("glass-card", "wing-duration-btn");
+                btn.textContent = duration.name;
+                btn.addEventListener("click", function () {
+                    selectWingsDuration(duration);
+                });
+                grid.appendChild(btn);
+            });
+
+            container.appendChild(grid);
+        }
+
+        function selectWingsDuration(duration) {
+            if (step != Steps.step3) {
+                step = Steps.step2;
+
+                currentResult = {
+                    id: wingsTask.id,
+                    code: wingsTask.code,
+                    name: wingsTask.name + ' - ' + duration.name,
+                    points: duration.points,
+                    multiple: duration.multiple,
+                    type: WINGS_TYPE,
+                    duration: duration.key
+                };
+
+                updateLines("בחרת ב: " + currentResult.name, "")
+                updateLinesByDevice()
+            }
         }
 
         function selectAction(cardData) {
@@ -295,6 +386,7 @@
 
         function searchStudent() {
             document.getElementById("cards").style.display = "none";
+            document.getElementById("wingsSection").style.display = "none";
             step = Steps.step3;
 
             window.expose.sendDbData("sendGetStudentById", searchVal);
@@ -333,7 +425,7 @@
                 } else {
                     document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
                     currentStudent.points = points;
-                    updateLines("תודה רבה " + currentStudent.name, " כעת יש בחשבונך " + currentStudent.points + " נקודות", "בהצלחה!")
+                    showSuccessScreen("כל הכבוד " + currentStudent.name + "!", "כעת יש בחשבונך " + currentStudent.points + " נקודות", "בהצלחה!")
 
                     if (systemConfig.hasPrint == 1) {
                         setTimeout(function () {
@@ -398,6 +490,16 @@
             setTimeout(function () {
                 location.reload();
             }, time);
+        }
+
+        function showSuccessScreen(line1Text, line2Text = "", line3Text = "") {
+            document.getElementById("line1").innerHTML = "";
+            document.getElementById("line2").innerHTML = "";
+            document.getElementById("line3").innerHTML = "";
+            document.getElementById("successLine1").innerHTML = line1Text;
+            document.getElementById("successLine2").innerHTML = line2Text;
+            document.getElementById("successLine3").innerHTML = line3Text;
+            document.getElementById("successScreen").classList.add("visible");
         }
 
         function updateLines(line1Text, line2Text, line3Text = "") {

@@ -269,8 +269,8 @@ ipcMain.on("sendMarkProductAsUsed", async (event, args) => {
 ipcMain.on("sendHasStudentDoneSelected", async (event, args) => {
   try {
     const { currentStudent, currentResult } = args;
-    
-    const data = await hasStudentDoneSelected(currentStudent.id, currentResult.id);
+
+    const data = await hasStudentDoneSelected(currentStudent.id, currentResult.id, currentResult.duration || '');
     mainWindow.webContents.send("receiveHasStudentDoneSelected", data);
   } catch (error) {
     console.error(error);
@@ -280,8 +280,8 @@ ipcMain.on("sendHasStudentDoneSelected", async (event, args) => {
 
 ipcMain.on("sendSaveStudentTask", async (event, args) => {
   try {
-    const { currentStudent, currentResult, currentTable } = args;
-    const points = await saveStudentTask(currentStudent.id, currentResult.id, currentTable);
+    const { currentStudent, currentResult } = args;
+    const points = await saveStudentTask(currentStudent.id, currentResult.id, currentResult.points, currentResult.duration || '');
     mainWindow.webContents.send("receiveSaveStudentData", points);
   } catch (error) {
     console.error("Error saving student data:", error);
