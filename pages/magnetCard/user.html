@@ -30,6 +30,7 @@
     </div>
 
     <div id="successScreen" class="success-screen">
+        <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
         <div id="successLine1" class="success-screen-line1"></div>
         <div id="successLine2" class="success-screen-line2"></div>
         <div id="successLine3" class="success-screen-line3"></div>
@@ -93,6 +94,7 @@
             { key: 'fortyDays', name: '40 יום', points: 500, multiple: 0 }
         ];
         var wingsTask = null;
+        var confettiAnimationId = null;
 
         const questionContainer = document.getElementById('questionContainer');
         const questionProgress = document.getElementById('questionProgress');
@@ -430,9 +432,9 @@
                     if (systemConfig.hasPrint == 1) {
                         setTimeout(function () {
                             toPrint();
-                        }, 2000);
+                        }, 5000);
                     } else {
-                        reset(2000);
+                        reset(5000);
                     }
                 }
             });
@@ -500,6 +502,55 @@
             document.getElementById("successLine2").innerHTML = line2Text;
             document.getElementById("successLine3").innerHTML = line3Text;
             document.getElementById("successScreen").classList.add("visible");
+            launchConfetti();
+        }
+
+        function launchConfetti() {
+            const canvas = document.getElementById("confettiCanvas");
+            const ctx = canvas.getContext("2d");
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const colors = ['#FFC700', '#FF3D68', '#3D9BFF', '#3DFFA0', '#B14EFF', '#FF8A3D'];
+            const particles = [];
+            for (let i = 0; i < 160; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: -20 - Math.random() * canvas.height * 0.5,
+                    size: 14 + Math.random() * 12,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    speedY: 2 + Math.random() * 3,
+                    speedX: (Math.random() - 0.5) * 2,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: (Math.random() - 0.5) * 10
+                });
+            }
+
+            const duration = 5000;
+            const startTime = performance.now();
+
+            function frame(now) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.y += p.speedY;
+                    p.x += p.speedX;
+                    p.rotation += p.rotationSpeed;
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation * Math.PI / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+                    ctx.restore();
+                });
+                if (now - startTime < duration) {
+                    confettiAnimationId = requestAnimationFrame(frame);
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+
+            if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
+            confettiAnimationId = requestAnimationFrame(frame);
         }
 
         function updateLines(line1Text, line2Text, line3Text = "") {

@@ -121,19 +121,32 @@
     display: flex;
 }
 
+.confetti-canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
 .success-screen-line1 {
+    position: relative;
+    z-index: 1;
     font-size: 6vw;
     line-height: 1.2;
     margin-bottom: 3vh;
 }
 
 .success-screen-line2 {
+    position: relative;
+    z-index: 1;
     font-size: 4vw;
     line-height: 1.3;
     margin-bottom: 2vh;
 }
 
 .success-screen-line3 {
+    position: relative;
+    z-index: 1;
     font-size: 4vw;
     line-height: 1.3;
 }
