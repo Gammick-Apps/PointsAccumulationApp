@@ -123,8 +123,8 @@
     direction: rtl;
 }
 
-.chart-scroll canvas {
-    height: 100% !important;
+.chart-canvas-holder {
+    height: 100%;
 }
 
 .chart-empty {

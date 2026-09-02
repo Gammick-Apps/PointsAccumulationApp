@@ -593,8 +593,8 @@ async function getStatistics() {
     `SELECT grade, SUM(points) AS points
        FROM students
       GROUP BY grade
-     HAVING points > 0
-      ORDER BY points DESC;`
+     HAVING SUM(points) > 0
+      ORDER BY SUM(points) DESC;`
   );
 
   return {
