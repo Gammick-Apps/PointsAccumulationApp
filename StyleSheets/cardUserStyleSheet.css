@@ -3,13 +3,16 @@
 .text {
     position: absolute;
     left: 5%;
-    top: 8%;
+    top: 3%;
     bottom: 10%;
     width: 90%;
     text-align: center;
     margin-right: auto;
     margin-left: auto;
     font-family: "FbPractica", "mainFont", sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .glass-card {
@@ -22,39 +25,47 @@
     color: #222;
 }
 
+#line1,
+#line2,
+#line3,
+#wingsSection {
+    flex-shrink: 0;
+}
+
 .wing-hero-card {
-    padding: 20px 24px;
+    padding: 18px 26px;
     text-align: center;
-    margin: 12px auto 16px;
+    margin: 8px auto 13px;
     width: fit-content;
     max-width: 55%;
     min-width: 260px;
+    box-sizing: border-box;
 }
 
 .wing-hero-title {
-    font-size: 2.4rem;
-    margin-bottom: 8px;
+    font-size: clamp(1.55rem, 3.1vw, 2.4rem);
+    margin-bottom: 5px;
 }
 
 .wing-hero-desc {
-    font-size: 1.1rem;
-    line-height: 1.5;
+    font-size: clamp(0.95rem, 1.55vw, 1.2rem);
+    line-height: 1.3;
     opacity: 0.85;
 }
 
 .wing-duration-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
+    gap: 9px;
     direction: rtl;
-    margin: 0 auto 24px;
-    width: 75%;
+    margin: 0 auto 15px;
+    box-sizing: border-box;
 }
 
 .wing-duration-btn {
-    padding: 18px 10px;
+    padding: 5px 8px;
     text-align: center;
-    font-size: 1.6rem;
+    font-size: clamp(1rem, 1.8vw, 1.45rem);
     cursor: pointer;
     transition: transform 0.15s ease, background 0.2s ease;
 }
@@ -65,41 +76,41 @@
 }
 
 .wing-card-desc {
-    font-size: 1.1rem;
+    font-size: clamp(0.85rem, 1.4vw, 1.1rem);
     opacity: 0.8;
-    margin-top: 6px;
+    margin-top: 4px;
 }
 
 #cards .card-body {
-    padding: 1.5rem 1.2rem;
+    padding: 0.85rem 1rem;
 }
 
 #cards .card-title {
-    font-size: 1.9rem;
-    margin-bottom: 0.5rem;
+    font-size: clamp(1.25rem, 2.2vw, 1.75rem);
+    margin-bottom: 0.3rem;
 }
 
 #cards .card-footer {
-    padding: 0.75rem 1.2rem;
+    padding: 0.48rem 1rem;
 }
 
 #cards .card-footer small {
-    font-size: 1.1rem;
+    font-size: clamp(0.85rem, 1.4vw, 1.1rem);
 }
 
 #line1 {
-    font-size: 2.7vw;
+    font-size: 3vw;
     line-height: 1.3;
     direction: rtl;
 }
 
 #line2 {
-    font-size: 2.4vw;
+    font-size: 2.65vw;
     direction: rtl;
 }
 
 #line3 {
-    font-size: 2.5vw;
+    font-size: 2.75vw;
     direction: rtl;
 }
 
@@ -166,8 +177,10 @@
 }
 
 #cards {
-    max-height: 30vW;
-    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    align-content: flex-start;
+    align-items: stretch;
 }
 
 .answer-button {

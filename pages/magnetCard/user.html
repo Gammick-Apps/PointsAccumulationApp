@@ -21,9 +21,10 @@
             <div id="line3"></div>
                         <br>
                         <br>
-                        <br>
+                                                <br>
+
             <div id="wingsSection"></div>
-            <div class="row row-cols-md-3 g-3 pb-2 justify-content-md-center" id="cards">
+            <div class="row row-cols-md-3 g-2 justify-content-md-center" id="cards">
             </div>
         </div>
         <div id="position">עמדה</div>
@@ -253,6 +254,7 @@
             });
 
             container.appendChild(grid);
+            grid.style.width = hero.offsetWidth + "px";
         }
 
         function selectWingsDuration(duration) {
