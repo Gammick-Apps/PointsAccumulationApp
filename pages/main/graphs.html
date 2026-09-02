@@ -46,14 +46,18 @@
                 <div class="glass-card chart-card">
                     <div class="chart-card-title" id="topStudentsTitle">התלמידות המובילות</div>
                     <div class="chart-scroll" id="topStudentsScroll">
-                        <canvas id="topStudentsChart"></canvas>
+                        <div class="chart-canvas-holder">
+                            <canvas id="topStudentsChart"></canvas>
+                        </div>
                     </div>
                 </div>
 
                 <div class="glass-card chart-card">
                     <div class="chart-card-title">הכיתות המובילות</div>
                     <div class="chart-scroll" id="topClassesScroll">
-                        <canvas id="topClassesChart"></canvas>
+                        <div class="chart-canvas-holder">
+                            <canvas id="topClassesChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -68,7 +72,7 @@
 
         const BAR_COLOR = "#5C4038";
         const LABEL_COLOR = "#222";
-        const MIN_BAR_SLOT_PX = 110;
+        const VISIBLE_BARS = 6;
 
         function onLoad() {
             tableName = 'systemConfig';
@@ -151,7 +155,11 @@
             const orderedValues = values.slice().reverse();
             const leadingIndex = orderedLabels.length - 1;
 
-            canvas.style.minWidth = (orderedLabels.length * MIN_BAR_SLOT_PX) + "px";
+            // רוחב עמודה = שישית מהמיכל, כך ש-6 עמודות ממלאות אותו בדיוק:
+            // פחות מ-6 מציג פחות בלי גלילה, יותר מ-6 מרחיב את המיכל וגורר גלילה
+            const holder = canvas.parentNode;
+            const slotWidth = scroll.clientWidth / VISIBLE_BARS;
+            holder.style.width = Math.max(scroll.clientWidth, orderedLabels.length * slotWidth) + "px";
 
             new Chart(canvas.getContext("2d"), {
                 type: 'bar',
