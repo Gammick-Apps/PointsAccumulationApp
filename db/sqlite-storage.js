@@ -595,11 +595,13 @@ async function getStatistics() {
   );
 
   const topClasses = await all(
-    `SELECT grade, SUM(points) AS points
+    `SELECT grade,
+            CAST(ROUND(AVG(points)) AS INTEGER) AS points,
+            COUNT(*) AS studentsCount
        FROM students
       GROUP BY grade
-     HAVING SUM(points) > 0
-      ORDER BY SUM(points) DESC;`
+     HAVING AVG(points) > 0
+      ORDER BY AVG(points) DESC;`
   );
 
   return {
