@@ -15,16 +15,6 @@
     overflow: hidden;
 }
 
-.glass-card {
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.5) !important;
-    border-radius: 18px !important;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-    color: #222;
-}
-
 #line1,
 #line2,
 #line3,

@@ -6,6 +6,7 @@ let db;
 let dbPath;
 let initPromise;
 const DB_FLAG_INCONSISTENT_ERROR_CODE = 'SQLITE_DB_FLAG_INCONSISTENT';
+const TOP_STUDENTS_LIMIT = 6;
 
 // -------------- basic functions ---------------- //
 
@@ -563,6 +564,54 @@ async function saveStudentProduct(studentId, productId) {
   }
 }
 
+//------------------ statistics ----------------------//
+
+async function getStatistics() {
+  await waitDB();
+
+  const totals = await get(
+    'SELECT COALESCE(SUM(points), 0) AS totalPoints FROM students;'
+  );
+
+  const active = await get(
+    'SELECT COUNT(DISTINCT studentId) AS activeStudents FROM studentsTasks;'
+  );
+
+  const popularTask = await get(
+    `SELECT tasks.name AS name, COUNT(*) AS times
+       FROM studentsTasks
+       JOIN tasks ON tasks.id = studentsTasks.taskId
+      GROUP BY studentsTasks.taskId
+      ORDER BY times DESC
+      LIMIT 1;`
+  );
+
+  const topStudents = await all(
+    `SELECT name, grade, points
+       FROM students
+      WHERE points > 0
+      ORDER BY points DESC
+      LIMIT ?;`, [TOP_STUDENTS_LIMIT]
+  );
+
+  const topClasses = await all(
+    `SELECT grade, SUM(points) AS points
+       FROM students
+      GROUP BY grade
+     HAVING points > 0
+      ORDER BY points DESC;`
+  );
+
+  return {
+    totalPoints: totals ? totals.totalPoints : 0,
+    activeStudents: active ? active.activeStudents : 0,
+    popularTask: popularTask || null,
+    topStudents: topStudents || [],
+    topClasses: topClasses || [],
+    leadingClass: topClasses && topClasses.length > 0 ? topClasses[0].grade : ''
+  };
+}
+
 async function resetDatabase() {
   await waitDB();
   await run('BEGIN TRANSACTION;');
@@ -610,6 +659,7 @@ module.exports = {
   hasStudentDoneSelected,
   saveStudentTask,
   saveStudentProduct,
+  getStatistics,
   resetDatabase,
   DB_FLAG_INCONSISTENT_ERROR_CODE
 };

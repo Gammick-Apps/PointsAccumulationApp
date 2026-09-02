@@ -15,6 +15,8 @@
     <script src="../../js/shared.js"></script>
 
     <div class="background" id="background">
+        <a href="#" class="glass-card graphs-open-btn" id="graphsBtn"
+            onclick="login('../main/graphs'); return false;">גרפים</a>
         <div class="text">
             <div id="line1"></div>
             <div id="line2"></div>
@@ -260,6 +262,7 @@
         function selectWingsDuration(duration) {
             if (step != Steps.step3) {
                 step = Steps.step2;
+                hideGraphsButton();
 
                 currentResult = {
                     id: wingsTask.id,
@@ -279,6 +282,7 @@
         function selectAction(cardData) {
             if (step != Steps.step3) {
                 step = Steps.step2;
+                hideGraphsButton();
 
                 currentResult = cardData;
 
@@ -553,6 +557,10 @@
 
             if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
             confettiAnimationId = requestAnimationFrame(frame);
+        }
+
+        function hideGraphsButton() {
+            document.getElementById("graphsBtn").style.display = "none";
         }
 
         function updateLines(line1Text, line2Text, line3Text = "") {
