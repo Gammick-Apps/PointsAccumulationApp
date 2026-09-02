@@ -1,0 +1,137 @@
+/* ב-main עמדות המשתמש מציבות את .text ב-top: 20%, מקום צר מדי לגרפים,
+   ולכן המסך הזה פורס על כל החלון עם שוליים בלבד */
+.graphs-page {
+    position: absolute;
+    inset: 2% 3% 3%;
+    direction: rtl;
+    font-family: "mainFont", sans-serif;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.graphs-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    padding: 0.6rem 0 1rem;
+}
+
+.graphs-title {
+    font-size: clamp(1rem, 2vw, 2rem);
+    font-weight: bold;
+}
+
+.graphs-back-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1.1rem;
+    font-size: clamp(1rem, 1.7vw, 1.4rem);
+    cursor: pointer;
+    text-decoration: none;
+    color: #222;
+}
+
+.graphs-back-btn:hover {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.graphs-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 1rem;
+}
+
+/* ברירת המחדל min-width:auto נותנת ל-canvas הרחב להרחיב את עמודת הגריד
+   במקום שהמיכל יגלול, וכל השורה נדחפת מעבר לרוחב המסך */
+.graphs-grid > *,
+.stat-row > * {
+    min-width: 0;
+}
+
+.stat-card {
+    padding: 1rem 1.2rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 0;
+}
+
+.stat-card-label {
+    font-size: clamp(0.95rem, 1.5vw, 1.3rem);
+    opacity: 0.75;
+    margin-bottom: 0.2rem;
+}
+
+.stat-card-value {
+    font-size: clamp(1.8rem, 4.2vw, 3.6rem);
+    font-weight: bold;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+}
+
+.stat-card-value-small {
+    font-size: clamp(1.2rem, 2vw, 1.75rem);
+    font-weight: bold;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.stat-card-note {
+    font-size: clamp(0.85rem, 1.3vw, 1.1rem);
+    opacity: 0.7;
+    margin-top: 0.2rem;
+}
+
+/* עמודה 3 (המשימה הפופולרית) רחבה מ-2 כי היא מכילה שם משימה ולא מספר */
+.stat-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr 1fr;
+    gap: 1rem;
+}
+
+.chart-card {
+    min-width: 0;
+    padding: 0.8rem 1rem 0.4rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.chart-card-title {
+    font-size: clamp(1.1rem, 2vw, 1.7rem);
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 0.4rem;
+    flex-shrink: 0;
+}
+
+/* direction: rtl גורם לגלילה להיפתח בקצה הימני, שם ממוקמות המובילות */
+.chart-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    direction: rtl;
+}
+
+.chart-scroll canvas {
+    height: 100% !important;
+}
+
+.chart-empty {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(1rem, 1.6vw, 1.3rem);
+    opacity: 0.7;
+}

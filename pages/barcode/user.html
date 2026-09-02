@@ -79,6 +79,7 @@
 
     function searchStudent() {
       step = Steps.step2
+      hideGraphsButton();
       window.expose.sendDbData("sendGetStudentById", searchVal);
       window.expose.receiveDbData("receiveGetStudentById", (student) => {
         currentStudent = student
@@ -206,6 +207,10 @@
       }, time);
     }
 
+    function hideGraphsButton() {
+      document.getElementById("graphsBtn").style.display = "none";
+    }
+
     function updateLines(line1Text, line2Text, line3Text = "") {
       document.getElementById("line1").innerHTML = line1Text;
       document.getElementById("line2").innerHTML = line2Text;
@@ -229,6 +234,8 @@
   </script>
 
   <div class="background" id="background">
+    <a href="#" class="glass-card graphs-open-btn" id="graphsBtn"
+      onclick="login('../main/graphs'); return false;">גרפים</a>
     <div class="text">
       <div id="line1"></div>
       <div id="line2"></div>

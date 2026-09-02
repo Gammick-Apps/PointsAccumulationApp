@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>טבלת ההישגים</title>
+</head>
+
+<body onload="onLoad()">
+    <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link href="../../styleSheets/mainStyleSheet.css" rel="stylesheet" />
+    <link href="../../styleSheets/graphsStyleSheet.css" rel="stylesheet" />
+    <script src="../../js/jquery.min.js"></script>
+    <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="../../js/chart.js"></script>
+    <script src="../../js/chartjs-plugin-datalabels.js"></script>
+    <script src="../../js/shared.js"></script>
+
+    <div class="background" id="background">
+        <div class="graphs-page">
+            <div class="graphs-header">
+                <div class="graphs-title">טבלת ההישגים</div>
+                <a href="#" class="glass-card graphs-back-btn" onclick="login('./user'); return false;">
+                    <span>&#8592;</span><span>חזרה</span>
+                </a>
+            </div>
+
+            <div class="graphs-grid">
+                <div class="stat-row">
+                    <div class="glass-card stat-card">
+                        <div class="stat-card-label">סך הנקודות שנצברו</div>
+                        <div class="stat-card-value" id="totalPoints">0</div>
+                        <div class="stat-card-note" id="leadingClass"></div>
+                    </div>
+                    <div class="glass-card stat-card">
+                        <div class="stat-card-label">תלמידות פעילות</div>
+                        <div class="stat-card-value" id="activeStudents">0</div>
+                    </div>
+                    <div class="glass-card stat-card">
+                        <div class="stat-card-label">המשימה הפופולרית</div>
+                        <div class="stat-card-value-small" id="popularTaskName">—</div>
+                        <div class="stat-card-note" id="popularTaskTimes"></div>
+                    </div>
+                </div>
+
+                <div class="glass-card chart-card">
+                    <div class="chart-card-title" id="topStudentsTitle">התלמידות המובילות</div>
+                    <div class="chart-scroll" id="topStudentsScroll">
+                        <canvas id="topStudentsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="glass-card chart-card">
+                    <div class="chart-card-title">הכיתות המובילות</div>
+                    <div class="chart-scroll" id="topClassesScroll">
+                        <canvas id="topClassesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="position">עמדה</div>
+    </div>
+
+    <script>
+        var systemConfig = "";
+        var tableName;
+
+        const BAR_COLOR = "#5C4038";
+        const LABEL_COLOR = "#222";
+        const MIN_BAR_SLOT_PX = 110;
+
+        function onLoad() {
+            tableName = 'systemConfig';
+            window.expose.sendSystem("sendReadSystem", tableName);
+            window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
+                systemConfig = (!data || Object.keys(data).length == 0) ? getDefaultConfig() : data;
+
+                document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0];
+                document.getElementById("position").style.color = getPosition(systemConfig.color)[1];
+                document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color);
+                document.querySelector(".graphs-title").style.color = getTextColor(systemConfig.textColor);
+
+                if (systemConfig.numPosition.length > 0) {
+                    document.getElementById("position").innerHTML += ' ' + systemConfig.numPosition;
+                }
+                else {
+                    document.getElementById("position").style.display = "none";
+                }
+
+                loadStatistics();
+            });
+        }
+
+        function loadStatistics() {
+            window.expose.receiveDbData("receiveGetStatistics", (stats) => {
+                if (!stats) {
+                    showAlert("שגיאה בטעינת הנתונים");
+                    return;
+                }
+                showStatistics(stats);
+            });
+            window.expose.sendDbData("sendGetStatistics");
+        }
+
+        function showStatistics(stats) {
+            document.getElementById("totalPoints").innerText = formatNumber(stats.totalPoints);
+            document.getElementById("activeStudents").innerText = formatNumber(stats.activeStudents);
+
+            if (stats.leadingClass) {
+                document.getElementById("leadingClass").innerHTML = 'הכיתה המובילה: <b>' + stats.leadingClass + '</b>';
+            }
+
+            if (stats.popularTask) {
+                document.getElementById("popularTaskName").innerText = stats.popularTask.name;
+                document.getElementById("popularTaskTimes").innerText = 'בוצעה ' + formatNumber(stats.popularTask.times) + ' פעמים';
+            }
+
+            document.getElementById("topStudentsTitle").innerText =
+                stats.topStudents.length + ' תלמידות מובילות';
+
+            renderChart(
+                "topStudentsChart",
+                "topStudentsScroll",
+                stats.topStudents.map(s => s.name),
+                stats.topStudents.map(s => s.points)
+            );
+
+            renderChart(
+                "topClassesChart",
+                "topClassesScroll",
+                stats.topClasses.map(c => c.grade),
+                stats.topClasses.map(c => c.points)
+            );
+        }
+
+        // getStatistics מחזירה ממוין יורד; ההיפוך מציב את המובילה באינדקס האחרון, שהוא הקצה הימני בגלילת RTL
+        function renderChart(canvasId, scrollId, labels, values) {
+            const canvas = document.getElementById(canvasId);
+            const scroll = document.getElementById(scrollId);
+
+            if (labels.length == 0) {
+                const empty = document.createElement("div");
+                empty.className = "chart-empty";
+                empty.innerText = "אין עדיין נתונים להצגה";
+                scroll.parentNode.replaceChild(empty, scroll);
+                return;
+            }
+
+            const orderedLabels = labels.slice().reverse();
+            const orderedValues = values.slice().reverse();
+            const leadingIndex = orderedLabels.length - 1;
+
+            canvas.style.minWidth = (orderedLabels.length * MIN_BAR_SLOT_PX) + "px";
+
+            new Chart(canvas.getContext("2d"), {
+                type: 'bar',
+                plugins: [ChartDataLabels],
+                data: {
+                    labels: orderedLabels,
+                    datasets: [{
+                        data: orderedValues,
+                        backgroundColor: BAR_COLOR,
+                        borderWidth: 0,
+                        borderRadius: 8,
+                        maxBarThickness: 90
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { top: 28 } },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'end',
+                            color: LABEL_COLOR,
+                            font: { weight: 'bold', size: 18 },
+                            formatter: function (value) { return formatNumber(value); }
+                        }
+                    },
+                    scales: {
+                        y: { display: false, beginAtZero: true },
+                        x: {
+                            grid: { display: false },
+                            border: { display: false },
+                            ticks: {
+                                color: LABEL_COLOR,
+                                font: function (context) {
+                                    return { size: 15, weight: context.index === leadingIndex ? 'bold' : 'normal' };
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function formatNumber(value) {
+            return Number(value || 0).toLocaleString('en-US');
+        }
+
+        function showAlert(message) {
+            document.querySelector(".modal-body").innerHTML = message;
+            $(document).ready(function () {
+                $('#modal').modal('show');
+            });
+            setTimeout(function () {
+                $(document).ready(function () {
+                    $('#modal').modal('hide');
+                });
+            }, 2500);
+        }
+    </script>
+
+    <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalLabel">הודעת מערכת</h5>
+                </div>
+                <div class="modal-body"></div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
