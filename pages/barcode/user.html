@@ -24,6 +24,13 @@
     var currentStudent
     var currentResult
     var tableName
+    var confettiAnimationId = null;
+
+    // אבן דרך: כל פעם שהתלמידה חוצה כפולה של 100 נקודות
+    const MILESTONE_POINTS = 100;
+    const MILESTONE_DISPLAY_MS = 5000;
+    const DISPLAY_MS = 2000;
+
     const Steps = {
       step1: "1",
       step2: "2",
@@ -137,15 +144,31 @@
       window.expose.receiveDbData("receiveSaveStudentData", (points) => {
         if (points !== false) {
           document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
+          const previousPoints = Number(currentStudent.points) || 0;
           currentStudent.points = points;
-          updateLines("ביצעת את משימה " + currentResult.name, "כעת יש בחשבונך " + currentStudent.points + " נקודות", "...לא לשכוח לקחת את האישור מהמדפסת");
+
+          const passedMilestone =
+            Math.floor(points / MILESTONE_POINTS) > Math.floor(previousPoints / MILESTONE_POINTS);
+
+          updateLines(
+            "!!אשרייך",
+            "עד כה צברת " + currentStudent.points + " נקודות לזכותך",
+            passedMilestone ? "!!את חכמה! מנצלת הזדמנויות פז" : "!!שיתקבלו תפילותייך לרצון"
+          );
+
+          // בלי הארכת ההמתנה המסך היה נטען מחדש לפני שהקונפטי מספיק להיראות
+          const displayTime = passedMilestone ? MILESTONE_DISPLAY_MS : DISPLAY_MS;
+          if (passedMilestone) {
+            document.getElementById("line3").classList.add("milestone-line");
+            launchConfetti(displayTime);
+          }
 
           if (systemConfig.hasPrint == 1) {
             setTimeout(function () {
               toPrint();
-            }, 2000);
+            }, displayTime);
           } else {
-            reset(2000);
+            reset(displayTime);
           }
         } else {
           console.error("שגיאה: השמירה במסד הנתונים נכשלה.");
@@ -204,6 +227,53 @@
       });
     }
 
+    function launchConfetti(duration) {
+      const canvas = document.getElementById("confettiCanvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const colors = ['#FFC700', '#FF3D68', '#3D9BFF', '#3DFFA0', '#B14EFF', '#FF8A3D'];
+      const particles = [];
+      for (let i = 0; i < 160; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: -20 - Math.random() * canvas.height * 0.5,
+          size: 14 + Math.random() * 12,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          speedY: 2 + Math.random() * 3,
+          speedX: (Math.random() - 0.5) * 2,
+          rotation: Math.random() * 360,
+          rotationSpeed: (Math.random() - 0.5) * 10
+        });
+      }
+
+      const startTime = performance.now();
+
+      function frame(now) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+          p.y += p.speedY;
+          p.x += p.speedX;
+          p.rotation += p.rotationSpeed;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rotation * Math.PI / 180);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+          ctx.restore();
+        });
+        if (now - startTime < duration) {
+          confettiAnimationId = requestAnimationFrame(frame);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+
+      if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
+      confettiAnimationId = requestAnimationFrame(frame);
+    }
+
     function reset(time = 0) {
       setTimeout(function () {
         location.reload();
@@ -247,6 +317,7 @@
     </div>
     <div id="position">עמדה</div>
   </div>
+  <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
   <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
       <div class="modal-content">

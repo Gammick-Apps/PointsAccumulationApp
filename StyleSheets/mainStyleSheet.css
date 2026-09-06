@@ -108,3 +108,31 @@ html {
     background: rgba(255, 255, 255, 0.7);
     color: #222;
 }
+
+.confetti-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+}
+
+/* שורת אבן הדרך: גדולה בהרבה מ-#line3 הרגיל ומהבהבת.
+   מחזור של 0.9 שניות, מתחת ל-3 הבהובים בשנייה שנחשבים מסוכנים */
+#line3.milestone-line {
+    font-size: 4.5vw;
+    font-weight: 800;
+    line-height: 1.15;
+    margin-top: 2vh;
+    animation: milestone-blink 0.9s ease-in-out infinite;
+}
+
+@keyframes milestone-blink {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.3;
+        transform: scale(1.06);
+    }
+}
