@@ -68,8 +68,7 @@
               searchStudent();//בת
           }
           else if (step == Steps.step2) {
-            //משימה רגילה--כללית
-            searchTask();
+            systemConfig.buy == 1 ? searchProduct() : searchTask();
           }
         }
       } else {
@@ -89,7 +88,10 @@
           return;
         }
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step)
-        updateLines("(: שלום  " + currentStudent.name, "יש לסרוק את הברקוד לעדכון משימה", "עד כה צברת " + currentStudent.points + " נקודות")
+        updateLines(
+          "(: שלום  " + currentStudent.name,
+          systemConfig.buy == 1 ? "יש לסרוק את ברקוד המתנה" : "יש לסרוק את הברקוד לעדכון משימה",
+          "עד כה צברת " + currentStudent.points + " נקודות")
       });
     }
 
@@ -128,6 +130,59 @@
           else {
             saveStudentData();
           }
+        }
+      });
+    }
+
+    // hasStudentDoneSelected בודק לבד ב-studentsProducts כש-buy == 1
+    function searchProduct() {
+      step = Steps.step3;
+
+      window.expose.sendDbData("sendGetProductByCode", searchVal);
+      window.expose.receiveDbData("receiveGetProductByCode", (product) => {
+        if (!product) {
+          showAlert("קוד לא תקין, גשו למורה!");
+          return;
+        }
+        currentResult = product;
+
+        if (!currentResult.multiple) {
+          window.expose.sendDbData("sendHasStudentDoneSelected", { currentStudent, currentResult });
+          window.expose.receiveDbData("receiveHasStudentDoneSelected", (alreadyDone) => {
+            if (alreadyDone) {
+              showAlert("הי, מתנה זו כבר קיימת בחשבונך!");
+              return;
+            }
+            saveStudentProduct();
+          });
+        }
+        else {
+          saveStudentProduct();
+        }
+      });
+    }
+
+    // saveStudentProduct בשרת מחזיר false כשאין מספיק נקודות, לפני שנרשם משהו
+    function saveStudentProduct() {
+      window.expose.sendDbData("sendSaveStudentProduct", { currentStudent, currentResult });
+      window.expose.receiveDbData("receiveSaveStudentData", (points) => {
+        if (points === false) {
+          showAlert("אין לך מספיק נקודות בחשבון!");
+          return;
+        }
+        document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
+        currentStudent.points = points;
+        updateLines(
+          "תודה רבה " + currentStudent.name,
+          "כעת יש בחשבונך " + currentStudent.points + " נקודות",
+          "!בהצלחה");
+
+        if (systemConfig.hasPrint == 1) {
+          setTimeout(function () {
+            toPrint();
+          }, 2000);
+        } else {
+          reset(2000);
         }
       });
     }
