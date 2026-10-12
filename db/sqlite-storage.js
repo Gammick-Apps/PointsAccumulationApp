@@ -613,13 +613,11 @@ async function resetDatabase() {
   await waitDB();
   await run('BEGIN TRANSACTION;');
   try {
+    // מוחק את מה שנצבר בשימוש בלבד; תלמידות, משימות, מתנות ומבחנים שהועלו נשארים
     await run('DELETE FROM studentsTasks;');
     await run('DELETE FROM studentsProducts;');
-    await run('DELETE FROM tests;');
-    await run('DELETE FROM questions;');
-    await run('DELETE FROM students;');
-    await run('DELETE FROM products;');
-    await run('DELETE FROM tasks;');
+    await run('UPDATE students SET points = 0;');
+    await run('UPDATE products SET used = 0;');
     await run('COMMIT;');
     return true;
   } catch (error) {

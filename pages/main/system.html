@@ -139,14 +139,16 @@
 
         document.addEventListener("keypress", function (e) {
             if (e.key === "Enter") {
-                if (searchVal.length > 0) {
-                    if (searchVal == '011429519')
-                        login("user")
-                    else if (searchVal == '999999999')
-                        login("manage")
-                    else if (searchVal == '207594581')
-                        login('../parentsMeeting/user')
-                }
+                // בלי האיפוס הזה תו בודד שנקלט קודם משבש כל סריקה הבאה, עד טעינת הדף מחדש
+                const scanned = searchVal;
+                searchVal = "";
+
+                if (scanned == '011429519')
+                    login("user")
+                else if (scanned == '999999999')
+                    login("manage")
+                else if (scanned == '207594581')
+                    login('../parentsMeeting/user')
             } else {
                 searchVal += e.key;
             }
@@ -187,13 +189,24 @@
         };
 
 
+        function askResetDatabase() {
+            $('#resetModal').modal('show');
+        }
+
         function resetDatabase() {
             window.expose.sendDbData("sendResetDatabase", {});
             window.expose.receiveDbData("receiveResetDatabase", (data) => {
-                if (!data) {
-                    alert("שגיאה באיפוס מסד הנתונים");
-                }
+                // alert חוסם את תהליך הרנדור ב-Electron, ואז הדף מפסיק להגיב להקשות
+                showResetResult(data
+                    ? "האיפוס בוצע. הנקודות והרכישות נמחקו, הרשימות שהועלו נשמרו."
+                    : "שגיאה באיפוס מסד הנתונים.");
             });
+        }
+
+        function showResetResult(message) {
+            document.getElementById("resetModalBody").innerHTML = message;
+            document.getElementById("resetModalFooter").innerHTML =
+                '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">סגור</button>';
         }
 
         function updateSystem() {
@@ -344,7 +357,7 @@
                 <div class="row">
                     <div class="col-md-2">
                         <label class="form-label">.</label>
-                        <button id="reset" onclick="resetDatabase()" class="form-control"> איפוס </button>
+                        <button type="button" id="reset" onclick="askResetDatabase()" class="form-control"> איפוס </button>
                     </div>
                 </div>
             </form>
@@ -354,6 +367,27 @@
                 התקנת דרייבר למדפסת |
                 למחוק את קובץ ההתקנה |
                 לכוון שעון במחשב
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="resetModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">איפוס נתוני השימוש</h5>
+                </div>
+                <div class="modal-body" id="resetModalBody">
+                    <div><b>יימחק:</b> כל הנקודות שנצברו, כל תיקופי המשימות וכל רכישות המתנות.</div>
+                    <br>
+                    <div><b>יישמר:</b> רשימת התלמידות, המשימות, המתנות והמבחנים שהעלית.</div>
+                    <br>
+                    <div>לא ניתן לבטל את הפעולה. להמשיך?</div>
+                </div>
+                <div class="modal-footer" id="resetModalFooter">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ביטול</button>
+                    <button type="button" class="btn btn-danger" onclick="resetDatabase()">כן, לאפס</button>
+                </div>
             </div>
         </div>
     </div>
