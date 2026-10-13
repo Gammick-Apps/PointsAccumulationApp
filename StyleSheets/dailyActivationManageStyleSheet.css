@@ -1,0 +1,43 @@
+.text {
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    top: 2.5%;
+    bottom: 10%;
+    width: 80%;
+    text-align: center;
+    margin-right: auto;
+    margin-left: auto;
+    line-height: 2vw;
+}
+
+#line1 {
+    font-size: 2.5vw;
+    font-weight: 400;
+}
+
+#line2 {
+    font-size: 1.5vw;
+    font-weight: 300;
+}
+
+img {
+    height: 5%;
+    float: right;
+}
+
+.ag-theme-alpine {
+    display: inline-block;
+    padding: 1rem 1rem;
+    vertical-align: middle;
+    height: 85%;
+    --ag-background-opacity: 0.33
+}
+
+.ag-cell-value {
+    direction: rtl;
+}
+
+#checkboxList{
+    direction: rtl;
+}

@@ -15,6 +15,8 @@
     <script src="../../js/shared.js"></script>
 
     <div class="background" id="background">
+        <a href="#" class="glass-card graphs-open-btn" id="graphsBtn"
+            onclick="login('../main/graphs'); return false;">גרפים</a>
         <div class="text">
             <div id="line1"></div>
             <div id="line2"></div>
@@ -56,19 +58,26 @@
     </div>
 
     <script>
-        var currentDate = getTodayDate();
         var actions = ""
-        var systemConfig = ""
+        var systemConfig
         var students = ""
         var tests = ""
-        var studentResult = ""
-        var result = "";
+        var currentStudent = ""
+        var currentResult = "";
         var searchVal = ""
         var buffer = "";
-        var fileName
+        var tableName
         var isModalOpen = false;
         var questions
         var step
+        var prizeWon = null;
+        var printStage = "";
+
+        // משך הצגת הפופאפ כשאין מדפסת, מתי נשלח השובר, וכמה נשאר אחרי שיצא
+        const PRIZE_DISPLAY_MS = 4500;
+        const PRIZE_PRINT_DELAY_MS = 1200;
+        const PRIZE_AFTER_PRINT_MS = 2500;
+
         const Steps = {
             step1: "1",
             step2: "2",
@@ -79,6 +88,7 @@
         const questionProgress = document.getElementById('questionProgress');
         const testNameElement = document.getElementById('testName');
         const timerElement = document.getElementById('timer');
+        let currentTable = "";
         let currentTest = null;
         let currentQuestionIndex = 0;
         let correctCount = 0;
@@ -86,15 +96,10 @@
 
         function onLoad() {
             step = Steps.step1;
-            fileName = 'systemConfig'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                if (data == 0) {
-                    systemConfig = getDefaultConfig()
-                }
-                else {
-                    systemConfig = JSON.parse(data)
-                }
+            tableName = 'systemConfig'
+            window.expose.sendSystem("sendReadSystem", tableName);
+            window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
+                systemConfig = data
                 document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
                 document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
                 document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color)
@@ -106,39 +111,22 @@
                 else {
                     document.getElementById("position").style.display = "none";
                 }
+                registerPrintHandler();
+                currentTable = systemConfig.buy ? 'products' : 'tasks';
                 if (systemConfig.buy) {
                     updateLines("שלום...!", "יש לבחור מתנה לקנייה")
                 }
                 else {
                     updateLines(" שלום...! ", "יש לבחור משימה לתיקוף ")
                 }
-                fileName = 'students'
-                window.expose.SendExcel("sendReadExcel", fileName);
-                window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                    if (data != 0) {
-                        students = JSON.parse(data)
-                        systemConfig.buy ?
-                            fileName = 'products' : fileName = 'uniqTasks';
-                        window.expose.SendExcel("sendReadExcel", fileName);
-                        window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                            if (data != 0) {
-                                actions = JSON.parse(data)
-                                createCards()
-                            }
-                        })
-
-                        if (systemConfig.hasTests == "1") {
-                            fileName = 'tests';
-                            window.expose.SendExcel("sendReadExcel", fileName);
-                            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                                if (data != 0) {
-                                    tests = JSON.parse(data)
-                                }
-                            })
-                        }
+                window.expose.receiveDbData("receiveGetDataByTable" + currentTable, (data) => {
+                    if (Array.isArray(data) && data.length > 0) {
+                        actions = data;
+                        createCards();
                     }
                 });
-            })
+                window.expose.sendDbData("sendGetDataByTable", currentTable);
+            });
         }
 
         document.addEventListener("keypress", function (e) {
@@ -159,7 +147,7 @@
                         }
                     }
                     else if (step == Steps.step2) {
-                        searchInExcel();
+                        searchStudent();
                     }
                 }
             } else {
@@ -175,7 +163,7 @@
                 cardColumn.classList.add("col");
 
                 const cardElement = document.createElement("a");
-                cardElement.classList.add("card", "focus-ring", "text-decoration-none", "rounded-2", "h-100");
+                cardElement.classList.add("card", "glass-card", "focus-ring", "text-decoration-none", "h-100");
                 cardElement.addEventListener("click", function () {
                     selectAction(cardData);
                 });
@@ -207,41 +195,50 @@
         function selectAction(cardData) {
             if (step != Steps.step3) {
                 step = Steps.step2;
-                result = cardData;
-                switch (result.type) {
+                hideGraphsButton();
+
+                currentResult = cardData;
+
+                if (systemConfig.buy == 1) {
+                    updateLines("בחרת במתנה: " + currentResult.name, "")
+                }
+
+                switch (currentResult.type) {
                     case 1: {
-                        if (systemConfig.buy == 1) {
-                            updateLines("בחרת במתנה: " + result.name, "")
-                        }
-                        else {
-                            updateLines("בחרת ב: " + result.name, "")
-                        }
-                        updateLinesByDevice()
+                        updateLines("בחרת ב: " + currentResult.name, "")
                         break;
                     }
                     case 2: {
-                        updateLines("בחרת ב: " + result.name, "")
+                        updateLines("בחרת ב: " + currentResult.name, "")
                         openTest();
-                        break;
+                        return;
                     }
                 }
-
+                updateLinesByDevice()
             }
         }
+
+        //-------------tests-------------------//
 
         function openTest() {
             isModalOpen = true;
             document.getElementById("cards").style.display = "none"
-            currentTest = tests.find(test => test.id == result.code);
-            currentQuestionIndex = 0;
-            correctCount = 0;
-            testNameElement.innerText = `${result.name}`;
-            questions = shuffleArray(currentTest.questions);
-            displayQuestion();
+            window.expose.sendDbData("sendGetTestByCode", currentResult.code);
+            window.expose.receiveDbData("receiveGetTestByCode", (test) => {
+                if (!test || !Array.isArray(test.questions) || test.questions.length == 0) {
+                    showAlert("שגיאה בטעינת המבחן");
+                    return;
+                }
+                currentTest = test;
+                currentQuestionIndex = 0;
+                correctCount = 0;
+                testNameElement.innerText = `${currentResult.name}`;
+                questions = shuffleArray(currentTest.questions);
+                displayQuestion();
 
-            // Show Modal
-            const triviaModal = new bootstrap.Modal(document.getElementById('triviaModal'));
-            triviaModal.show();
+                const triviaModal = new bootstrap.Modal(document.getElementById('triviaModal'));
+                triviaModal.show();
+            });
         }
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -297,68 +294,69 @@
 
         function showResults() {
             isModalOpen = false;
-            const score = correctCount * result.points;
+            const score = correctCount * currentResult.points;
             updateLines("הציון שלך: " + score)
             updateLinesByDevice()
-            result.points = score;
+            currentResult.points = score;
             const triviaModalEl = document.getElementById('triviaModal');
             const triviaModal = bootstrap.Modal.getInstance(triviaModalEl);
             triviaModal.hide();
         }
 
-        function searchInExcel() {
-            document.getElementById("cards").style.display = "none"
-            step = Steps.step3
-            for (var i = 0; i < students.length; i++) {
-                if (students[i]["tz"] == searchVal) {
-                    studentResult = students[i];
-                    break;
-                }
-            }
-            if (studentResult == "") {
-                showAlert("  קוד לא קיים. גשו למורה!")
-                return;
-            }
+        //---------------------------//
 
-            if (!result.multiple && studentResult.tasksNumber.includes(result.code)) {
-                showAlert("הי, בחירה זו כבר קיימת בחשבונך!");
-                return;
-            }
-            finishSession()
-        }
+        function searchStudent() {
+            document.getElementById("cards").style.display = "none";
+            step = Steps.step3;
 
-        function finishSession() {
-            studentResult.tasks += result.name + ',';
-            studentResult.tasksNumber += result.code + ',';
-            if (systemConfig.buy == 0)
-                studentResult.points = parseInt(result.points) + parseInt(studentResult.points);
-            else {
-                studentResult.points = parseInt(studentResult.points) - parseInt(result.points);
-                if (studentResult.points < 0) {
-                    showAlert("אין לך מספיק נקודות בחשבון!")
+            window.expose.sendDbData("sendGetStudentById", searchVal);
+            window.expose.receiveDbData("receiveGetStudentById", (student) => {
+                currentStudent = student;
+                if (currentStudent == null) {
+                    showAlert("הברקוד לא מופיע ברשימות. גשו למורה!");
                     return;
                 }
-            }
-            saveData();
+                if (!currentResult.multiple) {
+                    window.expose.sendDbData("sendHasStudentDoneSelected", { currentStudent, currentResult });
+                    window.expose.receiveDbData("receiveHasStudentDoneSelected", (alreadyDone) => {
+                        if (alreadyDone) {
+                            showAlert("הי, בחירה זו כבר קיימת בחשבונך!");
+                        }
+                        else
+                            saveStudentData();
+                    });
+                }
+                else {
+                    saveStudentData();
+                }
+            })
         }
 
-        function saveData() {
-            for (var i = 0; i < students.length; i++) {
-                if (students[i]["tz"] == studentResult.tz) {
-                    students[i] = studentResult;
-                    break;
-                }
+        async function saveStudentData() {
+            if (systemConfig.buy == 1) {
+                window.expose.sendDbData("sendSaveStudentProduct", { currentStudent, currentResult });
+            } else {
+                window.expose.sendDbData("sendSaveStudentTask", { currentStudent, currentResult });
             }
-            fileName = 'students'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                updateLines("תודה רבה " + studentResult.name, " כעת יש בחשבונך " + studentResult.points + " נקודות", "בהצלחה!")
-                if (systemConfig.hasPrint == 1)
-                    setTimeout(function () {
-                        toPrint();
-                    }, 2500);
-                else
-                    reset(2500);
+            window.expose.receiveDbData("receiveSaveStudentData", (points) => {
+                if (points == false) {
+                    showAlert(" אין לך מספיק נקודות בחשבון! ");
+                    return;
+                } else {
+                    document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
+                    currentStudent.points = points;
+                    updateLines("תודה רבה " + currentStudent.name, " כעת יש בחשבונך " + currentStudent.points + " נקודות", "בהצלחה!")
+
+                    if (systemConfig.hasPrint == 1) {
+                        setTimeout(function () {
+                            toPrint();
+                        }, 2000);
+                    } else {
+                        setTimeout(function () {
+                            runPrizeDraw(0);
+                        }, 2000);
+                    }
+                }
             });
         }
 
@@ -370,22 +368,16 @@
             <meta charset="utf-8" />
             <title>Print</title>
             <style>
-                body {
-                    font-family: 'Arial', sans-serif;;
-                    direction: rtl;
-                    margin: 0;
-                    padding: 0;
-                }
                 #title {
                     font-size: 40px;
                     text-align: center;
                 }
                 #content div {
-                    font-size: 20px;
+                    font-size: 17px;
                     margin: 10px 0;
                 }
                 #footer {
-                    font-size: 10px;
+                    font-size: 12px;
                     text-align: center;
                     margin-top: 20px;
                 }
@@ -395,12 +387,12 @@
             <div id="title">אישור</div>
             <br>
             <div id="content">
-                <div>${studentResult.name}</div>
-                <div>${studentResult.grade}</div>
+                <div>${currentStudent.name}</div>
+                <div>${currentStudent.grade}</div>
                 <div>${systemConfig.buy == 0
-                    ? "" + result.name
-                    : "זכאות למתנה: " + result.name}</div>
-                <div>נקודות בחשבון: ${studentResult.points}</div>
+                    ? "" + currentResult.name
+                    : "זכאות למתנה: " + currentResult.name}</div>
+                <div>נקודות בחשבון: ${currentStudent.points}</div>
             </div>
             <br>
             <div id="title">בהצלחה!</div>
@@ -410,16 +402,100 @@
         </body>
         </html>
     `;
+            printStage = "receipt";
             window.expose.send("sendPrint", dynamicHTML);
+        }
+
+        // מאזין אחד לשתי ההדפסות; מאזין נוסף היה נורה גם על הקבלה ומאפס באמצע
+        function registerPrintHandler() {
             window.expose.receive("receivePrint", () => {
-                reset();
+                if (printStage === "receipt") {
+                    runPrizeDraw(0);
+                } else {
+                    reset(PRIZE_AFTER_PRINT_MS);
+                }
             });
+        }
+
+        // הגרלה רק בתיקוף משימה; בקניית מתנה אין צ'ופר
+        function runPrizeDraw(resetDelay) {
+            if (systemConfig.buy == 1) {
+                reset(resetDelay);
+                return;
+            }
+
+            window.expose.sendDbData("sendDrawPrize", currentStudent.id);
+            window.expose.receiveDbData("receiveDrawPrize", (prize) => {
+                if (!prize) {
+                    reset(resetDelay);
+                    return;
+                }
+                prizeWon = prize;
+                showPrizeWin();
+            });
+        }
+
+        function showPrizeWin() {
+            document.getElementById("prizeName").innerText = prizeWon.name;
+
+            const modalEl = document.getElementById("prizeModal");
+            // הקנבס מקבל מידות רק אחרי שהפופאפ נפתח בפועל
+            modalEl.addEventListener("shown.bs.modal", function () {
+                launchConfetti(PRIZE_DISPLAY_MS, "prizeConfetti");
+            }, { once: true });
+            $('#prizeModal').modal('show');
+
+            if (systemConfig.hasPrint == 1) {
+                setTimeout(function () {
+                    printPrizeVoucher();
+                }, PRIZE_PRINT_DELAY_MS);
+            } else {
+                reset(PRIZE_DISPLAY_MS);
+            }
+        }
+
+        function printPrizeVoucher() {
+            const voucherHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8" />
+            <title>Print</title>
+            <style>
+                #title { font-size: 40px; text-align: center; }
+                #content div { font-size: 17px; margin: 10px 0; }
+                #footer { font-size: 12px; text-align: center; margin-top: 20px; }
+            </style>
+        </head>
+        <body>
+            <div id="title">שובר</div>
+            <br>
+            <div id="content">
+                <div>${currentStudent.name}</div>
+                <div>${currentStudent.grade}</div>
+                <div>${"זכית ב: " + prizeWon.name}</div>
+                <div>יש לגשת לאחראית לקבלת הצ'ופר</div>
+            </div>
+            <br>
+            <div id="title">בהנאה!</div>
+            <br>
+            <br>
+            <div id="footer">להזמנות: אפרת מלכה 0504167969 office@gammick.co.il</div>
+        </body>
+        </html>
+    `;
+            printStage = "voucher";
+            window.expose.send("sendPrint", voucherHTML);
         }
 
         function reset(time = 0) {
             setTimeout(function () {
                 location.reload();
             }, time);
+        }
+
+        function hideGraphsButton() {
+            document.getElementById("graphsBtn").style.display = "none";
         }
 
         function updateLines(line1Text, line2Text, line3Text = "") {
@@ -443,14 +519,28 @@
                 $('#modal').modal('show')
             });
             setTimeout(function () {
-            $(document).ready(function () {
-                $('#modal').modal('hide')
-            });
-            reset(0)
+                $(document).ready(function () {
+                    $('#modal').modal('hide')
+                });
+                reset(0)
             }
                 , 2500);
         }
     </script>
+
+    <div class="modal fade" id="prizeModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content prize-modal-content">
+                <canvas id="prizeConfetti" class="confetti-canvas-inner"></canvas>
+                <div class="prize-modal-body">
+                    <div class="prize-modal-title">זכית בצ'ופר!!</div>
+                    <div class="prize-modal-name" id="prizeName"></div>
+                    <div class="prize-modal-sub">כל הכבוד!</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </body>
 
