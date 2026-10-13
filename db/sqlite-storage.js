@@ -727,6 +727,7 @@ async function resetDatabase() {
     // מוחק את מה שנצבר בשימוש בלבד; תלמידות, משימות, מתנות ומבחנים שהועלו נשארים
     await run('DELETE FROM studentsTasks;');
     await run('DELETE FROM studentsProducts;');
+    await run('DELETE FROM studentsPrizes;');
     await run('UPDATE students SET points = 0;');
     await run('UPDATE products SET used = 0;');
     await run('COMMIT;');
