@@ -20,12 +20,12 @@
     <div class="prizes-page">
         <div class="prizes-header">
             <div class="prizes-title">ניהול צ'ופרים</div>
-            <a href="#" class="prizes-back-btn" onclick="login('./manage'); return false;">
+            <a href="#" class="glass-card prizes-back-btn" onclick="login('./manage'); return false;">
                 <span>&#8592;</span><span>חזרה</span>
             </a>
         </div>
 
-        <div class="prizes-chance">
+        <div class="glass-card prizes-chance">
             <label for="prizeChance" class="form-label">אחוז סיכוי לזכייה בצ'ופר</label>
             <div class="prizes-chance-row">
                 <input type="number" min="0" max="100" class="form-control" id="prizeChance">
@@ -39,7 +39,7 @@
         </div>
 
         <div class="prizes-grids">
-            <div class="prizes-section">
+            <div class="glass-card prizes-section">
                 <div class="prizes-section-head">
                     <div class="prizes-section-title">הצ'ופרים</div>
                     <button type="button" class="btn btn-dark" onclick="addPrize()">הוספת צ'ופר</button>
@@ -47,7 +47,7 @@
                 <div id="prizesGrid" class="ag-theme-alpine"></div>
             </div>
 
-            <div class="prizes-section">
+            <div class="glass-card prizes-section">
                 <div class="prizes-section-head">
                     <div class="prizes-section-title">הזוכות</div>
                 </div>
@@ -104,6 +104,7 @@
                 systemConfig = (!data || Object.keys(data).length == 0) ? getDefaultConfig() : data;
                 document.getElementById("background").style.backgroundImage =
                     getBackground(systemConfig.device, systemConfig.color);
+                document.querySelector(".prizes-title").style.color = getTextColor(systemConfig.textColor);
                 document.getElementById("prizeChance").value = Number(systemConfig.prizeChance || 0);
             });
 
