@@ -4,7 +4,7 @@ const path = require('path')
 let mainWindow
 const { initDatabase, waitDB, readData, readSystem, updateSystem, closeDatabase, insertExcelToDB,
   addStudent, updateStudent, addTask, updateTask, addProduct, updateProduct, getStudentById, getTaskByCode,
-  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, getStudentParentByCode, updateStudentText, getStatistics, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
+  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, getStudentParentByCode, updateStudentText, getStatistics, addPrize, updatePrize, deletePrize, readPrizes, readPrizeWinners, updatePrizeWinner, drawPrize, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -308,6 +308,75 @@ ipcMain.on("sendGetStatistics", async () => {
   } catch (error) {
     console.error("Error reading statistics:", error);
     mainWindow.webContents.send("receiveGetStatistics", null);
+  }
+});
+
+// -------------- prizes ---------------- //
+
+ipcMain.on("sendAddPrize", async () => {
+  try {
+    await addPrize();
+    mainWindow.webContents.send("receiveAddPrize", await readPrizes());
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveAddPrize", null);
+  }
+});
+
+ipcMain.on("sendUpdatePrize", async (event, args) => {
+  try {
+    await updatePrize(args.id, args.field, args.value);
+    mainWindow.webContents.send("receiveUpdatePrize", await readPrizes());
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveUpdatePrize", null);
+  }
+});
+
+ipcMain.on("sendDeletePrize", async (event, args) => {
+  try {
+    await deletePrize(args);
+    mainWindow.webContents.send("receiveDeletePrize", await readPrizes());
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveDeletePrize", null);
+  }
+});
+
+ipcMain.on("sendReadPrizes", async () => {
+  try {
+    mainWindow.webContents.send("receiveReadPrizes", await readPrizes());
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveReadPrizes", []);
+  }
+});
+
+ipcMain.on("sendReadPrizeWinners", async () => {
+  try {
+    mainWindow.webContents.send("receiveReadPrizeWinners", await readPrizeWinners());
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveReadPrizeWinners", []);
+  }
+});
+
+ipcMain.on("sendUpdatePrizeWinner", async (event, args) => {
+  try {
+    await updatePrizeWinner(args.id, args.given);
+    mainWindow.webContents.send("receiveUpdatePrizeWinner", true);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveUpdatePrizeWinner", false);
+  }
+});
+
+ipcMain.on("sendDrawPrize", async (event, args) => {
+  try {
+    mainWindow.webContents.send("receiveDrawPrize", await drawPrize(args));
+  } catch (error) {
+    console.error("Error drawing prize:", error);
+    mainWindow.webContents.send("receiveDrawPrize", null);
   }
 });
 

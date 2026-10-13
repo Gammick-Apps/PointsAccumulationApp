@@ -24,6 +24,14 @@
     var currentStudent
     var currentResult
     var tableName
+    var prizeWon = null;
+    var printStage = "";
+
+    // משך הצגת הפופאפ כשאין מדפסת, מתי נשלח השובר, וכמה נשאר אחרי שיצא
+    const PRIZE_DISPLAY_MS = 4500;
+    const PRIZE_PRINT_DELAY_MS = 1200;
+    const PRIZE_AFTER_PRINT_MS = 2500;
+
     const Steps = {
       step1: "1",
       step2: "2",
@@ -49,6 +57,7 @@
         else {
           document.getElementById("position").style.display = "none";
         }
+        registerPrintHandler();
       })
     }
 
@@ -200,7 +209,9 @@
               toPrint();
             }, 2000);
           } else {
-            reset(2000);
+            setTimeout(function () {
+              runPrizeDraw(0);
+            }, 2000);
           }
         } else {
           console.error("שגיאה: השמירה במסד הנתונים נכשלה.");
@@ -253,10 +264,85 @@
         </body>
         </html>
     `;
+      printStage = "receipt";
       window.expose.send("sendPrint", dynamicHTML);
+    }
+
+    // מאזין אחד לשתי ההדפסות; מאזין נוסף היה נורה גם על הקבלה ומאפס באמצע
+    function registerPrintHandler() {
       window.expose.receive("receivePrint", () => {
-        reset(1800);
+        if (printStage === "receipt") {
+          runPrizeDraw(1800);
+        } else {
+          reset(PRIZE_AFTER_PRINT_MS);
+        }
       });
+    }
+
+    // ההגרלה מתבצעת רק אחרי שהתיקוף נשמר והקבלה הודפסה
+    function runPrizeDraw(resetDelay) {
+      window.expose.sendDbData("sendDrawPrize", currentStudent.id);
+      window.expose.receiveDbData("receiveDrawPrize", (prize) => {
+        if (!prize) {
+          reset(resetDelay);
+          return;
+        }
+        prizeWon = prize;
+        showPrizeWin();
+      });
+    }
+
+    function showPrizeWin() {
+      document.getElementById("prizeName").innerText = prizeWon.name;
+
+      const modalEl = document.getElementById("prizeModal");
+      // הקנבס מקבל מידות רק אחרי שהפופאפ נפתח בפועל
+      modalEl.addEventListener("shown.bs.modal", function () {
+        launchConfetti(PRIZE_DISPLAY_MS, "prizeConfetti");
+      }, { once: true });
+      $('#prizeModal').modal('show');
+
+      if (systemConfig.hasPrint == 1) {
+        setTimeout(function () {
+          printPrizeVoucher();
+        }, PRIZE_PRINT_DELAY_MS);
+      } else {
+        reset(PRIZE_DISPLAY_MS);
+      }
+    }
+
+    function printPrizeVoucher() {
+      const voucherHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8" />
+            <title>Print</title>
+            <style>
+                #title { font-size: 40px; text-align: center; }
+                #content div { font-size: 17px; margin: 10px 0; }
+                #footer { font-size: 12px; text-align: center; margin-top: 20px; }
+            </style>
+        </head>
+        <body>
+            <div id="title">שובר</div>
+            <br>
+            <div id="content">
+                <div>${currentStudent.name}</div>
+                <div>${currentStudent.grade}</div>
+                <div>${"זכית ב: " + prizeWon.name}</div>
+                <div>יש לגשת לאחראית לקבלת הצ'ופר</div>
+            </div>
+            <br>
+            <div id="title">בהנאה!</div>
+            <br>
+            <br>
+            <div id="footer">להזמנות: אפרת מלכה 0504167969 office@gammick.co.il</div>
+        </body>
+        </html>
+      `;
+      printStage = "voucher";
+      window.expose.send("sendPrint", voucherHTML);
     }
 
     function reset(time = 0) {
@@ -312,6 +398,20 @@
       </div>
     </div>
   </div>
+    <div class="modal fade" id="prizeModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content prize-modal-content">
+                <canvas id="prizeConfetti" class="confetti-canvas-inner"></canvas>
+                <div class="prize-modal-body">
+                    <div class="prize-modal-title">זכית בצ'ופר!!</div>
+                    <div class="prize-modal-name" id="prizeName"></div>
+                    <div class="prize-modal-sub">כל הכבוד!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 
 </html>

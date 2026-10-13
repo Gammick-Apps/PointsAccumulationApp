@@ -204,8 +204,8 @@ async function updateSystem(payload) {
   await waitDB();
   const config = payload || {};
   try {
-    await run(`INSERT OR REPLACE INTO systemConfig (id, device, color, textColor, date, numPosition, type, hasPrint, hasBuy, hasParents, hasTests, buy, timer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-      [1, config.device, config.color, config.textColor, config.date, config.numPosition, config.type, config.hasPrint, config.hasBuy, config.hasParents, config.hasTests, config.buy, config.timer]);
+    await run(`INSERT OR REPLACE INTO systemConfig (id, device, color, textColor, date, numPosition, type, hasPrint, hasBuy, hasParents, hasTests, buy, timer, prizeChance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+      [1, config.device, config.color, config.textColor, config.date, config.numPosition, config.type, config.hasPrint, config.hasBuy, config.hasParents, config.hasTests, config.buy, config.timer, config.prizeChance || 0]);
   } catch (error) {
     throw error;
   }
@@ -559,6 +559,117 @@ async function saveStudentProduct(studentId, productId) {
   }
 }
 
+//------------------ prizes ----------------------//
+
+async function addPrize() {
+  await waitDB();
+  await run('INSERT INTO prizes DEFAULT VALUES;');
+  return true;
+}
+
+async function updatePrize(id, field, value) {
+  await waitDB();
+  const correctValue = field === 'name' ? value : Number(value);
+  await run(
+    `UPDATE prizes SET ${quoteIdentifier(field)} = ? WHERE id = ?;`,
+    [correctValue, id]
+  );
+  return true;
+}
+
+async function deletePrize(id) {
+  await waitDB();
+  await run('BEGIN TRANSACTION;');
+  try {
+    await run('DELETE FROM studentsPrizes WHERE prizeId = ?;', [id]);
+    await run('DELETE FROM prizes WHERE id = ?;', [id]);
+    await run('COMMIT;');
+    return true;
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
+}
+
+// "כמה נשאר" מחושב ולא נשמר, כדי שלא יתנתק מרשימת הזוכות
+async function readPrizes() {
+  await waitDB();
+  return all(
+    `SELECT prizes.id, prizes.name, prizes.quantity,
+            prizes.quantity - COUNT(studentsPrizes.id) AS remaining
+       FROM prizes
+       LEFT JOIN studentsPrizes ON studentsPrizes.prizeId = prizes.id
+      GROUP BY prizes.id
+      ORDER BY prizes.id;`
+  );
+}
+
+async function readPrizeWinners() {
+  await waitDB();
+  return all(
+    `SELECT studentsPrizes.id, studentsPrizes.given, studentsPrizes.createDateTime,
+            students.name AS studentName, students.grade AS grade,
+            prizes.name AS prizeName
+       FROM studentsPrizes
+       JOIN students ON students.id = studentsPrizes.studentId
+       JOIN prizes ON prizes.id = studentsPrizes.prizeId
+      ORDER BY studentsPrizes.createDateTime DESC;`
+  );
+}
+
+async function updatePrizeWinner(id, given) {
+  await waitDB();
+  await run('UPDATE studentsPrizes SET given = ? WHERE id = ?;', [given ? 1 : 0, id]);
+  return true;
+}
+
+// הגרלה שלמה בקריאה אחת: אחוז, זכייה יומית, בחירת צ'ופר ורישום הזוכה
+async function drawPrize(studentId) {
+  await waitDB();
+
+  const config = await get('SELECT prizeChance FROM systemConfig LIMIT 1;');
+  const chance = Number(config?.prizeChance || 0);
+  if (chance <= 0) {
+    return null;
+  }
+
+  const wonToday = await get(
+    `SELECT 1 FROM studentsPrizes
+      WHERE studentId = ?
+        AND DATE(createDateTime) = DATE('now', 'localtime')
+      LIMIT 1;`, [studentId]
+  );
+  if (wonToday) {
+    return null;
+  }
+
+  if (Math.random() * 100 >= chance) {
+    return null;
+  }
+
+  // רק צ'ופרים שנותר מהם מלאי, אחד מהם באקראי
+  const prize = await get(
+    `SELECT prizes.id, prizes.name
+       FROM prizes
+       LEFT JOIN studentsPrizes ON studentsPrizes.prizeId = prizes.id
+      GROUP BY prizes.id
+     HAVING prizes.quantity - COUNT(studentsPrizes.id) > 0
+      ORDER BY RANDOM()
+      LIMIT 1;`
+  );
+  if (!prize) {
+    return null;
+  }
+
+  await run(
+    `INSERT INTO studentsPrizes (studentId, prizeId, createDateTime)
+     VALUES (?, ?, DATETIME('now', 'localtime'));`,
+    [studentId, prize.id]
+  );
+
+  return prize;
+}
+
 //------------------ statistics ----------------------//
 
 async function getStatistics() {
@@ -655,6 +766,13 @@ module.exports = {
   saveStudentTask,
   saveStudentProduct,
   getStatistics,
+  addPrize,
+  updatePrize,
+  deletePrize,
+  readPrizes,
+  readPrizeWinners,
+  updatePrizeWinner,
+  drawPrize,
   resetDatabase,
   DB_FLAG_INCONSISTENT_ERROR_CODE
 };
