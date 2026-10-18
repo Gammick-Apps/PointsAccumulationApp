@@ -238,6 +238,12 @@
                     font-size: 17px;
                     margin: 10px 0;
                 }
+                #compliment {
+                    font-size: 22px;
+                    font-weight: bold;
+                    text-align: center;
+                    margin: 10px 0;
+                }
                 #footer {
                   font-size: 12px;
                     text-align: center;
@@ -256,6 +262,7 @@
           : "זכאות למתנה: " + currentResult.name}</div>
                 <div>נקודות בחשבון: ${currentStudent.points}</div>
             </div>
+            <div id="compliment" dir="rtl">${getRandomCompliment()}</div>
             <br>
             <div id="title">בהצלחה!</div>
             <br>
