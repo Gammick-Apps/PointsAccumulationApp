@@ -15,17 +15,23 @@
   <script src="../../js/shared.js"></script>
 
   <script>
-    var currentDate = getTodayDate();
-    var currentDateTime = getTodayDateTime();
     var students = ""
-    var uniqTasks = ""
+    var tasks = ""
     var systemConfig = ""
     var searchVal = ""
     var buffer = "";
     var step
-    var studentResult = ""
-    var result = "";
-    var fileName
+    var currentStudent
+    var currentResult
+    var tableName
+    var prizeWon = null;
+    var printStage = "";
+
+    // משך הצגת הפופאפ כשאין מדפסת, מתי נשלח השובר, וכמה נשאר אחרי שיצא
+    const PRIZE_DISPLAY_MS = 4500;
+    const PRIZE_PRINT_DELAY_MS = 1200;
+    const PRIZE_AFTER_PRINT_MS = 2500;
+
     const Steps = {
       step1: "1",
       step2: "2",
@@ -34,16 +40,11 @@
 
     function onLoad() {
       step = Steps.step1;
-      updateLines("!...שלום", "יש לתקף את הכרטיס האישי בסורק הברקוד") 
-      fileName = 'systemConfig'
-      window.expose.SendExcel("sendReadExcel", fileName);
-      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-        if (data == 0) {
-          systemConfig = getDefaultConfig()
-        }
-        else {
-          systemConfig = JSON.parse(data)
-        }
+      updateLines("!...שלום", "יש לתקף את הכרטיס האישי בסורק הברקוד")
+      tableName = 'systemConfig'
+      window.expose.sendSystem("sendReadSystem", tableName);
+      window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
+        systemConfig = data
         document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
         document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
 
@@ -56,21 +57,8 @@
         else {
           document.getElementById("position").style.display = "none";
         }
+        registerPrintHandler();
       })
-      fileName = 'students'
-      window.expose.SendExcel("sendReadExcel", fileName);
-      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-        if (data != 0) {
-          students = JSON.parse(data)
-          fileName = 'uniqTasks'
-          window.expose.SendExcel("sendReadExcel", fileName);
-          window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-            if (data != 0) {
-              uniqTasks = JSON.parse(data)
-            }
-          })
-        };
-      });
     }
 
     document.addEventListener("keypress", function (e) {
@@ -86,11 +74,10 @@
             else if (searchVal == '207594581')
               login('../parentsMeeting/user')
             else
-              searchInExcel();//בת
+              searchStudent();//בת
           }
           else if (step == Steps.step2) {
-            //משימה רגילה--כללית
-            updateTask();
+            systemConfig.buy == 1 ? searchProduct() : searchTask();
           }
         }
       } else {
@@ -98,87 +85,141 @@
       }
     });
 
-    function searchInExcel() {
+    function searchStudent() {
       step = Steps.step2
-      for (var i = 0; i < students.length; i++) {
-        if (students[i]["tz"] == searchVal) {
-          studentResult = students[i];
-          break;
+      hideGraphsButton();
+      window.expose.sendDbData("sendGetStudentById", searchVal);
+      window.expose.receiveDbData("receiveGetStudentById", (student) => {
+        currentStudent = student
+
+        if (currentStudent == null) {
+          showAlert("הברקוד לא מופיע ברשימות. גשו למורה!")
+          return;
         }
-      }
-      if (studentResult == "") {
-        showAlert("הברקוד לא מופיע ברשימות. גשו למורה!")
-        return;
-      }
-      document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step)
-      updateLines("(: שלום  " + studentResult.name, "יש לסרוק את הברקוד לעדכון משימה","עד כה צברת " + studentResult.points + " נקודות") 
+        document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step)
+
+        updateLines(
+          "(: שלום  " + currentStudent.name,
+          systemConfig.buy == 1 ? "יש לסרוק את ברקוד המתנה" : "יש לסרוק את הברקוד לעדכון משימה",
+          "עד כה צברת " + currentStudent.points + " נקודות")
+      });
     }
 
-    function updateTask() {
+    // ההחלטה לפי multiple נעשית בשרת, כך שלכל העמדות יש הגדרה אחת
+    function checkDuplicateThenSave(save, messages) {
+      window.expose.sendDbData("sendHasStudentDoneSelected", { currentStudent, currentResult });
+      window.expose.receiveDbData("receiveHasStudentDoneSelected", (alreadyDone) => {
+        if (alreadyDone) {
+          showAlert(Number(currentResult.multiple) === 2 ? messages.daily : messages.ever);
+          return;
+        }
+        save();
+      });
+    }
+
+    const TASK_MESSAGES = {
+      ever: "הי, בחירה זו כבר קיימת בחשבונך!",
+      daily: "הי, כבר תיקפת את זה היום!"
+    };
+
+    const PRODUCT_MESSAGES = {
+      ever: "הי, מתנה זו כבר קיימת בחשבונך!",
+      daily: "הי, כבר קנית את זה היום!"
+    };
+
+    function searchTask() {
       step = Steps.step3;
-      for (var i = 0; i < uniqTasks.length; i++) {
-        if (uniqTasks[i]["code"] == searchVal) {
-          result = uniqTasks[i]
-          break;
-        }
-      }
-      if (result == "") {
-        showAlert("קוד לא תקין, גשו למורה!")
-        return;
-      }
 
-      if (systemConfig.type == "1") {
-        if (result.used == 1) {
-          showAlert("הי, משימה זו כבר תוקפה!");
+      window.expose.sendDbData("sendGetTaskByCode", searchVal);
+      window.expose.receiveDbData("receiveGetTaskByCode", (task) => {
+        if (!task) {
+          showAlert("קוד לא תקין, גשו למורה!");
           return;
         }
-      }
-      else if (systemConfig.type == "2")
-        if (!result.multiple && studentResult.tasksNumber.includes(result.code)) {
-          showAlert("הי, אסור להגיש משימה פעמיים!");
-          return;
-        }
-      finishSession()
-    }
-
-    function finishSession() {
-      studentResult.tasks += result.name + ',';
-      studentResult.tasksNumber += result.code + ',';
-      studentResult.points = parseInt(result.points) + parseInt(studentResult.points);
-      saveData();
-    }
-
-    function saveData() {
-      for (var i = 0; i < students.length; i++) {
-        if (students[i]["tz"] == studentResult.tz) {
-          students[i] = studentResult;
-          break;
-        }
-      }
-      fileName = 'students'
-      window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
-      window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-        if (systemConfig.type == 1) {
-          for (var i = 0; i < uniqTasks.length; i++) {
-            if (uniqTasks[i]["code"] == result.code) {
-              uniqTasks[i].used = 1
-              break;
+        currentResult = task
+        if (systemConfig.type === 1) {
+          window.expose.sendDbData("sendIsTaskUsed", { currentResult });
+          window.expose.receiveDbData("receiveIsTaskUsed", (used) => {
+            if (used) {
+              showAlert("הי, משימה זו כבר תוקפה!");
+              return;
             }
-          }
-          fileName = 'uniqTasks'
-          window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(uniqTasks)]);
-          window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => { });
+            saveStudentData();
+          });
+        }
+
+        else {
+          checkDuplicateThenSave(saveStudentData, TASK_MESSAGES);
+        }
+      });
+    }
+
+    // hasStudentDoneSelected בודק לבד ב-studentsProducts כש-buy == 1
+    function searchProduct() {
+      step = Steps.step3;
+
+      window.expose.sendDbData("sendGetProductByCode", searchVal);
+      window.expose.receiveDbData("receiveGetProductByCode", (product) => {
+        if (!product) {
+          showAlert("קוד לא תקין, גשו למורה!");
+          return;
+        }
+        currentResult = product;
+
+        checkDuplicateThenSave(saveStudentProduct, PRODUCT_MESSAGES);
+      });
+    }
+
+    // saveStudentProduct בשרת מחזיר false כשאין מספיק נקודות, לפני שנרשם משהו
+    function saveStudentProduct() {
+      window.expose.sendDbData("sendSaveStudentProduct", { currentStudent, currentResult });
+      window.expose.receiveDbData("receiveSaveStudentData", (points) => {
+        if (points === false) {
+          showAlert("אין לך מספיק נקודות בחשבון!");
+          return;
         }
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
-        updateLines( "ביצעת את משימה" + " " + result.name, " כעת יש בחשבונך " + studentResult.points + " נקודות ","...לא לשכוח לקחת את האישור מהמדפסת") 
-        if (systemConfig.hasPrint == 1)
+        currentStudent.points = points;
+        updateLines(
+          "תודה רבה " + currentStudent.name,
+          "כעת יש בחשבונך " + currentStudent.points + " נקודות",
+          "!בהצלחה");
+
+        if (systemConfig.hasPrint == 1) {
           setTimeout(function () {
             toPrint();
           }, 2000);
-        else
+        } else {
           reset(2000);
+        }
       });
     }
+
+    async function saveStudentData() {
+      window.expose.sendDbData("sendSaveStudentTask", { currentStudent, currentResult });
+      window.expose.receiveDbData("receiveSaveStudentData", (points) => {
+        if (points !== false) {
+          document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
+          currentStudent.points = points;
+          updateLines("ביצעת את משימה " + currentResult.name, "כעת יש בחשבונך " + currentStudent.points + " נקודות", "...לא לשכוח לקחת את האישור מהמדפסת");
+
+          if (systemConfig.hasPrint == 1) {
+            setTimeout(function () {
+              toPrint();
+            }, 2000);
+          } else {
+            setTimeout(function () {
+              runPrizeDraw(0);
+            }, 2000);
+          }
+        } else {
+          console.error("שגיאה: השמירה במסד הנתונים נכשלה.");
+        }
+      });
+
+    }
+
+
 
     function toPrint() {
       const dynamicHTML = `
@@ -188,22 +229,16 @@
             <meta charset="utf-8" />
             <title>Print</title>
             <style>
-                body {
-                    font-family: 'Arial', sans-serif;;
-                    direction: rtl;
-                    margin: 0;
-                    padding: 0;
-                }
                 #title {
                     font-size: 40px;
                     text-align: center;
                 }
                 #content div {
-                    font-size: 20px;
+                    font-size: 17px;
                     margin: 10px 0;
                 }
                 #footer {
-                    font-size: 10px;
+                  font-size: 12px;
                     text-align: center;
                     margin-top: 20px;
                 }
@@ -213,12 +248,12 @@
             <div id="title">אישור</div>
             <br>
             <div id="content">
-                <div>${studentResult.name}</div>
-                <div>${studentResult.grade}</div>
+                <div>${currentStudent.name}</div>
+                <div>${currentStudent.grade}</div>
                 <div>${systemConfig.buy == 0
-          ? "משימה: " + result.name
-          : "זכאות למתנה: " + result.name}</div>
-                <div>נקודות בחשבון: ${studentResult.points}</div>
+          ? "משימה: " + currentResult.name
+          : "זכאות למתנה: " + currentResult.name}</div>
+                <div>נקודות בחשבון: ${currentStudent.points}</div>
             </div>
             <br>
             <div id="title">בהצלחה!</div>
@@ -228,16 +263,95 @@
         </body>
         </html>
     `;
+      printStage = "receipt";
       window.expose.send("sendPrint", dynamicHTML);
+    }
+
+    // מאזין אחד לשתי ההדפסות; מאזין נוסף היה נורה גם על הקבלה ומאפס באמצע
+    function registerPrintHandler() {
       window.expose.receive("receivePrint", () => {
-        reset(1800);
+        if (printStage === "receipt") {
+          runPrizeDraw(1800);
+        } else {
+          reset(PRIZE_AFTER_PRINT_MS);
+        }
       });
+    }
+
+    // ההגרלה מתבצעת רק אחרי שהתיקוף נשמר והקבלה הודפסה
+    function runPrizeDraw(resetDelay) {
+      window.expose.sendDbData("sendDrawPrize", currentStudent.id);
+      window.expose.receiveDbData("receiveDrawPrize", (prize) => {
+        if (!prize) {
+          reset(resetDelay);
+          return;
+        }
+        prizeWon = prize;
+        showPrizeWin();
+      });
+    }
+
+    function showPrizeWin() {
+      document.getElementById("prizeName").innerText = prizeWon.name;
+
+      const modalEl = document.getElementById("prizeModal");
+      // הקנבס מקבל מידות רק אחרי שהפופאפ נפתח בפועל
+      modalEl.addEventListener("shown.bs.modal", function () {
+        launchConfetti(PRIZE_DISPLAY_MS, "prizeConfetti");
+      }, { once: true });
+      $('#prizeModal').modal('show');
+
+      if (systemConfig.hasPrint == 1) {
+        setTimeout(function () {
+          printPrizeVoucher();
+        }, PRIZE_PRINT_DELAY_MS);
+      } else {
+        reset(PRIZE_DISPLAY_MS);
+      }
+    }
+
+    function printPrizeVoucher() {
+      const voucherHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8" />
+            <title>Print</title>
+            <style>
+                #title { font-size: 40px; text-align: center; }
+                #content div { font-size: 17px; margin: 10px 0; }
+                #footer { font-size: 12px; text-align: center; margin-top: 20px; }
+            </style>
+        </head>
+        <body>
+            <div id="title">שובר</div>
+            <br>
+            <div id="content">
+                <div>${currentStudent.name}</div>
+                <div>${currentStudent.grade}</div>
+                <div>${"זכית ב: " + prizeWon.name}</div>
+                <div>יש לגשת לאחראית לקבלת הצ'ופר</div>
+            </div>
+            <br>
+            <div id="title">בהנאה!</div>
+            <br>
+            <br>
+            <div id="footer">להזמנות: אפרת מלכה 0504167969 office@gammick.co.il</div>
+        </body>
+        </html>
+      `;
+      printStage = "voucher";
+      window.expose.send("sendPrint", voucherHTML);
     }
 
     function reset(time = 0) {
       setTimeout(function () {
         location.reload();
       }, time);
+    }
+
+    function hideGraphsButton() {
+      document.getElementById("graphsBtn").style.display = "none";
     }
 
     function updateLines(line1Text, line2Text, line3Text = "") {
@@ -263,6 +377,8 @@
   </script>
 
   <div class="background" id="background">
+    <a href="#" class="glass-card graphs-open-btn" id="graphsBtn"
+      onclick="login('../main/graphs'); return false;">גרפים</a>
     <div class="text">
       <div id="line1"></div>
       <div id="line2"></div>
@@ -281,6 +397,20 @@
       </div>
     </div>
   </div>
+    <div class="modal fade" id="prizeModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content prize-modal-content">
+                <canvas id="prizeConfetti" class="confetti-canvas-inner"></canvas>
+                <div class="prize-modal-body">
+                    <div class="prize-modal-title">זכית בצ'ופר!!</div>
+                    <div class="prize-modal-name" id="prizeName"></div>
+                    <div class="prize-modal-sub">כל הכבוד!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 
 </html>

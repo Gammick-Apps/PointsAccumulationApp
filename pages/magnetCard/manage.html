@@ -16,11 +16,11 @@
     <script src="../../js/shared.js"></script>
 
     <script>
-        var uniqTasks = ""
+        var tasks = ""
         var systemConfig = ""
         var products = ""
         var students = "";
-        var fileName
+        var tableName
         var searchVal = ""
         var currentDate = getTodayDate();
         var swich
@@ -33,61 +33,71 @@
         var columnDefs = [
             { headerName: "כיתה", field: "grade", editable: true },
             { headerName: "שם", field: "name", editable: true },
-            { headerName: "תעודת זהות", field: "tz" },
-            { headerName: "מספרי משימות", field: "tasksNumber", hide: true },
-            { headerName: "נקודות", field: "points", editable: true },
-            { headerName: "שמות המשימות", field: "tasks" }];
+            { headerName: "תעודת זהות", field: "tz", editable: true },
+            { headerName: "קוד", field: "code", editable: true },
+            { headerName: "נקודות", field: "points", editable: true }];
+
+        const MULTIPLE_LABELS = getMultipleLabels();
+
+        // אלמנט DOM אמיתי ולא מחרוזת, כדי שאפשר יהיה לחבר onchange בלי עורך תא
+        function multipleSelectRenderer(save) {
+            return function (params) {
+                const select = document.createElement('select');
+                select.className = 'form-select form-select-sm';
+                Object.keys(MULTIPLE_LABELS).forEach(value => {
+                    const option = document.createElement('option');
+                    option.value = value;
+                    option.textContent = MULTIPLE_LABELS[value];
+                    select.appendChild(option);
+                });
+                select.value = String(Number(params.value) || 0);
+                select.addEventListener('change', function () {
+                    params.data.multiple = Number(select.value);
+                    save({
+                        data: params.data,
+                        colDef: params.colDef,
+                        newValue: params.data.multiple
+                    });
+                });
+                return select;
+            };
+        }
 
         var productsGridOptions
         var productsColumnDefs = [
             { checkboxSelection: true },
+            { headerName: "קוד", field: "code", editable: false },
             { headerName: "שם", field: "name", editable: true },
             { headerName: "נקודות", field: "points", editable: true },
             {
-                headerName: "תיקוף מרובה",
+                headerName: "הגבלת תיקוף",
                 field: "multiple",
-                cellRenderer: function (params) {
-                    return `<input type="checkbox" ${params.value ? 'checked' : ''} />`;
-                },
-                cellEditor: 'agSelectCellEditor',
-                cellEditorParams: {
-                    values: [0, 1]
-                },
-                editable: true,
-                cellStyle: { textAlign: 'center' }
+                editable: false,
+                cellStyle: { textAlign: 'center' },
+                cellRenderer: multipleSelectRenderer(updateProduct)
             }
         ];
 
         var tasksGridOptions
         var tasksColumnDefs = [
             { checkboxSelection: true },
+            { headerName: "קוד", field: "code", editable: false },
             { headerName: "שם", field: "name", editable: true },
             { headerName: "נקודות", field: "points", editable: true },
             {
-                headerName: "תיקוף מרובה",
+                headerName: "הגבלת תיקוף",
                 field: "multiple",
-                cellRenderer: function (params) {
-                    return `<input type="checkbox" ${params.value ? 'checked' : ''} />`;
-                },
-                cellEditor: 'agSelectCellEditor',
-                cellEditorParams: {
-                    values: [0, 1]
-                },
-                editable: true,
-                cellStyle: { textAlign: 'center' }
+                editable: false,
+                cellStyle: { textAlign: 'center' },
+                cellRenderer: multipleSelectRenderer(updateTask)
             }
         ];
 
         function onLoad() {
-            fileName = 'systemConfig'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                if (data == 0) {
-                    systemConfig = getDefaultConfig()
-                }
-                else {
-                    systemConfig = JSON.parse(data)
-                }
+            tableName = 'systemConfig'
+            window.expose.sendSystem("sendReadSystem", tableName);
+            window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
+                systemConfig = data
                 document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color)
                 document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
 
@@ -100,20 +110,24 @@
                 printSwitch.checked = systemConfig.hasPrint == "1" ? true : false;
                 showLabel();
                 showPrintLabel();
-                fileName = 'uniqTasks'
-                window.expose.SendExcel("sendReadExcel", fileName);
-                window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                    if (data != 0) {
-                        if (systemConfig.device != "1" || (systemConfig.device == "1" && systemConfig.type =="2") ) {
-                            uniqTasks = JSON.parse(data)
+                // שינוי משימת ברירת המחדל מכבה את כל השאר, ולכן הטבלה נטענת מחדש
+                window.expose.receiveDbData("receiveSetDefaultTask", refreshTasksGrid);
+
+                tableName = 'tasks'
+                window.expose.sendDbData("sendGetDataByTable", tableName);
+                window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
+                if (Array.isArray(data) && data.length > 0) {
+                            if (systemConfig.device != "1" || (systemConfig.device == "1" && systemConfig.type =="2") ) {
+                            tasks = data
                             createTasksGrid()
+                            fillDefaultTaskSelect()
                         }
                         if (systemConfig.hasBuy == 1) {
-                            fileName = 'products'
-                            window.expose.SendExcel("sendReadExcel", fileName);
-                            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                                if (data != 0) {
-                                    products = JSON.parse(data)
+                            tableName = 'products'
+                            window.expose.sendDbData("sendGetDataByTable", tableName);
+                            window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
+                                if (Array.isArray(data) && data.length > 0) {
+                                    products = data
                                     createProductsGrid()
                                 }
                             })
@@ -121,11 +135,11 @@
                     }
                 })
             });
-            fileName = 'students'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                if (data != 0) {
-                    students = JSON.parse(data)
+            tableName = 'students'
+            window.expose.sendDbData("sendGetDataByTable", tableName);
+            window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
+                if (Array.isArray(data) && data.length > 0) {
+                    students = data
                     createStudentsGrid()
                 }
             });
@@ -148,15 +162,14 @@
         function createTasksGrid() {
             tasksGridOptions = {
                 columnDefs: tasksColumnDefs,
-                rowData: uniqTasks,
+                rowData: tasks,
                 enableRtl: true,
                 rowSelection: 'multiple',
                 suppressRowClickSelection: true,
                 defaultColDef: {
                     sortable: true,
                 },
-                onCellClicked: cellClickedTask,
-                onCellEditingStopped: editTask,
+                onCellEditingStopped: updateTask,
                 onRowSelected: onTaskRowSelected,
                 onFirstDataRendered: onTasksFirstRendered,
             };
@@ -175,8 +188,7 @@
                 defaultColDef: {
                     sortable: true,
                 },
-                onCellClicked: cellClickedProduct,
-                onCellEditingStopped: editProduct,
+                onCellEditingStopped: updateProduct,
                 onRowSelected: onProductsRowSelected,
                 onFirstDataRendered: onProductsFirstRendered,
             };
@@ -199,7 +211,7 @@
                     resizable: true
                 },
                 onFirstDataRendered: onStudentsFirstRendered,
-                onCellEditingStopped: editStudent
+                onCellEditingStopped: updateStudent
             };
             var gridDiv = document.querySelector('#studentsGrid');
             new agGrid.Grid(gridDiv, gridOptions);
@@ -227,110 +239,116 @@
 
         function onStudentsFirstRendered(params) {
             gridOptions.api.sizeColumnsToFit({
-                columnLimits: [{ key: 'tasks', minWidth: 300 }, { key: 'points', maxWidth: 100 }, { key: 'grade', maxWidth: 100 }],
+                columnLimits: [{ key: 'points', maxWidth: 100 }, { key: 'grade', maxWidth: 100 }],
             });
         }
 
-        function cellClickedTask(params) {
-            if (params.colDef.field === 'multiple') {
-                params.data.multiple = params.data.multiple === 1 ? 0 : 1;
-                params.api.refreshCells({ rowNodes: [params.node] });
-                editTask()
+        function fillDefaultTaskSelect() {
+            const select = document.getElementById("defaultTask");
+            const current = tasks.find(task => Number(task.isDefault) === 1);
+
+            select.innerHTML = '<option value="0">ללא</option>';
+            // טריוויה דורשת מסך שאלות ולכן לא יכולה להיות משימת ברירת מחדל
+            tasks.filter(task => Number(task.type) !== 2).forEach(task => {
+                const option = document.createElement('option');
+                option.value = task.id;
+                option.textContent = task.name;
+                select.appendChild(option);
+            });
+            select.value = current ? String(current.id) : "0";
+        }
+
+        function changeDefaultTask() {
+            const id = Number(document.getElementById("defaultTask").value);
+            window.expose.sendDbData("sendSetDefaultTask", id);
+        }
+
+        function refreshTasksGrid(data) {
+            if (!Array.isArray(data)) {
+                return;
             }
+            tasks = data;
+            tasksGridOptions.api.setRowData(tasks);
+            fillDefaultTaskSelect();
         }
 
-        function cellClickedProduct(params) {
-            if (params.colDef.field === 'multiple') {
-                params.data.multiple = params.data.multiple === 1 ? 0 : 1;
-                params.api.refreshCells({ rowNodes: [params.node] });
-                editProduct()
-            }
+        function updateTask(params) {
+            const payload = {
+                code: params.data.code,
+                field: params.colDef.field,
+                value: params.newValue
+            };
+            window.expose.sendDbData("sendUpdateTask", JSON.stringify(payload));
+            window.expose.receiveDbData("receiveUpdateTask", () => {});
         }
 
-        function editTask(params) {
-            fileName = 'uniqTasks'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(uniqTasks)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-            });
+        function updateProduct(params) {
+            const payload = {
+                code: params.data.code,
+                field: params.colDef.field,
+                value: params.newValue
+            };
+            window.expose.sendDbData("sendUpdateProduct", JSON.stringify(payload));
+            window.expose.receiveDbData("receiveUpdateProduct", () => {});
         }
 
-        function editProduct(params) {
-            fileName = 'products'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(products)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-            });
-        }
-
-        function editStudent(params) {
-            fileName = 'students'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-            });
+        function updateStudent(params) {
+            const payload = {
+                id: params.data.id,
+                field: params.colDef.field,
+                value: params.newValue
+            };
+            window.expose.sendDbData("sendUpdateStudent", JSON.stringify(payload));
+            window.expose.receiveDbData("receiveUpdateStudent", () => {});
         }
 
         function onTaskRowSelected(event) {
             if (!isInitialLoadTasks) {
-                event.node.data.show = event.node.isSelected();
-                fileName = 'uniqTasks'
-                window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(uniqTasks)]);
-                window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                });
+                const payload = {
+                    code: event.node.data.code,
+                    field: 'show',
+                    value: event.node.isSelected() ? 1 : 0
+                };
+                window.expose.sendDbData("sendUpdateTask", JSON.stringify(payload));
             }
         }
 
         function onProductsRowSelected(event) {
             if (!isInitialLoadProducts) {
-                event.node.data.show = event.node.isSelected();
-                fileName = 'products'
-                window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(products)]);
-                window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                });
+                const payload = {
+                    code: event.node.data.code,
+                    field: 'show',
+                    value: event.node.isSelected() ? 1 : 0
+                };
+                window.expose.sendDbData("sendUpdateProduct", JSON.stringify(payload));
             }
         }
 
-        function newTask() {
-            const code = uniqTasks[uniqTasks.length - 1].code + 1;
-            uniqTasks.push({
-                name: '------', code: code, points: 0, multiple: true, type: 1
-            })
-            fileName = 'uniqTasks'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(uniqTasks)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                location.reload()
-            });
-        }
-
-        function newProduct() {
-            const code = products[products.length - 1].code + 1;
-            products.push({
-                name: '------', code: code, points: 0, multiple: false, type: 1
-            })
-            fileName = 'products'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(products)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                location.reload()
-            });
-        }
-
-        function newStudent() {
-            if (students.length > 0) {
-                var tz = Math.floor(Math.random() * (399999999 - 200000000 + 1) + 200000000)
-                for (var i = 0; i < students.length; i++) {
-                    while (students[i]["tz"] == tz) {
-                        tz = Math.floor(Math.random() * (399999999 - 200000000 + 1) + 200000000)
-                        i = 0
-                    }
+        function addTask() {
+            window.expose.sendDbData("sendInsertTask");
+            window.expose.receiveDbData("receiveInsertTask", (data) => {
+                if (data === true) {
+                    location.reload();
                 }
-                students.push({
-                    grade: '------', name: '------', tz: tz, barcode: '',
-                    points: 0, tasks: ",", tasksNumber: ","
-                })
-                fileName = 'students'
-                window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
-                window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                    location.reload()
-                });
-            }
+            });
+        }
+
+         function addProduct() {
+            window.expose.sendDbData("sendInsertProduct");
+            window.expose.receiveDbData("receiveInsertProduct", (data) => {
+                if (data === true) {
+                    location.reload();
+                }
+            });
+        }
+
+        function addStudent() {
+            window.expose.sendDbData("sendInsertStudent");
+            window.expose.receiveDbData("receiveInsertStudent", (data) => {
+                if (data === true) {
+                    location.reload();
+                }
+            });
         }
 
         function exportToExcel(name) {
@@ -341,15 +359,22 @@
         }
 
         function swichChange() {
-            updateSystemConfig()
+            updateBuyStatus()
             showLabel()
         }
 
-        function updateSystemConfig() {
-            systemConfig.buy = swich.checked
-            fileName = 'systemConfig'
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(systemConfig)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
+        function updateBuyStatus() {
+            const previousBuy = systemConfig.buy;
+            systemConfig.buy = swich.checked;
+
+            window.expose.sendSystem("sendUpdateSystem", JSON.stringify(systemConfig));
+            window.expose.receiveSystem("receiveUpdateSystem", (data) => {
+                if (data === false) {
+                    alert("שמירת הגדרת מצב קנייה נכשלה");
+                    systemConfig.buy = previousBuy;
+                    swich.checked = !!previousBuy;
+                    showLabel();
+                }
             });
         }
 
@@ -360,9 +385,8 @@
 
         function updatePrintConfig() {
             systemConfig.hasPrint = printSwitch.checked ? "1" : "0";
-            fileName = 'systemConfig';
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(systemConfig)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => { });
+            window.expose.sendSystem("sendUpdateSystem", JSON.stringify(systemConfig));
+            window.expose.receiveSystem("receiveUpdateSystem", (data) => { });
         }
 
         function showLabel() {
@@ -379,6 +403,7 @@
 
     </script>
     <div class="background" id="background">
+        <a href="#" class="prizes-open-btn" onclick="login('../main/prizes'); return false;">צ'ופרים</a>
         <div class="closeBtn">
             <img onclick="expose.appClose()" src="../../resources/barcode/x-light.svg" />
         </div>
@@ -399,12 +424,17 @@
                     </div>
                     <div id="tasksSec" class="h-50 mb-2" style="text-align: right; visibility: hidden;">
                         <label> רשימת המשימות</label>
-                        <img onclick="newTask()" src="../../resources/barcode/plus-light.svg" class="cursor-pointer" />
+                        <img onclick="addTask()" src="../../resources/barcode/plus-light.svg" class="cursor-pointer" />
+                        <div class="default-task-pick">
+                            <label for="defaultTask">משימת ברירת מחדל:</label>
+                            <select id="defaultTask" class="form-select form-select-sm"
+                                onchange="changeDefaultTask()"></select>
+                        </div>
                         <div id="tasksGrid" class="ag-theme-alpine ag-theme-quartz"></div>
                     </div>
                     <div id="productsSec" class="h-50 mb-2" style="text-align: right; visibility: hidden;">
                         <label> רשימת המוצרים</label>
-                        <img onclick="newProduct()" src="../../resources/barcode/plus-light.svg"
+                        <img onclick="addProduct()" src="../../resources/barcode/plus-light.svg"
                             class="cursor-pointer" />
                         <div id="productsGrid" class="ag-theme-alpine"></div>
                     </div>
@@ -413,7 +443,7 @@
                     <div style="text-align: right;">
                         <img onclick="exportToExcel('ניקוד תלמידות')"
                             src="../../resources/barcode/download-simple-light.svg" class="cursor-pointer" />
-                        <img onclick="newStudent()" src="../../resources/barcode/plus-light.svg"
+                        <img onclick="addStudent()" src="../../resources/barcode/plus-light.svg"
                             class="cursor-pointer" />
                     </div>
                     <div id="studentsGrid" class="ag-theme-alpine w-100 h-100"></div>
