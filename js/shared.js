@@ -14,7 +14,7 @@ function getTodayDateTime() {
 }
 
 function getDefaultConfig() {
-    return { "date": getYesterdayDate(), "numPosition": "", "hasPrint": "1", "hasBuy": "0", "device": "0", "color": "0", "type": "0", "hasParents": "0", "hasTests": "0", "timer": "10", "buy": false, "textColor":0 };
+    return { "date": getYesterdayDate(), "numPosition": "", "hasPrint": "1", "hasBuy": "0", "device": "0", "color": "0", "type": "0", "hasParents": "0", "hasTests": "0", "timer": "10", "buy": false, "textColor": "#ffffff", "prizeChance": 0 };
 }
 
 function login(page) {
@@ -23,7 +23,7 @@ function login(page) {
 
 function getBackgroundUrl() {
      fileName = 'personalBackground';
-                window.expose.SendImage("getBackground", fileName);
+                window.expose.sendImage("getBackground", fileName);
                 window.expose.receive("receiveGetBackground" + fileName, (data) => {
                     if (data && data != 0) {
                         document.getElementById("background").style.backgroundImage = 'url("data:image/png;base64,' + data + '")';
@@ -67,6 +67,14 @@ function getBackground(device, color, step = "") {
         case "3":{     
                 return "url('../../resources/digitalCard/background" + step + ".gif')";
         };
+        case "5": {
+            switch (color) {
+                case "4":
+                    return getBackgroundUrl();
+                case "5":
+                    return "url('../../resources/gammick/gammickBackground.png')";
+            }
+        };
     }
 }
 
@@ -85,18 +93,23 @@ function getPosition(color) {
 }
 
 function getTextColor(color) {
-    switch (color) {
-        case "0":
-            return "#ffffff";
-        case "1":
-            return "#000000";
-        case "2":
-            return "#00eac8";
-    }
+    // Hex color from the color picker; fallback to white if missing/invalid
+    return /^#[0-9a-fA-F]{6}$/.test(color) ? color : "#ffffff";
+}
+
+// ערכי tasks.multiple ו-products.multiple.
+// המשמעות ממומשת ב-hasStudentDoneSelected, ולכן הרשימה חיה בקוד ולא במסד:
+// ערך רביעי בטבלה לא היה יודע להתנהג.
+function getMultipleLabels() {
+    return {
+        0: 'פעם אחת בלבד',
+        1: 'ללא הגבלה',
+        2: 'פעם ביום'
+    };
 }
 
 function getExcelFiles() {
-    return ["students", "uniqTasks", "products", "parents", "tests"];
+    return ["students", "tasks", "products", "tests", "questions"];
 }
 
 function getWonTexts() {
@@ -105,4 +118,80 @@ function getWonTexts() {
 
 function getLossTexts() {
     return ["...לא זכית, אוי לא", "!!חבל--- לא זכית הפעם", "!אופס... הכרטיס לא שווה ", "...לא זכית! לא נורא"];
+}
+
+
+
+var confettiAnimationId = null;
+
+// מקבל מזהה קנבס; אם הקנבס יושב בתוך מיכל, הקונפטי נצבע לפי גודל המיכל
+// ולא לפי החלון, כדי שאפשר יהיה להריץ אותו בתוך פופאפ
+function launchConfetti(duration = 5000, canvasId = "confettiCanvas") {
+    let canvas = document.getElementById(canvasId);
+    if (!canvas) {
+        canvas = document.createElement("canvas");
+        canvas.id = canvasId;
+        canvas.className = "confetti-canvas";
+        document.body.appendChild(canvas);
+    }
+
+    const host = canvas.parentElement && canvas.parentElement !== document.body
+        ? canvas.parentElement
+        : null;
+
+    canvas.width = host ? host.clientWidth : window.innerWidth;
+    canvas.height = host ? host.clientHeight : window.innerHeight;
+
+    if (canvas.width === 0 || canvas.height === 0) {
+        return;
+    }
+
+    const ctx = canvas.getContext("2d");
+    const colors = ['#FFC700', '#FF3D68', '#3D9BFF', '#3DFFA0', '#B14EFF', '#FF8A3D'];
+    const scale = Math.min(1, canvas.width / window.innerWidth);
+    const count = Math.max(50, Math.round(160 * scale));
+    const particles = [];
+
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: -20 - Math.random() * canvas.height * 0.5,
+            size: (14 + Math.random() * 12) * Math.max(0.55, scale),
+            color: colors[Math.floor(Math.random() * colors.length)],
+            speedY: 2 + Math.random() * 3,
+            speedX: (Math.random() - 0.5) * 2,
+            rotation: Math.random() * 360,
+            rotationSpeed: (Math.random() - 0.5) * 10
+        });
+    }
+
+    const startTime = performance.now();
+
+    function frame(now) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+            p.y += p.speedY;
+            p.x += p.speedX;
+            p.rotation += p.rotationSpeed;
+            // בתוך פופאפ הפתיתים ממשיכים ליפול במחזוריות, אחרת הוא מתרוקן מהר
+            if (host && p.y > canvas.height + p.size) {
+                p.y = -p.size;
+                p.x = Math.random() * canvas.width;
+            }
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rotation * Math.PI / 180);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+            ctx.restore();
+        });
+        if (now - startTime < duration) {
+            confettiAnimationId = requestAnimationFrame(frame);
+        } else {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    }
+
+    if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
+    confettiAnimationId = requestAnimationFrame(frame);
 }
