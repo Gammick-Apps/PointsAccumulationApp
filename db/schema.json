@@ -30,6 +30,7 @@
         { "name": "multiple", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "type", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "class", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "isDefault", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "show", "type": "BOOLEAN", "nullable": false, "default": false } 
 
       ],

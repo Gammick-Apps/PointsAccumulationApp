@@ -64,6 +64,7 @@
         var tests = ""
         var currentStudent = ""
         var currentResult = "";
+        var defaultTask = null;
         var searchVal = ""
         var buffer = "";
         var tableName
@@ -113,20 +114,48 @@
                 }
                 registerPrintHandler();
                 currentTable = systemConfig.buy ? 'products' : 'tasks';
-                if (systemConfig.buy) {
-                    updateLines("שלום...!", "יש לבחור מתנה לקנייה")
+
+                // משימת ברירת מחדל שייכת לתיקוף בלבד; במצב קנייה הזרימה לא משתנה
+                if (!systemConfig.buy) {
+                    window.expose.receiveDbData("receiveGetDefaultTask", (task) => {
+                        if (task) {
+                            startDefaultTaskMode(task);
+                            return;
+                        }
+                        startSelectionMode();
+                    });
+                    window.expose.sendDbData("sendGetDefaultTask");
+                    return;
                 }
-                else {
-                    updateLines(" שלום...! ", "יש לבחור משימה לתיקוף ")
-                }
-                window.expose.receiveDbData("receiveGetDataByTable" + currentTable, (data) => {
-                    if (Array.isArray(data) && data.length > 0) {
-                        actions = data;
-                        createCards();
-                    }
-                });
-                window.expose.sendDbData("sendGetDataByTable", currentTable);
+
+                updateLines("שלום...!", "יש לבחור מתנה לקנייה")
+                loadActions();
             });
+        }
+
+        function loadActions() {
+            window.expose.receiveDbData("receiveGetDataByTable" + currentTable, (data) => {
+                if (Array.isArray(data) && data.length > 0) {
+                    actions = data;
+                    createCards();
+                }
+            });
+            window.expose.sendDbData("sendGetDataByTable", currentTable);
+        }
+
+        function startSelectionMode() {
+            updateLines(" שלום...! ", "יש לבחור משימה לתיקוף ")
+            loadActions();
+        }
+
+        // אין בחירה: המשימה טעונה מראש והמסך עומד על שלב ההעברה
+        function startDefaultTaskMode(task) {
+            defaultTask = task;
+            currentResult = task;
+            step = Steps.step2;
+            document.getElementById("cards").style.display = "none";
+
+            updateLines("ברוכה הבאה!", "המשימה שנבחרה: " + task.name, getReaderText())
         }
 
         document.addEventListener("keypress", function (e) {
@@ -136,17 +165,21 @@
                 if (buffer.length > 0) {
                     searchVal = buffer;
                     buffer = "";
-                    if (step == Steps.step1) {
-                        if (searchVal == '999999999')
-                            login('../main/manage')
-                        else if (searchVal == '011429519')
-                            login('../main/system')
-                        else {
-                            showAlert("יש לבחור לפני התיקוף!");
-                            return;
-                        }
+                    // קודי הניהול נבדקים לפני השלבים, כי עם משימת ברירת מחדל המסך עולה ישר בשלב 2
+                    if (searchVal == '999999999') {
+                        login('../main/manage');
+                        return;
                     }
-                    else if (step == Steps.step2) {
+                    if (searchVal == '011429519') {
+                        login('../main/system');
+                        return;
+                    }
+
+                    if (step == Steps.step1) {
+                        showAlert("יש לבחור לפני התיקוף!");
+                        return;
+                    }
+                    if (step == Steps.step2) {
                         searchStudent();
                     }
                 }
@@ -316,19 +349,20 @@
                     showAlert("הברקוד לא מופיע ברשימות. גשו למורה!");
                     return;
                 }
-                if (!currentResult.multiple) {
-                    window.expose.sendDbData("sendHasStudentDoneSelected", { currentStudent, currentResult });
-                    window.expose.receiveDbData("receiveHasStudentDoneSelected", (alreadyDone) => {
-                        if (alreadyDone) {
-                            showAlert("הי, בחירה זו כבר קיימת בחשבונך!");
-                        }
-                        else
-                            saveStudentData();
-                    });
-                }
-                else {
+                // ההחלטה לפי multiple נעשית בשרת, כך שלכל העמדות יש הגדרה אחת
+                window.expose.sendDbData("sendHasStudentDoneSelected", { currentStudent, currentResult });
+                window.expose.receiveDbData("receiveHasStudentDoneSelected", (alreadyDone) => {
+                    if (alreadyDone) {
+                        const daily = systemConfig.buy == 1
+                            ? "הי, כבר קנית את זה היום!"
+                            : "הי, כבר תיקפת את זה היום!";
+                        showAlert(Number(currentResult.multiple) === 2
+                            ? daily
+                            : "הי, בחירה זו כבר קיימת בחשבונך!");
+                        return;
+                    }
                     saveStudentData();
-                }
+                });
             })
         }
 
@@ -505,12 +539,19 @@
             document.getElementById("line3").innerHTML = line3Text;
         }
 
+        // מקור אחד לנוסח לפי סוג המכשיר, כדי שלא יתפצל בין המסכים
+        function getReaderText() {
+            if (systemConfig.device == "2") {
+                return "יש להעביר את הכרטיס המגנטי";
+            }
+            if (systemConfig.device == "4") {
+                return "יש לסרוק את הצ'יפ בקורא";
+            }
+            return "יש לסרוק את הברקוד האישי";
+        }
+
         function updateLinesByDevice() {
-            systemConfig.device == "2" ?
-                updateLines("*", "יש להעביר את הכרטיס המגנטי") :
-                systemConfig.device == "4" ?
-                    updateLines("*", "יש לסרוק את הצ'יפ בקורא ") :
-                    updateLines("*", "יש לסרוק את הברקוד האישי ")
+            updateLines("*", getReaderText())
         }
 
         function showAlert(message) {

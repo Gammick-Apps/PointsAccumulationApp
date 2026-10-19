@@ -4,7 +4,7 @@ const path = require('path')
 let mainWindow
 const { initDatabase, waitDB, readData, readSystem, updateSystem, closeDatabase, insertExcelToDB,
   addStudent, updateStudent, addTask, updateTask, addProduct, updateProduct, getStudentById, getTaskByCode,
-  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, getStudentParentByCode, updateStudentText, getStatistics, addPrize, updatePrize, deletePrize, readPrizes, readPrizeWinners, updatePrizeWinner, drawPrize, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
+  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, setDefaultTask, getDefaultTask, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, getStudentParentByCode, updateStudentText, getStatistics, addPrize, updatePrize, deletePrize, readPrizes, readPrizeWinners, updatePrizeWinner, drawPrize, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -270,7 +270,7 @@ ipcMain.on("sendHasStudentDoneSelected", async (event, args) => {
   try {
     const { currentStudent, currentResult } = args;
     
-    const data = await hasStudentDoneSelected(currentStudent.id, currentResult.id);
+    const data = await hasStudentDoneSelected(currentStudent.id, currentResult.id, currentResult.multiple);
     mainWindow.webContents.send("receiveHasStudentDoneSelected", data);
   } catch (error) {
     console.error(error);
@@ -308,6 +308,25 @@ ipcMain.on("sendGetStatistics", async () => {
   } catch (error) {
     console.error("Error reading statistics:", error);
     mainWindow.webContents.send("receiveGetStatistics", null);
+  }
+});
+
+ipcMain.on("sendSetDefaultTask", async (event, args) => {
+  try {
+    await setDefaultTask(args);
+    mainWindow.webContents.send("receiveSetDefaultTask", await readData('tasks'));
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveSetDefaultTask", null);
+  }
+});
+
+ipcMain.on("sendGetDefaultTask", async () => {
+  try {
+    mainWindow.webContents.send("receiveGetDefaultTask", await getDefaultTask());
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveGetDefaultTask", null);
   }
 });
 

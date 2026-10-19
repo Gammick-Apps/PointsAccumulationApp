@@ -97,12 +97,35 @@
           return;
         }
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step)
+
         updateLines(
           "(: שלום  " + currentStudent.name,
           systemConfig.buy == 1 ? "יש לסרוק את ברקוד המתנה" : "יש לסרוק את הברקוד לעדכון משימה",
           "עד כה צברת " + currentStudent.points + " נקודות")
       });
     }
+
+    // ההחלטה לפי multiple נעשית בשרת, כך שלכל העמדות יש הגדרה אחת
+    function checkDuplicateThenSave(save, messages) {
+      window.expose.sendDbData("sendHasStudentDoneSelected", { currentStudent, currentResult });
+      window.expose.receiveDbData("receiveHasStudentDoneSelected", (alreadyDone) => {
+        if (alreadyDone) {
+          showAlert(Number(currentResult.multiple) === 2 ? messages.daily : messages.ever);
+          return;
+        }
+        save();
+      });
+    }
+
+    const TASK_MESSAGES = {
+      ever: "הי, בחירה זו כבר קיימת בחשבונך!",
+      daily: "הי, כבר תיקפת את זה היום!"
+    };
+
+    const PRODUCT_MESSAGES = {
+      ever: "הי, מתנה זו כבר קיימת בחשבונך!",
+      daily: "הי, כבר קנית את זה היום!"
+    };
 
     function searchTask() {
       step = Steps.step3;
@@ -126,19 +149,7 @@
         }
 
         else {
-          if (!currentResult.multiple) {
-            window.expose.sendDbData("sendHasStudentDoneSelected", { currentStudent, currentResult });
-            window.expose.receiveDbData("receiveHasStudentDoneSelected", (alreadyDone) => {
-              if (alreadyDone) {
-                showAlert("הי, בחירה זו כבר קיימת בחשבונך!");
-                return;
-              }
-              saveStudentData();
-            });
-          }
-          else {
-            saveStudentData();
-          }
+          checkDuplicateThenSave(saveStudentData, TASK_MESSAGES);
         }
       });
     }
@@ -155,19 +166,7 @@
         }
         currentResult = product;
 
-        if (!currentResult.multiple) {
-          window.expose.sendDbData("sendHasStudentDoneSelected", { currentStudent, currentResult });
-          window.expose.receiveDbData("receiveHasStudentDoneSelected", (alreadyDone) => {
-            if (alreadyDone) {
-              showAlert("הי, מתנה זו כבר קיימת בחשבונך!");
-              return;
-            }
-            saveStudentProduct();
-          });
-        }
-        else {
-          saveStudentProduct();
-        }
+        checkDuplicateThenSave(saveStudentProduct, PRODUCT_MESSAGES);
       });
     }
 

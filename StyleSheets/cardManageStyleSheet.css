@@ -32,3 +32,21 @@
 }
 
 
+
+/* שורה משלה מתחת לכותרת הרשימה, כדי שלא תידחק לצד כפתור ההוספה */
+.default-task-pick {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.35rem 0;
+    font-size: 0.95rem;
+}
+
+.default-task-pick label {
+    margin: 0;
+    white-space: nowrap;
+}
+
+.default-task-pick select {
+    max-width: 14rem;
+}

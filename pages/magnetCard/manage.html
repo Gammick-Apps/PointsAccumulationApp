@@ -37,6 +37,32 @@
             { headerName: "קוד", field: "code", editable: true },
             { headerName: "נקודות", field: "points", editable: true }];
 
+        const MULTIPLE_LABELS = getMultipleLabels();
+
+        // אלמנט DOM אמיתי ולא מחרוזת, כדי שאפשר יהיה לחבר onchange בלי עורך תא
+        function multipleSelectRenderer(save) {
+            return function (params) {
+                const select = document.createElement('select');
+                select.className = 'form-select form-select-sm';
+                Object.keys(MULTIPLE_LABELS).forEach(value => {
+                    const option = document.createElement('option');
+                    option.value = value;
+                    option.textContent = MULTIPLE_LABELS[value];
+                    select.appendChild(option);
+                });
+                select.value = String(Number(params.value) || 0);
+                select.addEventListener('change', function () {
+                    params.data.multiple = Number(select.value);
+                    save({
+                        data: params.data,
+                        colDef: params.colDef,
+                        newValue: params.data.multiple
+                    });
+                });
+                return select;
+            };
+        }
+
         var productsGridOptions
         var productsColumnDefs = [
             { checkboxSelection: true },
@@ -44,17 +70,11 @@
             { headerName: "שם", field: "name", editable: true },
             { headerName: "נקודות", field: "points", editable: true },
             {
-                headerName: "תיקוף מרובה",
+                headerName: "הגבלת תיקוף",
                 field: "multiple",
-                cellRenderer: function (params) {
-                    return `<input type="checkbox" ${params.value ? 'checked' : ''} />`;
-                },
-                cellEditor: 'agSelectCellEditor',
-                cellEditorParams: {
-                    values: [0, 1]
-                },
-                editable: true,
-                cellStyle: { textAlign: 'center' }
+                editable: false,
+                cellStyle: { textAlign: 'center' },
+                cellRenderer: multipleSelectRenderer(updateProduct)
             }
         ];
 
@@ -65,17 +85,11 @@
             { headerName: "שם", field: "name", editable: true },
             { headerName: "נקודות", field: "points", editable: true },
             {
-                headerName: "תיקוף מרובה",
+                headerName: "הגבלת תיקוף",
                 field: "multiple",
-                cellRenderer: function (params) {
-                    return `<input type="checkbox" ${params.value ? 'checked' : ''} />`;
-                },
-                cellEditor: 'agSelectCellEditor',
-                cellEditorParams: {
-                    values: [0, 1]
-                },
-                editable: true,
-                cellStyle: { textAlign: 'center' }
+                editable: false,
+                cellStyle: { textAlign: 'center' },
+                cellRenderer: multipleSelectRenderer(updateTask)
             }
         ];
 
@@ -96,6 +110,9 @@
                 printSwitch.checked = systemConfig.hasPrint == "1" ? true : false;
                 showLabel();
                 showPrintLabel();
+                // שינוי משימת ברירת המחדל מכבה את כל השאר, ולכן הטבלה נטענת מחדש
+                window.expose.receiveDbData("receiveSetDefaultTask", refreshTasksGrid);
+
                 tableName = 'tasks'
                 window.expose.sendDbData("sendGetDataByTable", tableName);
                 window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
@@ -103,6 +120,7 @@
                             if (systemConfig.device != "1" || (systemConfig.device == "1" && systemConfig.type =="2") ) {
                             tasks = data
                             createTasksGrid()
+                            fillDefaultTaskSelect()
                         }
                         if (systemConfig.hasBuy == 1) {
                             tableName = 'products'
@@ -151,7 +169,6 @@
                 defaultColDef: {
                     sortable: true,
                 },
-                onCellClicked: cellClickedTask,
                 onCellEditingStopped: updateTask,
                 onRowSelected: onTaskRowSelected,
                 onFirstDataRendered: onTasksFirstRendered,
@@ -171,7 +188,6 @@
                 defaultColDef: {
                     sortable: true,
                 },
-                onCellClicked: cellClickedProduct,
                 onCellEditingStopped: updateProduct,
                 onRowSelected: onProductsRowSelected,
                 onFirstDataRendered: onProductsFirstRendered,
@@ -227,22 +243,33 @@
             });
         }
 
-        function cellClickedTask(params) {
-            if (params.colDef.field === 'multiple') {
-                params.data.multiple = params.data.multiple === 1 ? 0 : 1;
-                params.api.refreshCells({ rowNodes: [params.node] });
-                //Injects the value of multiple to newValue into payload.
-                updateTask({ ...params, newValue: params.data.multiple });
-            }
+        function fillDefaultTaskSelect() {
+            const select = document.getElementById("defaultTask");
+            const current = tasks.find(task => Number(task.isDefault) === 1);
+
+            select.innerHTML = '<option value="0">ללא</option>';
+            // טריוויה דורשת מסך שאלות ולכן לא יכולה להיות משימת ברירת מחדל
+            tasks.filter(task => Number(task.type) !== 2).forEach(task => {
+                const option = document.createElement('option');
+                option.value = task.id;
+                option.textContent = task.name;
+                select.appendChild(option);
+            });
+            select.value = current ? String(current.id) : "0";
         }
 
-        function cellClickedProduct(params) {
-            if (params.colDef.field === 'multiple') {
-                params.data.multiple = params.data.multiple === 1 ? 0 : 1;
-                params.api.refreshCells({ rowNodes: [params.node] });
-                //Injects the value of multiple to newValue into payload.
-                updateProduct({ ...params, newValue: params.data.multiple });
+        function changeDefaultTask() {
+            const id = Number(document.getElementById("defaultTask").value);
+            window.expose.sendDbData("sendSetDefaultTask", id);
+        }
+
+        function refreshTasksGrid(data) {
+            if (!Array.isArray(data)) {
+                return;
             }
+            tasks = data;
+            tasksGridOptions.api.setRowData(tasks);
+            fillDefaultTaskSelect();
         }
 
         function updateTask(params) {
@@ -398,6 +425,11 @@
                     <div id="tasksSec" class="h-50 mb-2" style="text-align: right; visibility: hidden;">
                         <label> רשימת המשימות</label>
                         <img onclick="addTask()" src="../../resources/barcode/plus-light.svg" class="cursor-pointer" />
+                        <div class="default-task-pick">
+                            <label for="defaultTask">משימת ברירת מחדל:</label>
+                            <select id="defaultTask" class="form-select form-select-sm"
+                                onchange="changeDefaultTask()"></select>
+                        </div>
                         <div id="tasksGrid" class="ag-theme-alpine ag-theme-quartz"></div>
                     </div>
                     <div id="productsSec" class="h-50 mb-2" style="text-align: right; visibility: hidden;">

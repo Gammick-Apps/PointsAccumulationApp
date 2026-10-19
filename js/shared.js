@@ -97,6 +97,17 @@ function getTextColor(color) {
     return /^#[0-9a-fA-F]{6}$/.test(color) ? color : "#ffffff";
 }
 
+// ערכי tasks.multiple ו-products.multiple.
+// המשמעות ממומשת ב-hasStudentDoneSelected, ולכן הרשימה חיה בקוד ולא במסד:
+// ערך רביעי בטבלה לא היה יודע להתנהג.
+function getMultipleLabels() {
+    return {
+        0: 'פעם אחת בלבד',
+        1: 'ללא הגבלה',
+        2: 'פעם ביום'
+    };
+}
+
 function getExcelFiles() {
     return ["students", "tasks", "products", "tests", "questions"];
 }

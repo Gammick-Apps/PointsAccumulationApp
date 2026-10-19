@@ -8,6 +8,11 @@ let initPromise;
 const DB_FLAG_INCONSISTENT_ERROR_CODE = 'SQLITE_DB_FLAG_INCONSISTENT';
 const TOP_STUDENTS_LIMIT = 6;
 
+// ערכי tasks.multiple. 0 ו-1 שומרים על המשמעות הישנה כדי שמשימות קיימות לא ישנו התנהגות
+const MULTIPLE_ONCE = 0;
+const MULTIPLE_UNLIMITED = 1;
+const MULTIPLE_ONCE_PER_DAY = 2;
+
 // -------------- basic functions ---------------- //
 
 function quoteIdentifier(identifier) {
@@ -358,19 +363,51 @@ async function updateStudentText(studentId, text) {
   }
 }
 
-async function hasStudentDoneSelected(studentId, taskId) {
+// מקבל את מצב ה-multiple ומחליט כאן, כדי שלכל העמדות תהיה הגדרה אחת
+async function hasStudentDoneSelected(studentId, taskId, multiple = MULTIPLE_ONCE) {
   await waitDB();
 
-  const condition = await get('SELECT buy from systemConfig')
-  let result = ''
-  if (condition.buy === 1) {
-    result = await get(`
-    SELECT 1 FROM studentsProducts WHERE studentId = ? AND productId = ? LIMIT 1`, [studentId, taskId]);
-  } else {
-    result = await get(`
-    SELECT 1 FROM studentsTasks WHERE studentId = ? AND taskId = ? LIMIT 1`, [studentId, taskId]);
+  if (Number(multiple) === MULTIPLE_UNLIMITED) {
+    return false;
   }
+
+  const condition = await get('SELECT buy from systemConfig');
+  const isBuy = condition.buy === 1;
+  const table = isBuy ? 'studentsProducts' : 'studentsTasks';
+  const column = isBuy ? 'productId' : 'taskId';
+
+  const dayFilter = Number(multiple) === MULTIPLE_ONCE_PER_DAY
+    ? " AND DATE(createDateTime) = DATE('now', 'localtime')"
+    : '';
+
+  const result = await get(
+    `SELECT 1 FROM ${table} WHERE studentId = ? AND ${column} = ?${dayFilter} LIMIT 1;`,
+    [studentId, taskId]
+  );
   return !!result;
+}
+
+// רק משימה אחת יכולה להיות ברירת מחדל; id ריק מכבה את כולן
+async function setDefaultTask(id) {
+  await waitDB();
+  await run('BEGIN TRANSACTION;');
+  try {
+    await run('UPDATE tasks SET isDefault = 0;');
+    if (id) {
+      await run('UPDATE tasks SET isDefault = 1 WHERE id = ?;', [id]);
+    }
+    await run('COMMIT;');
+    return true;
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
+}
+
+// טריוויה דורשת מסך שאלות ולכן לא יכולה להיות משימת ברירת מחדל
+async function getDefaultTask() {
+  await waitDB();
+  return get('SELECT * FROM tasks WHERE isDefault = 1 AND type != 2 LIMIT 1;');
 }
 
 
@@ -764,6 +801,8 @@ module.exports = {
   isProductUsed,
   markProductAsUsed,
   hasStudentDoneSelected,
+  setDefaultTask,
+  getDefaultTask,
   saveStudentTask,
   saveStudentProduct,
   getStatistics,
