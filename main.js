@@ -399,6 +399,42 @@ ipcMain.on("sendDrawPrize", async (event, args) => {
   }
 });
 
+// -------------- station hours ---------------- //
+
+// נשמר בקובץ ליד המסד ולא בתוכו, כדי לא לגעת בסכימה של מוסד שכבר מותקן
+const DEFAULT_CLOSING_TIME = '08:30';
+
+function closingTimePath() {
+  return path.join(app.getPath('userData'), 'stationHours.json');
+}
+
+function readClosingTime() {
+  try {
+    const raw = fs.readFileSync(closingTimePath(), 'utf8');
+    const parsed = JSON.parse(raw);
+    return /^\d{2}:\d{2}$/.test(parsed.closingTime) ? parsed.closingTime : DEFAULT_CLOSING_TIME;
+  } catch (error) {
+    return DEFAULT_CLOSING_TIME;
+  }
+}
+
+ipcMain.on("sendReadClosingTime", () => {
+  mainWindow.webContents.send("receiveReadClosingTime", readClosingTime());
+});
+
+ipcMain.on("sendSaveClosingTime", (event, args) => {
+  try {
+    if (!/^\d{2}:\d{2}$/.test(args)) {
+      throw new Error('Invalid closing time: ' + args);
+    }
+    fs.writeFileSync(closingTimePath(), JSON.stringify({ closingTime: args }), 'utf8');
+    mainWindow.webContents.send("receiveSaveClosingTime", true);
+  } catch (error) {
+    console.error('Failed to save closing time:', error);
+    mainWindow.webContents.send("receiveSaveClosingTime", false);
+  }
+});
+
 // -------------- utils ---------------- //
 
 ipcMain.on("getBackground", (event, args) => {

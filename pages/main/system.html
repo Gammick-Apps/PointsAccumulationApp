@@ -42,6 +42,14 @@
             const uploadPollsWrapper = document.getElementById('uploadPollsWrapper');
             const uploadQuestionsWrapper = document.getElementById('uploadQuestionsWrapper');
 
+            startComputerClock();
+
+            // שעת הסגירה נשמרת בקובץ ולא במסד, ולכן נקראת ונשמרת בנפרד מ-systemConfig
+            window.expose.receive("receiveReadClosingTime", (time) => {
+                document.getElementById("closingTime").value = time;
+            });
+            window.expose.send("sendReadClosingTime");
+
             tableName = 'systemConfig'
             window.expose.sendSystem("sendReadSystem", tableName);
             window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {               
@@ -189,6 +197,19 @@
         };
 
 
+        // שעת הסגירה נשענת על שעון המחשב, אז כדאי שיהיה אפשר לראות אותו כאן
+        function startComputerClock() {
+            const clock = document.getElementById("computerClock");
+
+            function tick() {
+                const now = new Date();
+                clock.textContent = now.toLocaleDateString('he-IL') + '  ' + now.toLocaleTimeString('he-IL');
+            }
+
+            tick();
+            setInterval(tick, 1000);
+        }
+
         function askResetDatabase() {
             $('#resetModal').modal('show');
         }
@@ -217,6 +238,8 @@
                         systemConfig[key] = element.value;
                     }
             })
+
+            window.expose.send("sendSaveClosingTime", document.getElementById("closingTime").value);
 
             tableName = "systemConfig"
             window.expose.sendSystem("sendUpdateSystem", JSON.stringify(systemConfig));
@@ -304,6 +327,14 @@
                     <div class="col-md-1">
                         <label for="numPosition" class="form-label">עמדה</label>
                         <input type="number" class="form-control" id="numPosition">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="closingTime" class="form-label">שעת סגירת העמדה</label>
+                        <input type="time" class="form-control" id="closingTime">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">השעה במחשב</label>
+                        <div id="computerClock" class="form-control-plaintext"></div>
                     </div>
                     <div class="col-md-1">
                         <label for="hasPrint" class="form-label">הדפסה</label>

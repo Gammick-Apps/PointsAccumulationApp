@@ -65,6 +65,7 @@
         var currentStudent = ""
         var currentResult = "";
         var defaultTask = null;
+        var stationClosed = false;
         var searchVal = ""
         var buffer = "";
         var tableName
@@ -115,22 +116,55 @@
                 registerPrintHandler();
                 currentTable = systemConfig.buy ? 'products' : 'tasks';
 
-                // משימת ברירת מחדל שייכת לתיקוף בלבד; במצב קנייה הזרימה לא משתנה
-                if (!systemConfig.buy) {
-                    window.expose.receiveDbData("receiveGetDefaultTask", (task) => {
-                        if (task) {
-                            startDefaultTaskMode(task);
-                            return;
-                        }
-                        startSelectionMode();
-                    });
-                    window.expose.sendDbData("sendGetDefaultTask");
-                    return;
-                }
-
-                updateLines("שלום...!", "יש לבחור מתנה לקנייה")
-                loadActions();
+                // שעת הסגירה נקראת מקובץ ולא מהמסד
+                window.expose.receive("receiveReadClosingTime", (closingTime) => {
+                    if (isAfterClosingTime(closingTime)) {
+                        showClosedScreen();
+                        return;
+                    }
+                    scheduleClosing(closingTime);
+                    startStation();
+                });
+                window.expose.send("sendReadClosingTime");
             });
+        }
+
+        // המסך נטען מחדש רק אחרי תיקוף, ולכן בלי טיימר העמדה הייתה נשארת פתוחה
+        // עד שמישהי תעביר כרטיס אחרי שעת הסגירה
+        function scheduleClosing(closingTime) {
+            const parts = String(closingTime).split(':');
+            const closesAt = new Date();
+            closesAt.setHours(Number(parts[0]), Number(parts[1]), 0, 0);
+
+            const wait = closesAt.getTime() - Date.now();
+            if (wait > 0) {
+                setTimeout(showClosedScreen, wait);
+            }
+        }
+
+        // מסך סגירה קבוע: העברת כרטיס לא עושה דבר, אבל קודי הניהול עדיין עובדים
+        function showClosedScreen() {
+            stationClosed = true;
+            document.getElementById("cards").style.display = "none";
+            updateLines("העמדה סגורה", "התיקוף להיום הסתיים", "נתראה מחר!")
+        }
+
+        function startStation() {
+            // משימת ברירת מחדל שייכת לתיקוף בלבד; במצב קנייה הזרימה לא משתנה
+            if (!systemConfig.buy) {
+                window.expose.receiveDbData("receiveGetDefaultTask", (task) => {
+                    if (task) {
+                        startDefaultTaskMode(task);
+                        return;
+                    }
+                    startSelectionMode();
+                });
+                window.expose.sendDbData("sendGetDefaultTask");
+                return;
+            }
+
+            updateLines("שלום...!", "יש לבחור מתנה לקנייה")
+            loadActions();
         }
 
         function loadActions() {
@@ -172,6 +206,10 @@
                     }
                     if (searchVal == '011429519') {
                         login('../main/system');
+                        return;
+                    }
+
+                    if (stationClosed) {
                         return;
                     }
 
