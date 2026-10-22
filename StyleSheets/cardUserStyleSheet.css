@@ -10,18 +10,18 @@
 }
 
 #line1 {
-    font-size: 4vw;
-    line-height: 3.5vw;
+    font-size: 5.5vw;
+    line-height: 5vw;
     direction: rtl;
 }
 
 #line2 {
-    font-size: 2.5vw;
+    font-size: 3.5vw;
     direction: rtl;
 }
 
 #line3 {
-    font-size: 2.5vw;
+    font-size: 3.5vw;
     direction: rtl;
 }
 
@@ -111,8 +111,13 @@
     border-top: 1px solid rgba(255, 255, 255, 0.5);
 }
 
+#cards .card-title {
+    font-size: 1.6vw;
+}
+
 #cards .card-footer small {
     color: #222 !important;
+    font-size: 1.2vw;
 }
 
 #cards .card:hover {
