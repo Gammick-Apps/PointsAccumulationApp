@@ -44,11 +44,12 @@
 
             startComputerClock();
 
-            // שעת הסגירה נשמרת בקובץ ולא במסד, ולכן נקראת ונשמרת בנפרד מ-systemConfig
-            window.expose.receive("receiveReadClosingTime", (time) => {
-                document.getElementById("closingTime").value = time;
+            // שעות העמדה נשמרות בקובץ ולא במסד, ולכן נקראות ונשמרות בנפרד מ-systemConfig
+            window.expose.receive("receiveReadStationHours", (hours) => {
+                document.getElementById("openingTime").value = hours.openingTime;
+                document.getElementById("closingTime").value = hours.closingTime;
             });
-            window.expose.send("sendReadClosingTime");
+            window.expose.send("sendReadStationHours");
 
             tableName = 'systemConfig'
             window.expose.sendSystem("sendReadSystem", tableName);
@@ -239,7 +240,10 @@
                     }
             })
 
-            window.expose.send("sendSaveClosingTime", document.getElementById("closingTime").value);
+            window.expose.send("sendSaveStationHours", {
+                openingTime: document.getElementById("openingTime").value,
+                closingTime: document.getElementById("closingTime").value
+            });
 
             tableName = "systemConfig"
             window.expose.sendSystem("sendUpdateSystem", JSON.stringify(systemConfig));
@@ -329,10 +333,14 @@
                         <input type="number" class="form-control" id="numPosition">
                     </div>
                     <div class="col-md-2">
+                        <label for="openingTime" class="form-label">שעת פתיחת העמדה</label>
+                        <input type="time" class="form-control" id="openingTime">
+                    </div>
+                    <div class="col-md-2">
                         <label for="closingTime" class="form-label">שעת סגירת העמדה</label>
                         <input type="time" class="form-control" id="closingTime">
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-1">
                         <label class="form-label">השעה במחשב</label>
                         <div id="computerClock" class="form-control-plaintext"></div>
                     </div>

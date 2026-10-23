@@ -109,13 +109,14 @@ function getMultipleLabels() {
 }
 
 // השוואת "HH:MM" כמחרוזות עובדת כל עוד השעות מרופדות באפס, וזה מה ש-input type=time מחזיר
-function isAfterClosingTime(closingTime) {
-    if (!/^\d{2}:\d{2}$/.test(closingTime)) {
-        return false;
-    }
+function getCurrentTime() {
     const now = new Date();
-    const current = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-    return current >= closingTime;
+    return String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+}
+
+function isStationOpen(hours) {
+    const current = getCurrentTime();
+    return current >= hours.openingTime && current < hours.closingTime;
 }
 
 function getExcelFiles() {

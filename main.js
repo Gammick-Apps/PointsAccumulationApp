@@ -402,36 +402,45 @@ ipcMain.on("sendDrawPrize", async (event, args) => {
 // -------------- station hours ---------------- //
 
 // נשמר בקובץ ליד המסד ולא בתוכו, כדי לא לגעת בסכימה של מוסד שכבר מותקן
+// ברירת המחדל לפתיחה היא חצות, כדי שעמדה שלא הוגדרה לה שעה תתנהג כמו קודם
+const DEFAULT_OPENING_TIME = '00:00';
 const DEFAULT_CLOSING_TIME = '08:30';
+const TIME_FORMAT = /^\d{2}:\d{2}$/;
 
-function closingTimePath() {
+function stationHoursPath() {
   return path.join(app.getPath('userData'), 'stationHours.json');
 }
 
-function readClosingTime() {
+function readStationHours() {
+  let parsed = {};
   try {
-    const raw = fs.readFileSync(closingTimePath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    return /^\d{2}:\d{2}$/.test(parsed.closingTime) ? parsed.closingTime : DEFAULT_CLOSING_TIME;
+    parsed = JSON.parse(fs.readFileSync(stationHoursPath(), 'utf8'));
   } catch (error) {
-    return DEFAULT_CLOSING_TIME;
+    // אין קובץ עדיין - נשארים עם ברירות המחדל
   }
+  return {
+    openingTime: TIME_FORMAT.test(parsed.openingTime) ? parsed.openingTime : DEFAULT_OPENING_TIME,
+    closingTime: TIME_FORMAT.test(parsed.closingTime) ? parsed.closingTime : DEFAULT_CLOSING_TIME
+  };
 }
 
-ipcMain.on("sendReadClosingTime", () => {
-  mainWindow.webContents.send("receiveReadClosingTime", readClosingTime());
+ipcMain.on("sendReadStationHours", () => {
+  mainWindow.webContents.send("receiveReadStationHours", readStationHours());
 });
 
-ipcMain.on("sendSaveClosingTime", (event, args) => {
+ipcMain.on("sendSaveStationHours", (event, args) => {
   try {
-    if (!/^\d{2}:\d{2}$/.test(args)) {
-      throw new Error('Invalid closing time: ' + args);
+    if (!TIME_FORMAT.test(args.openingTime) || !TIME_FORMAT.test(args.closingTime)) {
+      throw new Error('Invalid station hours: ' + JSON.stringify(args));
     }
-    fs.writeFileSync(closingTimePath(), JSON.stringify({ closingTime: args }), 'utf8');
-    mainWindow.webContents.send("receiveSaveClosingTime", true);
+    fs.writeFileSync(stationHoursPath(), JSON.stringify({
+      openingTime: args.openingTime,
+      closingTime: args.closingTime
+    }), 'utf8');
+    mainWindow.webContents.send("receiveSaveStationHours", true);
   } catch (error) {
-    console.error('Failed to save closing time:', error);
-    mainWindow.webContents.send("receiveSaveClosingTime", false);
+    console.error('Failed to save station hours:', error);
+    mainWindow.webContents.send("receiveSaveStationHours", false);
   }
 });
 

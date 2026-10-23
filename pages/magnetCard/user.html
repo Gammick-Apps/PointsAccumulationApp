@@ -116,30 +116,31 @@
                 registerPrintHandler();
                 currentTable = systemConfig.buy ? 'products' : 'tasks';
 
-                // שעת הסגירה נקראת מקובץ ולא מהמסד
-                window.expose.receive("receiveReadClosingTime", (closingTime) => {
-                    if (isAfterClosingTime(closingTime)) {
+                // שעות העמדה נקראות מקובץ ולא מהמסד
+                window.expose.receive("receiveReadStationHours", (hours) => {
+                    watchStationHours(hours);
+                    if (!isStationOpen(hours)) {
                         showClosedScreen();
                         return;
                     }
-                    scheduleClosing(closingTime);
                     startStation();
                 });
-                window.expose.send("sendReadClosingTime");
+                window.expose.send("sendReadStationHours");
             });
         }
 
-        // המסך נטען מחדש רק אחרי תיקוף, ולכן בלי טיימר העמדה הייתה נשארת פתוחה
-        // עד שמישהי תעביר כרטיס אחרי שעת הסגירה
-        function scheduleClosing(closingTime) {
-            const parts = String(closingTime).split(':');
-            const closesAt = new Date();
-            closesAt.setHours(Number(parts[0]), Number(parts[1]), 0, 0);
-
-            const wait = closesAt.getTime() - Date.now();
-            if (wait > 0) {
-                setTimeout(showClosedScreen, wait);
-            }
+        // המסך נטען מחדש רק אחרי תיקוף, ולכן בלי בדיקה תקופתית העמדה לא הייתה נסגרת ונפתחת בעצמה.
+        // בדיקה כל חצי דקה ולא טיימר אחד, כי טיימר ארוך נדחה כשהמחשב נכנס לשינה
+        function watchStationHours(hours) {
+            setInterval(function () {
+                const open = isStationOpen(hours);
+                if (open && stationClosed) {
+                    // טעינה מחדש מעלה את העמדה מההתחלה, כולל משימת ברירת המחדל
+                    location.reload();
+                } else if (!open && !stationClosed) {
+                    showClosedScreen();
+                }
+            }, 30000);
         }
 
         // מסך סגירה קבוע: העברת כרטיס לא עושה דבר, אבל קודי הניהול עדיין עובדים
