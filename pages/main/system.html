@@ -15,6 +15,7 @@
     <script src="../../js/xlsx.full.min.js"></script>
     <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
     <script src="../../js/shared.js"></script>
+    <script src="../../js/languages.js"></script>
 
     <script>
         var systemConfig = ""
@@ -41,6 +42,8 @@
             const uploadTestsWrapper = document.getElementById('uploadTestsWrapper');
             const uploadPollsWrapper = document.getElementById('uploadPollsWrapper');
             const uploadQuestionsWrapper = document.getElementById('uploadQuestionsWrapper');
+
+            fillLanguageOptions();
 
             tableName = 'systemConfig'
             window.expose.sendSystem("sendReadSystem", tableName);
@@ -189,6 +192,17 @@
         };
 
 
+        // הרשימה נבנית מ-languages.js, כך ששפה שנוספת שם מופיעה כאן לבד
+        function fillLanguageOptions() {
+            const select = document.getElementById("language");
+            Object.entries(LANGUAGES).forEach(([code, name]) => {
+                const option = document.createElement("option");
+                option.value = code;
+                option.textContent = name;
+                select.appendChild(option);
+            });
+        }
+
         function askResetDatabase() {
             $('#resetModal').modal('show');
         }
@@ -263,6 +277,10 @@
                             <option value="4">עיצוב אישי</option>
                             <option value="5">עיצוב Gammick </option>
                         </select>
+                    </div>
+                    <div class="col-md-1">
+                        <label for="language" class="form-label">שפה</label>
+                        <select class="form-control" id="language"></select>
                     </div>
                     <div class="col-md-2" id="textColorWrapper" >
                         <label for="textColor" class="form-label"> צבע כיתוב</label>

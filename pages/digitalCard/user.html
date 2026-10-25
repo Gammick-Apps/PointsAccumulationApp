@@ -13,6 +13,7 @@
   <script src="../../js/jquery.min.js"></script>
   <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
   <script src="../../js/shared.js"></script>
+  <script src="../../js/languages.js"></script>
 
   <script>
     var systemConfig = ""
@@ -28,11 +29,12 @@
 
     function onLoad() {
       step = Steps.step1;
-      updateLines("יש לסרוק את כרטיס ההפתעה", "...אולי הכרטיס שלך יזכה")
       tableName = 'systemConfig'
       window.expose.sendSystem("sendReadSystem", tableName);
       window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
           systemConfig = data
+        setLanguage(systemConfig.language);
+        updateLines(t('scanSurprise'), t('maybeWin'))
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, 0, step)
       })
     }
@@ -63,19 +65,19 @@
     if (result && result != "") {
       step = Steps.step2;
       if (result.used == "1") {
-        showAlert("הי, שובר זה כבר הודפס!");
+        showAlert(t('voucherAlreadyPrinted'));
         return;
       }
       document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, 0, step);
-      texts = getWonTexts();
-      updateLines(texts[Math.floor(Math.random() * texts.length)], "זכית ב" + result.name);
+      texts = t('wonTexts');
+      updateLines(texts[Math.floor(Math.random() * texts.length)], t('youWon', { name: result.name }));
       saveData();
     }
     else {
       step = Steps.step3;
       document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, 0, step);
-      texts = getLossTexts();
-      updateLines(texts[Math.floor(Math.random() * texts.length)], "!...אולי בפעם הבאה");
+      texts = t('lossTexts');
+      updateLines(texts[Math.floor(Math.random() * texts.length)], t('maybeNextTime'));
       reset(2500);
     }
   });
@@ -114,18 +116,18 @@
             </style>
         </head>
         <body>
-            <div id="title">שובר</div>
+            <div id="title">${t('printVoucherTitle')}</div>
             <br>
             <div id="content">
-                <div>וואו, איזה כיף!!</div>
-                <div>זכית ב ${result.name}</div>
-                <div>יש לגשת לאחראית לקבלת המתנה</div>
+                <div>${t('printWow')}</div>
+                <div>${t('youWon', { name: result.name })}</div>
+                <div>${t('printCollectGift')}</div>
             </div>
             <br>
-            <div id="title">בהנאה!</div>
+            <div id="title">${t('printEnjoy')}</div>
             <br>
             <br>
-            <div id="footer">להזמנות: אפרת מלכה 0504167969 office@gammick.co.il</div>
+            <div id="footer">${t('printFooter')}</div>
         </body>
         </html>
     `;
@@ -174,7 +176,7 @@
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="modalLabel">הודעת מערכת</h5>
+          <h5 class="modal-title" id="modalLabel" data-t="systemMessage">הודעת מערכת</h5>
         </div>
         <div class="modal-body"></div>
       </div>

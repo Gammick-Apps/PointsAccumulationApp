@@ -14,7 +14,7 @@ function getTodayDateTime() {
 }
 
 function getDefaultConfig() {
-    return { "date": getYesterdayDate(), "numPosition": "", "hasPrint": "1", "hasBuy": "0", "device": "0", "color": "0", "type": "0", "hasParents": "0", "hasTests": "0", "timer": "10", "buy": false, "textColor": "#ffffff", "prizeChance": 0 };
+    return { "date": getYesterdayDate(), "numPosition": "", "hasPrint": "1", "hasBuy": "0", "device": "0", "color": "0", "type": "0", "hasParents": "0", "hasTests": "0", "timer": "10", "buy": false, "textColor": "#ffffff", "prizeChance": 0, "language": "he" };
 }
 
 function login(page) {
@@ -112,13 +112,6 @@ function getExcelFiles() {
     return ["students", "tasks", "products", "tests", "questions"];
 }
 
-function getWonTexts() {
-    return ["!איזה כיף", "---כן, כן, זה קרה", "...וואו, איזה חלום", "---קולולולולו"];
-}
-
-function getLossTexts() {
-    return ["...לא זכית, אוי לא", "!!חבל--- לא זכית הפעם", "!אופס... הכרטיס לא שווה ", "...לא זכית! לא נורא"];
-}
 
 
 

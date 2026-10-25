@@ -13,6 +13,7 @@
   <script src="../../js/jquery.min.js"></script>
   <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
   <script src="../../js/shared.js"></script>
+  <script src="../../js/languages.js"></script>
    <script src="../../js/chart.js"></script>
   <script src="../../js/chartjs-plugin-datalabels.js"></script>
 
@@ -58,11 +59,12 @@
     ];
 
     function onLoad() {
-      updateLines("!ברוכות הבאות", "?...מי הכיתה המנצחת");
       tableName = 'systemConfig';
       window.expose.sendSystem("sendReadSystem", tableName);
       window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
           systemConfig = data
+        setLanguage(systemConfig.language);
+        updateLines(t('welcomeAll'), t('whoWins'));
         document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
         document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
 
@@ -75,7 +77,12 @@
         else {
           document.getElementById("position").style.display = "none";
         }
+        loadStudents();
       })
+    }
+
+    // נטען אחרי השפה, כי הגרף כותב "נקודות" כבר בציור הראשון
+    function loadStudents() {
         tableName = 'students'
             window.expose.sendDbData("sendGetDataByTable", tableName);
             window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
@@ -135,7 +142,7 @@
         }
       }
       if (studentResult == "") {
-        showAlert("הברקוד לא מופיע ברשימות. גשו למורה!");
+        showAlert(t('notFound'));
         return;
       }
       saveData();
@@ -145,7 +152,7 @@
       for (var i = 0; i < classesPoints.length; i++) {
         if (classesPoints[i]["code"] == studentResult.grade) {
           classesPoints[i]["points"] += POINTS_PER_SCAN;
-          updateLines("(:כל הכבוד ל" + studentResult.name + " " + "מ" + studentResult.grade, "!עד כה צברתן " + classesPoints[i]["points"] + " נקודות");
+          updateLines(t('wellDoneStudent', { name: studentResult.name, grade: studentResult.grade }), t('classPointsSoFar', { points: classesPoints[i]["points"] }));
           localStorage.setItem("classesPoints", JSON.stringify(classesPoints));
           renderClassCards();
           renderChart();
@@ -165,20 +172,20 @@
         }
       }
       if (!matched) {
-        showAlert("לא נמצאו כיתות לשכבה זו. גשו למורה!");
+        showAlert(t('noClassesForGrade'));
         return;
       }
       localStorage.setItem("classesPoints", JSON.stringify(classesPoints));
       renderClassCards();
       renderChart();
       var gradeLabel = gradePrefix.replace("כיתה ", "");
-      updateLines("!כל הכבוד לכיתות " + gradeLabel, "!כל כיתה קיבלה " + POINTS_PER_SCAN + " נקודות");
+      updateLines(t('wellDoneClasses', { grade: gradeLabel }), t('eachClassGot', { points: POINTS_PER_SCAN }));
       reset(3000);
     }
 
     function reset(time = 0) {
       setTimeout(function () {
-        updateLines("!ברוכות הבאות", "?...מי הכיתה המנצחת");
+        updateLines(t('welcomeAll'), t('whoWins'));
       }, time);
     }
 
@@ -259,7 +266,7 @@
           labels: labels,
           datasets: [
             {
-              label: 'נקודות',
+              label: t('points'),
               data: data,
               backgroundColor: barColors,
               borderWidth: 2,
@@ -283,7 +290,7 @@
               enabled: true,
               callbacks: {
                 label: function (context) {
-                  return context.label + ': ' + context.parsed.y + ' נקודות';
+                  return context.label + ': ' + t('pointsCount', { points: context.parsed.y });
                 }
               }
             },
@@ -345,11 +352,11 @@
         </div>
       </div>
       <div class="bottom-actions d-flex flex-row justify-content-center" style="gap: 24px;">
-        <button onclick="login('./graphology'); this.blur();" class="action-btn">גרפולוגית</button>
-        <button onclick="login('./questions'); this.blur();" class="action-btn">הסרטות</button>
+        <button onclick="login('./graphology'); this.blur();" class="action-btn" data-t="graphologyBtn">גרפולוגית</button>
+        <button onclick="login('./questions'); this.blur();" class="action-btn" data-t="videosBtn">הסרטות</button>
       </div>
     </div>
-    <div id="position">עמדה</div>
+    <div id="position" data-t="position">עמדה</div>
   </div>
 
   <!-- Cards Container -->
@@ -358,7 +365,7 @@
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="modalLabel">הודעת מערכת</h5>
+          <h5 class="modal-title" id="modalLabel" data-t="systemMessage">הודעת מערכת</h5>
         </div>
         <div class="modal-body"></div>
       </div>

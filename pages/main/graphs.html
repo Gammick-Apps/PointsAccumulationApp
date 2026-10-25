@@ -15,36 +15,37 @@
     <script src="../../js/chart.js"></script>
     <script src="../../js/chartjs-plugin-datalabels.js"></script>
     <script src="../../js/shared.js"></script>
+    <script src="../../js/languages.js"></script>
 
     <div class="background" id="background">
         <div class="graphs-page">
             <div class="graphs-header">
-                <div class="graphs-title">טבלת ההישגים</div>
+                <div class="graphs-title" data-t="achievementsTable">טבלת ההישגים</div>
                 <a href="#" class="glass-card graphs-back-btn" onclick="login('./user'); return false;">
-                    <span>&#8592;</span><span>חזרה</span>
+                    <span>&#8592;</span><span data-t="back">חזרה</span>
                 </a>
             </div>
 
             <div class="graphs-grid">
                 <div class="stat-row">
                     <div class="glass-card stat-card">
-                        <div class="stat-card-label">סך הנקודות שנצברו</div>
+                        <div class="stat-card-label" data-t="totalPointsCollected">סך הנקודות שנצברו</div>
                         <div class="stat-card-value" id="totalPoints">0</div>
                         <div class="stat-card-note" id="leadingClass"></div>
                     </div>
                     <div class="glass-card stat-card">
-                        <div class="stat-card-label">תלמידות פעילות</div>
+                        <div class="stat-card-label" data-t="activeStudents">תלמידות פעילות</div>
                         <div class="stat-card-value" id="activeStudents">0</div>
                     </div>
                     <div class="glass-card stat-card">
-                        <div class="stat-card-label">המשימה הפופולרית</div>
+                        <div class="stat-card-label" data-t="popularTask">המשימה הפופולרית</div>
                         <div class="stat-card-value-small" id="popularTaskName">—</div>
                         <div class="stat-card-note" id="popularTaskTimes"></div>
                     </div>
                 </div>
 
                 <div class="glass-card chart-card">
-                    <div class="chart-card-title" id="topStudentsTitle">התלמידות המובילות</div>
+                    <div class="chart-card-title" id="topStudentsTitle" data-t="topStudents">התלמידות המובילות</div>
                     <div class="chart-scroll" id="topStudentsScroll">
                         <div class="chart-canvas-holder">
                             <canvas id="topStudentsChart"></canvas>
@@ -53,7 +54,7 @@
                 </div>
 
                 <div class="glass-card chart-card">
-                    <div class="chart-card-title">הכיתות המובילות (ממוצע לתלמידה)</div>
+                    <div class="chart-card-title" data-t="topClasses">הכיתות המובילות (ממוצע לתלמידה)</div>
                     <div class="chart-scroll" id="topClassesScroll">
                         <div class="chart-canvas-holder">
                             <canvas id="topClassesChart"></canvas>
@@ -63,7 +64,7 @@
             </div>
         </div>
 
-        <div id="position">עמדה</div>
+        <div id="position" data-t="position">עמדה</div>
     </div>
 
     <script>
@@ -79,6 +80,7 @@
             window.expose.sendSystem("sendReadSystem", tableName);
             window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
                 systemConfig = (!data || Object.keys(data).length == 0) ? getDefaultConfig() : data;
+                setLanguage(systemConfig.language);
 
                 document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0];
                 document.getElementById("position").style.color = getPosition(systemConfig.color)[1];
@@ -99,7 +101,7 @@
         function loadStatistics() {
             window.expose.receiveDbData("receiveGetStatistics", (stats) => {
                 if (!stats) {
-                    showAlert("שגיאה בטעינת הנתונים");
+                    showAlert(t('dataLoadError'));
                     return;
                 }
                 showStatistics(stats);
@@ -112,16 +114,16 @@
             document.getElementById("activeStudents").innerText = formatNumber(stats.activeStudents);
 
             if (stats.leadingClass) {
-                document.getElementById("leadingClass").innerHTML = 'הכיתה המובילה: <b>' + stats.leadingClass + '</b>';
+                document.getElementById("leadingClass").innerHTML = t('leadingClass', { name: stats.leadingClass });
             }
 
             if (stats.popularTask) {
                 document.getElementById("popularTaskName").innerText = stats.popularTask.name;
-                document.getElementById("popularTaskTimes").innerText = 'בוצעה ' + formatNumber(stats.popularTask.times) + ' פעמים';
+                document.getElementById("popularTaskTimes").innerText = t('doneTimes', { times: formatNumber(stats.popularTask.times) });
             }
 
             document.getElementById("topStudentsTitle").innerText =
-                stats.topStudents.length + ' תלמידות מובילות';
+                t('topStudentsCount', { count: stats.topStudents.length });
 
             renderChart(
                 "topStudentsChart",
@@ -146,7 +148,7 @@
             if (labels.length == 0) {
                 const empty = document.createElement("div");
                 empty.className = "chart-empty";
-                empty.innerText = "אין עדיין נתונים להצגה";
+                empty.innerText = t('noData');
                 scroll.parentNode.replaceChild(empty, scroll);
                 return;
             }
@@ -227,7 +229,7 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="modalLabel">הודעת מערכת</h5>
+                    <h5 class="modal-title" id="modalLabel" data-t="systemMessage">הודעת מערכת</h5>
                 </div>
                 <div class="modal-body"></div>
             </div>

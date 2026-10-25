@@ -13,10 +13,11 @@
     <script src="../../js/jquery.min.js"></script>
     <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
     <script src="../../js/shared.js"></script>
+    <script src="../../js/languages.js"></script>
 
     <div class="background" id="background">
         <a href="#" class="glass-card graphs-open-btn" id="graphsBtn"
-            onclick="login('../main/graphs'); return false;">גרפים</a>
+            onclick="login('../main/graphs'); return false;" data-t="graphsBtn">גרפים</a>
         <div class="text">
             <div id="line1"></div>
             <div id="line2"></div>
@@ -26,13 +27,13 @@
             <div class="row row-cols-md-5 g-3 pb-2 justify-content-md-center" id="cards">
             </div>
         </div>
-        <div id="position">עמדה</div>
+        <div id="position" data-t="position">עמדה</div>
     </div>
     <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="modalLabel">הודעת מערכת</h5>
+                    <h5 class="modal-title" id="modalLabel" data-t="systemMessage">הודעת מערכת</h5>
                 </div>
                 <div class="modal-body"></div>
             </div>
@@ -101,6 +102,7 @@
             window.expose.sendSystem("sendReadSystem", tableName);
             window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
                 systemConfig = data
+                setLanguage(systemConfig.language);
                 document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
                 document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
                 document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color)
@@ -128,7 +130,7 @@
                     return;
                 }
 
-                updateLines("שלום...!", "יש לבחור מתנה לקנייה")
+                updateLines(t('hello'), t('chooseGift'))
                 loadActions();
             });
         }
@@ -144,7 +146,7 @@
         }
 
         function startSelectionMode() {
-            updateLines(" שלום...! ", "יש לבחור משימה לתיקוף ")
+            updateLines(t('hello'), t('chooseTask'))
             loadActions();
         }
 
@@ -155,7 +157,7 @@
             step = Steps.step2;
             document.getElementById("cards").style.display = "none";
 
-            updateLines("ברוכה הבאה!", "המשימה שנבחרה: " + task.name, getReaderText())
+            updateLines(t('welcome'), t('chosenTask', { name: task.name }), getReaderText())
         }
 
         document.addEventListener("keypress", function (e) {
@@ -176,7 +178,7 @@
                     }
 
                     if (step == Steps.step1) {
-                        showAlert("יש לבחור לפני התיקוף!");
+                        showAlert(t('chooseFirst'));
                         return;
                     }
                     if (step == Steps.step2) {
@@ -207,7 +209,7 @@
 
                 const footerSmall = document.createElement("small");
                 footerSmall.classList.add("text-body-secondary");
-                footerSmall.textContent = cardData.points + ' נקודות'
+                footerSmall.textContent = t('pointsCount', { points: cardData.points })
 
                 const cardBody = document.createElement("div");
                 cardBody.classList.add("card-body");
@@ -233,16 +235,16 @@
                 currentResult = cardData;
 
                 if (systemConfig.buy == 1) {
-                    updateLines("בחרת במתנה: " + currentResult.name, "")
+                    updateLines(t('youChoseGift', { name: currentResult.name }), "")
                 }
 
                 switch (currentResult.type) {
                     case 1: {
-                        updateLines("בחרת ב: " + currentResult.name, "")
+                        updateLines(t('youChose', { name: currentResult.name }), "")
                         break;
                     }
                     case 2: {
-                        updateLines("בחרת ב: " + currentResult.name, "")
+                        updateLines(t('youChose', { name: currentResult.name }), "")
                         openTest();
                         return;
                     }
@@ -259,7 +261,7 @@
             window.expose.sendDbData("sendGetTestByCode", currentResult.code);
             window.expose.receiveDbData("receiveGetTestByCode", (test) => {
                 if (!test || !Array.isArray(test.questions) || test.questions.length == 0) {
-                    showAlert("שגיאה בטעינת המבחן");
+                    showAlert(t('testLoadError'));
                     return;
                 }
                 currentTest = test;
@@ -298,11 +300,11 @@
 
         function startTimer() {
             let timeLeft = systemConfig.timer;
-            timerElement.innerText = `זמן שנותר: ${timeLeft} שניות`;
+            timerElement.innerText = t('timeLeft', { seconds: timeLeft });
             clearInterval(timer);
             timer = setInterval(() => {
                 timeLeft--;
-                timerElement.innerText = `זמן שנותר: ${timeLeft} שניות`;
+                timerElement.innerText = t('timeLeft', { seconds: timeLeft });
                 if (timeLeft <= 0) {
                     clearInterval(timer);
                     submitAnswer(-1); // Auto move to next question if no answer selected
@@ -328,7 +330,7 @@
         function showResults() {
             isModalOpen = false;
             const score = correctCount * currentResult.points;
-            updateLines("הציון שלך: " + score)
+            updateLines(t('yourScore', { score: score }))
             updateLinesByDevice()
             currentResult.points = score;
             const triviaModalEl = document.getElementById('triviaModal');
@@ -346,7 +348,7 @@
             window.expose.receiveDbData("receiveGetStudentById", (student) => {
                 currentStudent = student;
                 if (currentStudent == null) {
-                    showAlert("הברקוד לא מופיע ברשימות. גשו למורה!");
+                    showAlert(t('notFound'));
                     return;
                 }
                 // ההחלטה לפי multiple נעשית בשרת, כך שלכל העמדות יש הגדרה אחת
@@ -354,11 +356,11 @@
                 window.expose.receiveDbData("receiveHasStudentDoneSelected", (alreadyDone) => {
                     if (alreadyDone) {
                         const daily = systemConfig.buy == 1
-                            ? "הי, כבר קנית את זה היום!"
-                            : "הי, כבר תיקפת את זה היום!";
+                            ? t('alreadyBoughtToday')
+                            : t('alreadyValidatedToday');
                         showAlert(Number(currentResult.multiple) === 2
                             ? daily
-                            : "הי, בחירה זו כבר קיימת בחשבונך!");
+                            : t('alreadyChosen'));
                         return;
                     }
                     saveStudentData();
@@ -374,12 +376,12 @@
             }
             window.expose.receiveDbData("receiveSaveStudentData", (points) => {
                 if (points == false) {
-                    showAlert(" אין לך מספיק נקודות בחשבון! ");
+                    showAlert(t('notEnoughPoints'));
                     return;
                 } else {
                     document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
                     currentStudent.points = points;
-                    updateLines("תודה רבה " + currentStudent.name, " כעת יש בחשבונך " + currentStudent.points + " נקודות", "בהצלחה!")
+                    updateLines(t('thanks', { name: currentStudent.name }), t('pointsNow', { points: currentStudent.points }), t('goodLuck'))
 
                     if (systemConfig.hasPrint == 1) {
                         setTimeout(function () {
@@ -418,21 +420,21 @@
             </style>
         </head>
         <body>
-            <div id="title">אישור</div>
+            <div id="title">${t('printConfirmTitle')}</div>
             <br>
             <div id="content">
                 <div>${currentStudent.name}</div>
                 <div>${currentStudent.grade}</div>
                 <div>${systemConfig.buy == 0
                     ? "" + currentResult.name
-                    : "זכאות למתנה: " + currentResult.name}</div>
-                <div>נקודות בחשבון: ${currentStudent.points}</div>
+                    : t('printGiftEligibility', { name: currentResult.name })}</div>
+                <div>${t('printPoints', { points: currentStudent.points })}</div>
             </div>
             <br>
-            <div id="title">בהצלחה!</div>
+            <div id="title">${t('goodLuck')}</div>
             <br>
             <br>
-            <div id="footer">להזמנות: אפרת מלכה 0504167969 office@gammick.co.il</div>
+            <div id="footer">${t('printFooter')}</div>
         </body>
         </html>
     `;
@@ -502,19 +504,19 @@
             </style>
         </head>
         <body>
-            <div id="title">שובר</div>
+            <div id="title">${t('printVoucherTitle')}</div>
             <br>
             <div id="content">
                 <div>${currentStudent.name}</div>
                 <div>${currentStudent.grade}</div>
-                <div>${"זכית ב: " + prizeWon.name}</div>
-                <div>יש לגשת לאחראית לקבלת הצ'ופר</div>
+                <div>${t('printYouWon', { name: prizeWon.name })}</div>
+                <div>${t('printCollectPrize')}</div>
             </div>
             <br>
-            <div id="title">בהנאה!</div>
+            <div id="title">${t('printEnjoy')}</div>
             <br>
             <br>
-            <div id="footer">להזמנות: אפרת מלכה 0504167969 office@gammick.co.il</div>
+            <div id="footer">${t('printFooter')}</div>
         </body>
         </html>
     `;
@@ -542,12 +544,12 @@
         // מקור אחד לנוסח לפי סוג המכשיר, כדי שלא יתפצל בין המסכים
         function getReaderText() {
             if (systemConfig.device == "2") {
-                return "יש להעביר את הכרטיס המגנטי";
+                return t('readerMagnet');
             }
             if (systemConfig.device == "4") {
-                return "יש לסרוק את הצ'יפ בקורא";
+                return t('readerChip');
             }
-            return "יש לסרוק את הברקוד האישי";
+            return t('readerBarcode');
         }
 
         function updateLinesByDevice() {
@@ -575,9 +577,9 @@
             <div class="modal-content prize-modal-content">
                 <canvas id="prizeConfetti" class="confetti-canvas-inner"></canvas>
                 <div class="prize-modal-body">
-                    <div class="prize-modal-title">זכית בצ'ופר!!</div>
+                    <div class="prize-modal-title" data-t="prizeWonTitle">זכית בצ'ופר!!</div>
                     <div class="prize-modal-name" id="prizeName"></div>
-                    <div class="prize-modal-sub">כל הכבוד!</div>
+                    <div class="prize-modal-sub" data-t="wellDone">כל הכבוד!</div>
                 </div>
             </div>
         </div>

@@ -13,6 +13,7 @@
   <script src="../../js/jquery.min.js"></script>
   <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
   <script src="../../js/shared.js"></script>
+  <script src="../../js/languages.js"></script>
 
   <script>
     var students = ""
@@ -41,6 +42,7 @@
         else {
           systemConfig = data
         }
+        setLanguage(systemConfig.language);
         document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
         document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color)
@@ -96,14 +98,14 @@
 
     function showQuestion() {
       if (questions == "" || questions.length == 0) {
-        showAlert("אין שאלות. גשו למורה!");
+        showAlert(t('noQuestions'));
         return;
       }
       if (currentIndex >= questions.length) {
         currentIndex = 0;
       }
       closeVideo();
-      updateLines(questions[currentIndex].question + "?", "!חושבת שזה את? אם יש לך אומץ עלי לבמה");
+      updateLines(questions[currentIndex].question + "?", t('thinkItsYou'));
     }
 
     function handleScan() {
@@ -174,9 +176,9 @@
           wrongPool[j] = tmp;
         }
         if (wrongPool.length > 1 && wrongPool[0] == lastWrong) {
-          var t = wrongPool[0];
+          var first = wrongPool[0];
           wrongPool[0] = wrongPool[1];
-          wrongPool[1] = t;
+          wrongPool[1] = first;
         }
       }
       var v = wrongPool.shift();
@@ -226,11 +228,11 @@
       <div id="line2"></div>
       <div id="line3"></div>
       <div id="quizButtons" class="bottom-actions d-flex flex-row justify-content-center" style="gap: 24px;">
-        <button id="prevBtn" onclick="prevQuestion(); this.blur();" class="action-btn">שאלה קודמת</button>
-        <button id="nextBtn" onclick="nextQuestion(); this.blur();" class="action-btn">שאלה הבאה</button>
+        <button id="prevBtn" onclick="prevQuestion(); this.blur();" class="action-btn" data-t="prevQuestion">שאלה קודמת</button>
+        <button id="nextBtn" onclick="nextQuestion(); this.blur();" class="action-btn" data-t="nextQuestion">שאלה הבאה</button>
       </div>
     </div>
-    <div id="position">עמדה</div>
+    <div id="position" data-t="position">עמדה</div>
   </div>
 
   <!-- פופאפ ההסרטה -->
@@ -245,7 +247,7 @@
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="modalLabel">הודעת מערכת</h5>
+          <h5 class="modal-title" id="modalLabel" data-t="systemMessage">הודעת מערכת</h5>
         </div>
         <div class="modal-body"></div>
       </div>

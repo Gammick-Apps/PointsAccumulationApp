@@ -16,7 +16,8 @@
         { "name": "hasTests", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "buy", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "timer", "type": "INTEGER", "nullable": false, "default": "0" },
-        { "name": "prizeChance", "type": "INTEGER", "nullable": false, "default": "0" }
+        { "name": "prizeChance", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "language", "type": "TEXT", "nullable": false, "default": "'he'" }
       ],
       "foreignKeys": []
     },
