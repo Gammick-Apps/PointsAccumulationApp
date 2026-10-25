@@ -107,6 +107,15 @@
       ]
     },
     {
+      "name": "background",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
+        { "name": "mimeType", "type": "TEXT", "nullable": false, "default": "'image/png'" },
+        { "name": "data", "type": "BLOB", "nullable": false }
+      ],
+      "foreignKeys": []
+    },
+    {
       "name": "prizes",
       "columns": [
         { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },

@@ -224,6 +224,25 @@ async function readSystem() {
   return data;
 }
 
+// -------------- background ---------------- //
+
+// טבלה נפרדת ולא עמודה ב-systemConfig: updateSystem כותב את כל השורה מחדש והיה מוחק את התמונה
+async function saveBackground(payload) {
+  await waitDB();
+  await run('INSERT OR REPLACE INTO background (id, mimeType, data) VALUES (1, ?, ?);',
+    [payload.mimeType, Buffer.from(payload.data)]);
+  return true;
+}
+
+async function readBackground() {
+  await waitDB();
+  const row = await get('SELECT mimeType, data FROM background WHERE id = 1 LIMIT 1;');
+  if (!row) {
+    return null;
+  }
+  return { mimeType: row.mimeType, data: row.data.toString('base64') };
+}
+
 // -------------- general ---------------- //
 
 async function insertExcelToDB(tableName, payload) {
@@ -782,6 +801,8 @@ module.exports = {
   waitDB,
   updateSystem,
   readSystem,
+  saveBackground,
+  readBackground,
   readData,
   closeDatabase,
   insertExcelToDB,

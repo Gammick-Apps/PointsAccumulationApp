@@ -124,18 +124,21 @@
 
             uploadBackground.addEventListener('change', function (event) {
                 const file = event.target.files[0];
-                if (file && file.type === 'image/png') {
+                if (file && file.type.startsWith('image/')) {
                     const reader = new FileReader();
                     reader.onload = function (e) {
-                        const data = e.target.result;
-                        window.expose.send("sendUploadBackground", data);
-                        window.expose.receive("recieveUploadBackground", (data) => {
-                            location.reload()
+                        window.expose.send("sendUploadBackground", { mimeType: file.type, data: e.target.result });
+                        window.expose.receive("recieveUploadBackground", (saved) => {
+                            if (saved) {
+                                location.reload()
+                            } else {
+                                showMessage("שמירת הרקע נכשלה");
+                            }
                         });
                     };
                     reader.readAsArrayBuffer(file);
                 } else {
-                    alert("אנא בחר קובץ PNG.");
+                    showMessage("אנא בחר קובץ תמונה.");
                 }
             });
         }
@@ -201,6 +204,12 @@
                 option.textContent = name;
                 select.appendChild(option);
             });
+        }
+
+        // alert חוסם את תהליך הרנדור ב-Electron, ואז הדף מפסיק להגיב להקשות
+        function showMessage(message) {
+            document.getElementById("messageModalBody").innerHTML = message;
+            $('#messageModal').modal('show');
         }
 
         function askResetDatabase() {
@@ -357,7 +366,7 @@
                     </div>
                     <div class="col-md-2" id="uploadBackgroundWrapper" style="display: none;">
                         <label for="uploadBackground" class="form-label">בחר רקע אישי</label>
-                        <input type="file" class="form-control" id="uploadBackground" accept="image/png">
+                        <input type="file" class="form-control" id="uploadBackground" accept="image/*">
                     </div>
                     <div class="col-md-2" id="uploadTestsWrapper" style="display: none;">
                         <label for="uploadTest" class="form-label">מבחנים</label>
@@ -385,6 +394,20 @@
                 התקנת דרייבר למדפסת |
                 למחוק את קובץ ההתקנה |
                 לכוון שעון במחשב
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="messageModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">הודעת מערכת</h5>
+                </div>
+                <div class="modal-body" id="messageModalBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">סגור</button>
+                </div>
             </div>
         </div>
     </div>

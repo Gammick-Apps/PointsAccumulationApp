@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
 const fs = require('fs')
 const path = require('path')
 let mainWindow
-const { initDatabase, waitDB, readData, readSystem, updateSystem, closeDatabase, insertExcelToDB,
+const { initDatabase, waitDB, readData, readSystem, updateSystem, saveBackground, readBackground, closeDatabase, insertExcelToDB,
   addStudent, updateStudent, addTask, updateTask, addProduct, updateProduct, getStudentById, getTaskByCode,
   isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, setDefaultTask, getDefaultTask, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, getStudentParentByCode, updateStudentText, getStatistics, addPrize, updatePrize, deletePrize, readPrizes, readPrizeWinners, updatePrizeWinner, drawPrize, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
 
@@ -401,30 +401,28 @@ ipcMain.on("sendDrawPrize", async (event, args) => {
 
 // -------------- utils ---------------- //
 
-ipcMain.on("getBackground", (event, args) => {
-  fs.readFile(args + '.png', { encoding: 'base64', flag: 'r' }, function (err, data) {
-    if (err) {
-      console.log("background read error", err);
-      if (mainWindow && mainWindow.webContents) {
-        mainWindow.webContents.send("receiveGetBackground" + args, 0);
-      }
-    } else {
-      if (mainWindow && mainWindow.webContents) {
-        mainWindow.webContents.send("receiveGetBackground" + args, data);
-      }
-    }
-  });
+// הרקע האישי נשמר במסד: קובץ בתיקיית העבודה לא נשמר במחשב שהתוכנה מותקנת בו
+ipcMain.on("getBackground", async (event, args) => {
+  let background = null;
+  try {
+    background = await readBackground();
+  } catch (error) {
+    console.error("background read error", error);
+  }
+  if (mainWindow && mainWindow.webContents) {
+    mainWindow.webContents.send("receiveGetBackground" + args, background || 0);
+  }
 });
 
-ipcMain.on("sendUploadBackground", (event, args) => {
-  const fileData = args;
-  const buffer = Buffer.from(fileData, "base64");
-  fs.writeFile("personalBackground.png", buffer, (err) => {
-    if (err) {
-      console.log(err)
-    }
-    mainWindow.webContents.send("recieveUploadBackground", 1);
-  });
+// args: { mimeType, data } כש-data הוא תוכן הקובץ
+ipcMain.on("sendUploadBackground", async (event, args) => {
+  let saved = false;
+  try {
+    saved = await saveBackground(args);
+  } catch (error) {
+    console.error("background save error", error);
+  }
+  mainWindow.webContents.send("recieveUploadBackground", saved);
 });
 
 ipcMain.on("sendPrint", (event, args) => {

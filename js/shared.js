@@ -26,7 +26,7 @@ function getBackgroundUrl() {
                 window.expose.sendImage("getBackground", fileName);
                 window.expose.receive("receiveGetBackground" + fileName, (data) => {
                     if (data && data != 0) {
-                        document.getElementById("background").style.backgroundImage = 'url("data:image/png;base64,' + data + '")';
+                        document.getElementById("background").style.backgroundImage = 'url("data:' + data.mimeType + ';base64,' + data.data + '")';
                     }
                 });
 }
