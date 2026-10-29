@@ -11,20 +11,16 @@
     <link href="../../styleSheets/systemStyleSheet.css" rel="stylesheet" />
     <link href="../../styleSheets/mainStyleSheet.css" rel="stylesheet" />
     <script src="../../js/ag-grid-community.min.js"></script>
-    <script src="../../js/uniqTasks-ag-grid.js"></script>
     <script src="../../js/jquery.min.js"></script>
     <script src="../../js/xlsx.full.min.js"></script>
     <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
     <script src="../../js/shared.js"></script>
+    <script src="../../js/languages.js"></script>
 
     <script>
-        var students = ""
-        var uniqTasks = ""
-        var products = ""
-        var tasks = ""
         var systemConfig = ""
         var excelFiles = getExcelFiles();
-        var fileName
+        var tableName
         var searchVal = ""
 
         function onLoad() {
@@ -41,30 +37,25 @@
             const hasParents = document.getElementById('hasParents');
             const hasBuy = document.getElementById('hasBuy');
             const uploadProductsWrapper = document.getElementById('uploadProductsWrapper');
-            const uploadProducts = document.getElementById('uploadProducts');
-            const uploadParentsWrapper = document.getElementById('uploadParentsWrapper');
-            const uploadParents = document.getElementById('uploadParents');
             const uploadBackgroundWrapper = document.getElementById('uploadBackgroundWrapper');
             const uploadBackground = document.getElementById('uploadBackground');
             const uploadTestsWrapper = document.getElementById('uploadTestsWrapper');
-            const uploadTests = document.getElementById('uploadTests');
             const uploadPollsWrapper = document.getElementById('uploadPollsWrapper');
-            const uploadPolls = document.getElementById('uploadPolls');
+            const uploadQuestionsWrapper = document.getElementById('uploadQuestionsWrapper');
 
-            fileName = 'systemConfig'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                if (data == 0) {
-                    systemConfig = getDefaultConfig()
-                }
-                else {
-                    systemConfig = JSON.parse(data)
-                }
+            fillLanguageOptions();
+
+            tableName = 'systemConfig'
+            window.expose.sendSystem("sendReadSystem", tableName);
+            window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {               
+                systemConfig = data
                 document.getElementById("background").style.backgroundImage = getBackground("1", "1");
 
                 Object.entries(systemConfig).forEach(x => {
-                    if (x[0] != 'buy')
-                        document.getElementById(x[0]).value = x[1]
+                    const element = document.getElementById(x[0]);
+                    if (element) {
+                        element.value = x[1];
+                    }
                 })
                 const changeEvent = new Event('change');
                 device.dispatchEvent(changeEvent);
@@ -74,40 +65,6 @@
                 color.dispatchEvent(changeEvent);
                 textColor.dispatchEvent(changeEvent);
             })
-
-            fileName = 'students'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                if (data != 0) {
-                    students = JSON.parse(data);
-                }
-            })
-
-            fileName = 'uniqTasks'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                if (data != 0) {
-                    uniqTasks = JSON.parse(data)
-                }
-            })
-
-            fileName = 'products'
-            window.expose.SendExcel("sendReadExcel", fileName);
-            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-                if (data != 0) {
-                    products = JSON.parse(data)
-                }
-            })
-
-            hasParents.addEventListener('change', function () {
-                const selectedOption = hasParents.value;
-                if (selectedOption == '1') {
-                    uploadParentsWrapper.style.display = "unset";
-                }
-                else {
-                    uploadParentsWrapper.style.display = "none";
-                }
-            });
 
             hasTests.addEventListener('change', function () {
                 const selectedOption = hasTests.value;
@@ -154,6 +111,7 @@
                     hasParents.value = "0";
                     hasParents.dispatchEvent(changeEvent);
                 }
+                uploadQuestionsWrapper.style.display = (selectedOption == '5') ? "unset" : "none";
             });
 
             color.addEventListener('change', function () {
@@ -166,32 +124,37 @@
 
             uploadBackground.addEventListener('change', function (event) {
                 const file = event.target.files[0];
-                if (file && file.type === 'image/png') {
+                if (file && file.type.startsWith('image/')) {
                     const reader = new FileReader();
                     reader.onload = function (e) {
-                        const data = e.target.result;
-                        window.expose.send("sendUploadBackground", data);
-                        window.expose.receive("recieveUploadBackground", (data) => {
-                            location.reload()
+                        window.expose.send("sendUploadBackground", { mimeType: file.type, data: e.target.result });
+                        window.expose.receive("recieveUploadBackground", (saved) => {
+                            if (saved) {
+                                location.reload()
+                            } else {
+                                showMessage("שמירת הרקע נכשלה");
+                            }
                         });
                     };
                     reader.readAsArrayBuffer(file);
                 } else {
-                    alert("אנא בחר קובץ PNG.");
+                    showMessage("אנא בחר קובץ תמונה.");
                 }
             });
         }
 
         document.addEventListener("keypress", function (e) {
             if (e.key === "Enter") {
-                if (searchVal.length > 0) {
-                    if (searchVal == '011429519')
-                        login("user")
-                    else if (searchVal == '999999999')
-                        login("manage")
-                    else if (searchVal == '207594581')
-                        login('../parentsMeeting/user')
-                }
+                // בלי האיפוס הזה תו בודד שנקלט קודם משבש כל סריקה הבאה, עד טעינת הדף מחדש
+                const scanned = searchVal;
+                searchVal = "";
+
+                if (scanned == '011429519')
+                    login("user")
+                else if (scanned == '999999999')
+                    login("manage")
+                else if (scanned == '207594581')
+                    login('../parentsMeeting/user')
             } else {
                 searchVal += e.key;
             }
@@ -206,7 +169,7 @@
             return "";
         }
 
-        function handleFileSelect(event) {
+        function insertExcelToDB(event) {
             var file = event.target.files[0];
             var reader = new FileReader();
             reader.onload = function (e) {
@@ -215,112 +178,81 @@
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
                 const name = checkFileName(file.name)
-                let json_object;
-                if (name == "tests") {
-                    json_object = convertTestToJSON(XLSX.utils.sheet_to_json(sheet));
-                }
-                else {
-                    json_object = JSON.stringify(XLSX.utils.sheet_to_json(sheet));
-                }
+                const json_object = JSON.stringify(XLSX.utils.sheet_to_json(sheet));
                 if (name != "") {
-                    fileName = name;
-                    window.expose.SendExcel("sendWriteExcel", [fileName, json_object]);
-                    window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                        location.reload()
+                    tableName = name;
+                    window.expose.sendDbData("sendInsertExcelToDB", [tableName, json_object]);
+                    window.expose.receiveDbData("receiveInsertExcelToDB" + tableName, (data) => {
+                        if (!data) {
+                            alert("העלאת הקובץ נכשלה");
+                            return;
+                        }
+                        location.reload();
                     });
                 }
             };
             reader.readAsArrayBuffer(file);
         };
 
-        function convertTestToJSON(rows) {
-            const tests = {};
 
-            rows.forEach((row) => {
-                const { code, question, answer1, answer2, answer3, correct } = row;
-
-                // אם המבחן עם ה-ID הזה לא קיים, צור אותו
-                if (!tests[code]) {
-                    tests[code] = {
-                        id: code,
-                        questions: []
-                    };
-                }
-
-                // הוספת שאלה למבחן
-                tests[code].questions.push({
-                    question: question,
-                    answers: [answer1, answer2, answer3],
-                    correctIndex: correct - 1 // המרת תשובה נכונה לאינדקס
-                });
+        // הרשימה נבנית מ-languages.js, כך ששפה שנוספת שם מופיעה כאן לבד
+        function fillLanguageOptions() {
+            const select = document.getElementById("language");
+            Object.entries(LANGUAGES).forEach(([code, name]) => {
+                const option = document.createElement("option");
+                option.value = code;
+                option.textContent = name;
+                select.appendChild(option);
             });
-
-            // החזרת המבחנים כמערך
-            return JSON.stringify(Object.values(tests));
         }
 
-        function resetExcel() {
-            if (systemConfig.device == 1 || systemConfig.device == 2 || systemConfig.device == 4) {
-                if (students.length > 0 && uniqTasks.length > 0) {
-                    for (var i = 0; i < students.length; i++) {
-                        students[i].points = 0
-                        students[i].tasksNumber = ','
-                        students[i].tasks = ','
-                    }
-                    fileName = "students"
-                    window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(students)]);
-                    window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                        if (systemConfig.type == 1) {
-                            for (var i = 0; i < uniqTasks.length; i++) {
-                                uniqTasks[i].used = 0
-                            }
-                            fileName = "uniqTasks"
-                            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(uniqTasks)]);
-                            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                                // alert("!הקבצים אופסו בהצלחה")
-                                location.reload()
-                            });
-                        }
-                        else {
-                            location.reload()
-                        }
-
-                    });
-                }
-            }
-            else {
-                for (var i = 0; i < products.length; i++) {
-                    products[i].used = 0
-                }
-                fileName = "products"
-                window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(products)]);
-                window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                    // alert("!הקבצים אופסו בהצלחה")
-                    location.reload()
-                });
-            }
+        // alert חוסם את תהליך הרנדור ב-Electron, ואז הדף מפסיק להגיב להקשות
+        function showMessage(message) {
+            document.getElementById("messageModalBody").innerHTML = message;
+            $('#messageModal').modal('show');
         }
 
-        function update() {
+        function askResetDatabase() {
+            $('#resetModal').modal('show');
+        }
+
+        function resetDatabase() {
+            window.expose.sendDbData("sendResetDatabase", {});
+            window.expose.receiveDbData("receiveResetDatabase", (data) => {
+                // alert חוסם את תהליך הרנדור ב-Electron, ואז הדף מפסיק להגיב להקשות
+                showResetResult(data
+                    ? "האיפוס בוצע. הנקודות והרכישות נמחקו, הרשימות שהועלו נשמרו."
+                    : "שגיאה באיפוס מסד הנתונים.");
+            });
+        }
+
+        function showResetResult(message) {
+            document.getElementById("resetModalBody").innerHTML = message;
+            document.getElementById("resetModalFooter").innerHTML =
+                '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">סגור</button>';
+        }
+
+        function updateSystem() {
             Object.entries(systemConfig).forEach(x => {
                 var key = x[0]
-                if (key != 'buy')
-                    systemConfig[key] = document.getElementById(x[0]).value;
-                else {
-                    systemConfig[key] = 0;
-                }
+                    const element = document.getElementById(x[0]);
+                    if (element) {
+                        systemConfig[key] = element.value;
+                    }
             })
 
-            fileName = "systemConfig"
-            window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(systemConfig)]);
-            window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
-                location.reload()
+            tableName = "systemConfig"
+            window.expose.sendSystem("sendUpdateSystem", JSON.stringify(systemConfig));
+            window.expose.receiveSystem("receiveUpdateSystem" , (data) => {
+                if (data === true) {
+                    location.reload()
+                }
+                else {
+                    alert("שמירת ההגדרות נכשלה");
+                }
             });
         }
 
-        function exportUniqTasks() {
-            ExportUniqTasks()
-        }
     </script>
 
     <div class="background" id="background">
@@ -341,6 +273,7 @@
                             <option value="2">כרטיס מגנטי</option>
                             <option value="3">כרטיס גירוד</option>
                             <option value="4">צ'יפים</option>
+                            <option value="5">הפעלה יומית</option>
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -354,13 +287,14 @@
                             <option value="5">עיצוב Gammick </option>
                         </select>
                     </div>
+                    <div class="col-md-1">
+                        <label for="language" class="form-label">שפה</label>
+                        <select class="form-control" id="language"></select>
+                    </div>
                     <div class="col-md-2" id="textColorWrapper" >
                         <label for="textColor" class="form-label"> צבע כיתוב</label>
-                        <select class="form-control" id="textColor">
-                            <option value="0">לבן</option>
-                            <option value="1">שחור</option>
-                            <option value="2">ירוק</option>
-                        </select>
+                        <input type="color" class="form-control form-control-color" id="textColor"
+                            value="#ffffff" style="width:100%; height:38px;">
                     </div>
                     <div class="col-md-2" id="typeWrapper" style="display: none;">
                         <label for="type" class="form-label">סוג משחק</label>
@@ -414,7 +348,7 @@
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">.</label>
-                        <button type="submit" onclick="update()" class="form-control">עדכן</button>
+                        <button type="submit" onclick="updateSystem()" class="form-control">עדכן</button>
                     </div>
                 </div>
                 <div class="row">
@@ -423,8 +357,8 @@
                         <input type=file class="form-control" id="uploadStudents" name="files[]">
                     </div>
                     <div class="col-md-2">
-                        <label for="uploaduniqTasks" class="form-label">משימות </label>
-                        <input type=file class="form-control" id="uploaduniqTasks" name="files[]">
+                        <label for="uploadTasks" class="form-label">משימות </label>
+                        <input type=file class="form-control" id="uploadTasks" name="files[]">
                     </div>
                     <div class="col-md-2" id="uploadProductsWrapper" style="display: none;">
                         <label for="uploadProducts" class="form-label">מתנות </label>
@@ -432,11 +366,7 @@
                     </div>
                     <div class="col-md-2" id="uploadBackgroundWrapper" style="display: none;">
                         <label for="uploadBackground" class="form-label">בחר רקע אישי</label>
-                        <input type="file" class="form-control" id="uploadBackground" accept="image/png">
-                    </div>
-                    <div class="col-md-2" id="uploadParentsWrapper" style="display: none;">
-                        <label for="uploadParents" class="form-label">הורים </label>
-                        <input type=file class="form-control" id="uploadParents" name="files[]">
+                        <input type="file" class="form-control" id="uploadBackground" accept="image/*">
                     </div>
                     <div class="col-md-2" id="uploadTestsWrapper" style="display: none;">
                         <label for="uploadTest" class="form-label">מבחנים</label>
@@ -446,15 +376,15 @@
                         <label for="uploadPolls" class="form-label">סקרים</label>
                         <input type="file" class="form-control" id="uploadPolls" accept="image/png">
                     </div>
+                    <div class="col-md-2" id="uploadQuestionsWrapper" style="display: none;">
+                        <label for="uploadQuestions" class="form-label">שאלות</label>
+                        <input type=file class="form-control" id="uploadQuestions" name="files[]">
+                    </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-1">
-                        <label class="form-label">.</label>
-                        <button onclick="exportUniqTasks()" class="form-control"> משימות</button>
-                    </div>
                     <div class="col-md-2">
                         <label class="form-label">.</label>
-                        <button id="reset" onclick="resetExcel()" class="form-control"> איפוס </button>
+                        <button type="button" id="reset" onclick="askResetDatabase()" class="form-control"> איפוס </button>
                     </div>
                 </div>
             </form>
@@ -468,12 +398,47 @@
         </div>
     </div>
 
+    <div class="modal fade" id="messageModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">הודעת מערכת</h5>
+                </div>
+                <div class="modal-body" id="messageModalBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">סגור</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="resetModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">איפוס נתוני השימוש</h5>
+                </div>
+                <div class="modal-body" id="resetModalBody">
+                    <div><b>יימחק:</b> כל הנקודות שנצברו, כל תיקופי המשימות, כל רכישות המתנות וכל הזכיות בצ'ופרים.</div>
+                    <br>
+                    <div><b>יישמר:</b> רשימת התלמידות, המשימות, המתנות, הצ'ופרים והמבחנים שהעלית.</div>
+                    <br>
+                    <div>לא ניתן לבטל את הפעולה. להמשיך?</div>
+                </div>
+                <div class="modal-footer" id="resetModalFooter">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ביטול</button>
+                    <button type="button" class="btn btn-danger" onclick="resetDatabase()">כן, לאפס</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        document.getElementById('uploadStudents').addEventListener('change', handleFileSelect, false);
-        document.getElementById('uploaduniqTasks').addEventListener('change', handleFileSelect, false);
-        document.getElementById('uploadProducts').addEventListener('change', handleFileSelect, false);
-        document.getElementById('uploadParents').addEventListener('change', handleFileSelect, false);
-        document.getElementById('uploadTest').addEventListener('change', handleFileSelect, false);
+        document.getElementById('uploadStudents').addEventListener('change', insertExcelToDB, false);
+        document.getElementById('uploadTasks').addEventListener('change', insertExcelToDB, false);
+        document.getElementById('uploadProducts').addEventListener('change', insertExcelToDB, false);
+        document.getElementById('uploadTest').addEventListener('change', insertExcelToDB, false);
+        document.getElementById('uploadQuestions').addEventListener('change', insertExcelToDB, false);
 
     </script>
 </body>
