@@ -10,6 +10,24 @@
     <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
     <link href="../../styleSheets/manageStyleSheet.css" rel="stylesheet" />
     <link href="../../styleSheets/mainStyleSheet.css" rel="stylesheet" />
+    <style>
+        .default-task-pick {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.35rem 0;
+            font-size: 0.95rem;
+        }
+
+        .default-task-pick label {
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .default-task-pick select {
+            max-width: 14rem;
+        }
+    </style>
     <script src="../../js/ag-grid-community.min.js"></script>
     <script src="../../js/jquery.min.js"></script>
     <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
@@ -62,6 +80,34 @@
                     new agGrid.Grid(gridDiv, gridOptions);
                 }
             });
+
+            // במצב אישי אין טבלת משימות, רק בחירה של משימת ברירת מחדל
+            window.expose.receiveDbData("receiveSetDefaultTask", fillDefaultTaskSelect);
+            window.expose.sendDbData("sendGetDataByTable", 'tasks');
+            window.expose.receiveDbData("receiveGetDataByTable" + 'tasks', fillDefaultTaskSelect);
+        }
+
+        function fillDefaultTaskSelect(tasks) {
+            if (!Array.isArray(tasks)) {
+                return;
+            }
+            const select = document.getElementById("defaultTask");
+            const current = tasks.find(task => Number(task.isDefault) === 1);
+
+            select.innerHTML = '<option value="0">ללא</option>';
+            // טריוויה דורשת מסך שאלות ולכן לא יכולה להיות משימת ברירת מחדל
+            tasks.filter(task => Number(task.type) !== 2).forEach(task => {
+                const option = document.createElement('option');
+                option.value = task.id;
+                option.textContent = task.name;
+                select.appendChild(option);
+            });
+            select.value = current ? String(current.id) : "0";
+        }
+
+        function changeDefaultTask() {
+            const id = Number(document.getElementById("defaultTask").value);
+            window.expose.sendDbData("sendSetDefaultTask", id);
         }
 
         document.addEventListener("keypress", function (e) {
@@ -118,6 +164,11 @@
         <div class="text">
             <div id="line1">ברוכים הבאים הבאה לממשק ניהול</div>
             <div id="line2">כאן אפשר לצפות, לערוך ולהוריד את הנתונים</div>
+            <div class="default-task-pick">
+                <label for="defaultTask">משימת ברירת מחדל:</label>
+                <select id="defaultTask" class="form-select form-select-sm"
+                    onchange="changeDefaultTask()"></select>
+            </div>
             <img style="margin-left: 10px;" onclick="exportToExcel('ניקוד תלמידות')"
                 src="../../resources/barcode/download-simple-light.svg" />
             <img style="margin-left: 10px;" onclick="addStudent()" src="../../resources/barcode/plus-light.svg" />

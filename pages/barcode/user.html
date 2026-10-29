@@ -27,6 +27,7 @@
     var tableName
     var prizeWon = null;
     var printStage = "";
+    var defaultTask = null;
 
     // משך הצגת הפופאפ כשאין מדפסת, מתי נשלח השובר, וכמה נשאר אחרי שיצא
     const PRIZE_DISPLAY_MS = 4500;
@@ -60,6 +61,17 @@
           document.getElementById("position").style.display = "none";
         }
         registerPrintHandler();
+
+        // משימת ברירת מחדל שייכת לתיקוף בלבד; במצב קנייה הזרימה לא משתנה
+        if (systemConfig.buy != 1) {
+          window.expose.receiveDbData("receiveGetDefaultTask", (task) => {
+            if (task) {
+              defaultTask = task;
+              updateLines(t('barcodeHello'), t('validateCard'), t('chosenTask', { name: task.name }))
+            }
+          });
+          window.expose.sendDbData("sendGetDefaultTask");
+        }
       })
     }
 
@@ -99,6 +111,11 @@
           return;
         }
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step)
+
+        if (defaultTask) {
+          saveDefaultTask();
+          return;
+        }
 
         updateLines(
           t('barcodeHelloStudent', { name: currentStudent.name }),
@@ -154,6 +171,13 @@
           checkDuplicateThenSave(saveStudentData, TASK_MESSAGES);
         }
       });
+    }
+
+    // משימת ברירת מחדל משותפת לכל התלמידים, ולכן נבדקת לפי multiple שלה ולא כקוד חד-פעמי
+    function saveDefaultTask() {
+      step = Steps.step3;
+      currentResult = defaultTask;
+      checkDuplicateThenSave(saveStudentData, TASK_MESSAGES);
     }
 
     // hasStudentDoneSelected בודק לבד ב-studentsProducts כש-buy == 1
