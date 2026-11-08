@@ -32,6 +32,16 @@
   },
   "build": {
     "npmRebuild": false,
+    "afterPack": "build/afterPack.js",
+    "files": [
+      "**/*",
+      "!personalBackground.png",
+      "!**/*.map",
+      "!node_modules/sqlite3/deps/**",
+      "!node_modules/sqlite3/src/**",
+      "!node_modules/bootstrap/scss/**",
+      "!node_modules/bootstrap/js/**"
+    ],
     "extraResources": [
       "./extraResources/**",
       {
