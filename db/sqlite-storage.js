@@ -299,6 +299,13 @@ async function insertExcelToDB(tableName, payload) {
 
 async function readData(tableName) {
   await waitDB();
+  if (tableName === 'students') {
+    return all(
+      `SELECT students.*, CASE WHEN fingerprints.id IS NULL THEN 0 ELSE 1 END AS hasFingerprint
+         FROM students
+         LEFT JOIN fingerprints ON fingerprints.tz = students.tz;`
+    );
+  }
   const rows = await all(`SELECT * FROM ${quoteIdentifier(tableName)};`);
   return rows;
 }
@@ -356,6 +363,23 @@ async function updateStudent(id, field, value) {
     correctValue = normalizeCodeValue(value);
   } else {
     correctValue = value;
+  }
+
+  if (field === 'tz') {
+    const student = await get('SELECT tz FROM students WHERE id = ? LIMIT 1;', [id]);
+    const newTz = Number(value);
+    await run('BEGIN TRANSACTION;');
+    try {
+      await run('UPDATE students SET tz = ? WHERE id = ?;', [value, id]);
+      if (student && Number(student.tz) !== newTz) {
+        await run('UPDATE OR REPLACE fingerprints SET tz = ? WHERE tz = ?;', [newTz, Number(student.tz)]);
+      }
+      await run('COMMIT;');
+      return true;
+    } catch (error) {
+      await run('ROLLBACK;');
+      throw error;
+    }
   }
 
   try {
@@ -726,6 +750,47 @@ async function drawPrize(studentId) {
   return prize;
 }
 
+
+
+async function readFingerprints() {
+  await waitDB();
+  return all(
+    `SELECT fingerprints.id, fingerprints.tz, fingerprints.template, MIN(students.name) AS name
+       FROM fingerprints
+       JOIN students ON students.tz = fingerprints.tz
+      GROUP BY fingerprints.id;`
+  );
+}
+
+async function readEnrollStudents() {
+  await waitDB();
+  return all(
+    `SELECT students.id, students.tz, students.name, students.grade,
+            CASE WHEN fingerprints.id IS NULL THEN 0 ELSE 1 END AS enrolled
+       FROM students
+       LEFT JOIN fingerprints ON fingerprints.tz = students.tz;`
+  );
+}
+
+async function saveFingerprint(tz, template) {
+  await waitDB();
+  await run(
+    `INSERT INTO fingerprints (tz, template, createDateTime)
+     VALUES (?, ?, DATETIME('now', 'localtime'))
+     ON CONFLICT(tz) DO UPDATE SET template = excluded.template,
+                                   createDateTime = excluded.createDateTime;`,
+    [Number(tz), template]
+  );
+  const row = await get('SELECT id FROM fingerprints WHERE tz = ? LIMIT 1;', [Number(tz)]);
+  return row ? row.id : null;
+}
+
+async function deleteFingerprint(tz) {
+  await waitDB();
+  await run('DELETE FROM fingerprints WHERE tz = ?;', [Number(tz)]);
+  return true;
+}
+
 //------------------ statistics ----------------------//
 
 async function getStatistics() {
@@ -834,6 +899,10 @@ module.exports = {
   readPrizeWinners,
   updatePrizeWinner,
   drawPrize,
+  readFingerprints,
+  readEnrollStudents,
+  saveFingerprint,
+  deleteFingerprint,
   resetDatabase,
   DB_FLAG_INCONSISTENT_ERROR_CODE
 };

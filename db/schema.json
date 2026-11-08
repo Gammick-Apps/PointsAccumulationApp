@@ -116,6 +116,16 @@
       "foreignKeys": []
     },
     {
+      "name": "fingerprints",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
+        { "name": "tz", "type": "INTEGER", "unique": true, "nullable": false },
+        { "name": "template", "type": "TEXT", "nullable": false },
+        { "name": "createDateTime", "type": "DATETIME", "nullable": false, "default": "(datetime('now'))" }
+      ],
+      "foreignKeys": []
+    },
+    {
       "name": "prizes",
       "columns": [
         { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },

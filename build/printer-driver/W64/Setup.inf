@@ -1,0 +1,101 @@
+; Sample combination printer INF for VISTA .
+; 
+
+[Version]
+Signature="$Windows NT$"
+Provider=%SNBC%
+LayoutFile=layout.inf
+ClassGUID={4D36E979-E325-11CE-BFC1-08002BE10318}
+Class=Printer
+DriverVer=03/06/2008,1.1.0
+
+[ClassInstall]
+AddReg=ClassAddReg
+DelReg=ClassDelReg
+
+[ClassDelReg]
+HKLM,"System\CurrentControlSet\Services\Class\Printer","NoUseClass"
+
+[ClassAddReg]
+HKR,,,,%CLASSNAME%
+HKR,,Installer,,MSPRINT.DLL
+HKR,,Icon,,-4
+HKR,,NoDisplayClass,,1
+
+;
+; Manufacturer Sections
+;
+
+[Manufacturer]
+"SNBC"=SNBC, NTamd64
+
+;
+; Model Sections 
+;
+
+[SNBC.NTamd64]
+"BTP-R880NP(U)1" = R880NPxp.NTamd64, USBPRINT\"SNBC_BTP-R880NP(U)1B4D7", "SNBC_BTP-R880NP(U)1B4D7"
+"BTP-R880NP(U)2" = R880NPxp.NTamd64, USBPRINT\"SNBC_BTP-R880NP(U)2B597", "SNBC_BTP-R880NP(U)2B597"
+"BTP-R880NP(U)3" = R880NPxp.NTamd64, USBPRINT\"SNBC_BTP-R880NP(U)37556", "SNBC_BTP-R880NP(U)37556"
+"BTP-R880NP(U)4" = R880NPxp.NTamd64, USBPRINT\"SNBC_BTP-R880NP(U)4B717", "SNBC_BTP-R880NP(U)4B717"
+
+"BTP-R880NPII(U)1" = R880NPxp.NTamd64, USBPRINT\"SNBC_BTP-R880NPII(U)5318", "SNBC_BTP-R880NP(U)5318"
+"BTP-R880NPII(U)2" = R880NPxp.NTamd64, USBPRINT\"SNBC_BTP-R880NPII(U)5258", "SNBC_BTP-R880NP(U)5258"
+"BTP-R880NPII(U)3" = R880NPxp.NTamd64, USBPRINT\"SNBC_BTP-R880NPII(U)9299", "SNBC_BTP-R880NP(U)9299"
+"BTP-R880NPII(U)4" = R880NPxp.NTamd64, USBPRINT\"SNBC_BTP-R880NPII(U)50D8", "SNBC_BTP-R880NP(U)50D8"
+
+
+;
+; Installer Sections
+;
+; 
+
+[R880NPxp.NTamd64]
+DriverVer=06/09/2010,1.1.0
+CopyFiles=@R880NPxp.dll,@R880NPxp.GPD,@R880NPUI.INI
+CopyFiles=R880NPUI,CONTROLFONT
+CopyFiles=LANGUAGEINI
+DataFile=R880NPxp.GPD
+DataSection=UNIDRV_DATA
+Include=NTPRINT.INF
+Needs=UNIDRV.OEM,TTFSUB.OEM,UNIDRV_DATA
+
+; Copy Sections
+
+[R880NPUI]
+R880NPUNI.DLL
+R880NPUI.DLL
+
+[CONTROLFONT]
+R880NPCONTROL.dat
+
+[LANGUAGEINI]
+LANG_R880NP.dat
+CHF_R880NP.res
+CHN_R880NP.res
+ENG_R880NP.res
+
+[DestinationDirs]
+DefaultDestDir=66000
+
+
+[SourceDisksNames]
+1 = %Floppy%
+
+[SourceDisksFiles]
+R880NPxp.dll    = 1
+R880NPxp.GPD    = 1
+R880NPUNI.DLL = 1
+R880NPUI.DLL  = 1
+
+LANGUAGE_R880NP.dat = 1
+CHF_R880NP.res = 1
+CHN_R880NP.res = 1
+ENG_R880NP.res = 1
+;ldaNLM64.dll  = 1
+
+
+[Strings]
+SNBC="Shandong New Beiyang Information Technology Co., Ltd"
+Floppy="BY Printer Disk"
+CLASSNAME="Printer"

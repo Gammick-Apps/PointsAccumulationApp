@@ -33,7 +33,13 @@
   "build": {
     "npmRebuild": false,
     "extraResources": [
-      "./extraResources/**"
-    ]
+      "./extraResources/**",
+      { "from": "build/zk-driver-setup.exe", "to": "zk-driver-setup.exe" },
+      { "from": "build/install-drivers.cmd", "to": "install-drivers.cmd" },
+      { "from": "build/printer-driver", "to": "printer-driver" }
+    ],
+    "nsis": {
+      "include": "build/installer.nsh"
+    }
   }
 }

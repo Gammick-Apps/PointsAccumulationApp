@@ -18,6 +18,8 @@
     <div class="background" id="background">
         <a href="#" class="glass-card graphs-open-btn" id="graphsBtn"
             onclick="login('../main/graphs'); return false;" data-t="graphsBtn">גרפים</a>
+        <a href="#" class="glass-card fingerprint-open-btn" id="fingerprintBtn" style="display: none;"
+            onclick="login('../fingerprint/enroll'); return false;" data-t="fingerprintEnrollBtn">רישום טביעות אצבע</a>
         <div class="text">
             <div id="line1"></div>
             <div id="line2"></div>
@@ -115,6 +117,9 @@
                     document.getElementById("position").style.display = "none";
                 }
                 registerPrintHandler();
+                if (systemConfig.device == "6") {
+                    startFingerprintMode();
+                }
                 currentTable = systemConfig.buy ? 'products' : 'tasks';
 
                 // משימת ברירת מחדל שייכת לתיקוף בלבד; במצב קנייה הזרימה לא משתנה
@@ -165,30 +170,52 @@
             document.activeElement.blur();
             if (e.key === "Enter") {
                 if (buffer.length > 0) {
-                    searchVal = buffer;
+                    const code = buffer;
                     buffer = "";
                     // קודי הניהול נבדקים לפני השלבים, כי עם משימת ברירת מחדל המסך עולה ישר בשלב 2
-                    if (searchVal == '999999999') {
+                    if (code == '999999999') {
                         login('../main/manage');
                         return;
                     }
-                    if (searchVal == '011429519') {
+                    if (code == '011429519') {
                         login('../main/system');
                         return;
                     }
-
-                    if (step == Steps.step1) {
-                        showAlert(t('chooseFirst'));
-                        return;
-                    }
-                    if (step == Steps.step2) {
-                        searchStudent();
-                    }
+                    identifyStudent(code);
                 }
             } else {
                 buffer += e.key;
             }
         });
+
+        function identifyStudent(code) {
+            if (step == Steps.step1) {
+                showAlert(t('chooseFirst'));
+                return;
+            }
+            if (step == Steps.step2) {
+                searchVal = code;
+                searchStudent();
+            }
+        }
+
+        function startFingerprintMode() {
+            document.getElementById("fingerprintBtn").style.display = "";
+            window.expose.receive("receiveFingerprintEvent", (ev) => {
+                if (!ev || isModalOpen || step == Steps.step3) return;
+                if (ev.type === "match") {
+                    identifyStudent(ev.code);
+                } else if (ev.type === "nomatch") {
+                    if (step == Steps.step1) {
+                        showAlert(t('chooseFirst'));
+                        return;
+                    }
+                    step = Steps.step3;
+                    showAlert(t('fingerprintNotFound'));
+                }
+            });
+            window.expose.send("sendFingerprintStart", "identify");
+        }
 
         function createCards() {
             const cardContainer = document.getElementById("cards");
@@ -532,6 +559,7 @@
 
         function hideGraphsButton() {
             document.getElementById("graphsBtn").style.display = "none";
+            document.getElementById("fingerprintBtn").style.display = "none";
         }
 
         function updateLines(line1Text, line2Text, line3Text = "") {
@@ -548,6 +576,9 @@
             }
             if (systemConfig.device == "4") {
                 return t('readerChip');
+            }
+            if (systemConfig.device == "6") {
+                return t('readerFingerprint');
             }
             return t('readerBarcode');
         }

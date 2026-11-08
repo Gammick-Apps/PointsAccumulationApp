@@ -4,7 +4,9 @@ const path = require('path')
 let mainWindow
 const { initDatabase, waitDB, readData, readSystem, updateSystem, saveBackground, readBackground, closeDatabase, insertExcelToDB,
   addStudent, updateStudent, addTask, updateTask, addProduct, updateProduct, getStudentById, getTaskByCode,
-  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, setDefaultTask, getDefaultTask, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, getStudentParentByCode, updateStudentText, getStatistics, addPrize, updatePrize, deletePrize, readPrizes, readPrizeWinners, updatePrizeWinner, drawPrize, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
+  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, setDefaultTask, getDefaultTask, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, getStudentParentByCode, updateStudentText, getStatistics, addPrize, updatePrize, deletePrize, readPrizes, readPrizeWinners, updatePrizeWinner, drawPrize,
+  readFingerprints, readEnrollStudents, saveFingerprint, deleteFingerprint, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
+const { createFingerprint } = require('./fingerprint');
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -58,6 +60,7 @@ ipcMain.on("sendInsertExcelToDB", async (event, args) => {
     try {
       JSON.parse(args[1]);
       const data = await insertExcelToDB(args[0], args[1]);
+      if (args[0] === 'students') await reloadFingerprints();
       mainWindow.webContents.send("receiveInsertExcelToDB" + args[0], data);
     } catch (e) {
       console.error("Invalid JSON data:", e);
@@ -117,6 +120,7 @@ ipcMain.on("sendUpdateStudent", async (event, args) => {
   try {
     const payload = JSON.parse(args);
     const data = await updateStudent(payload.id, payload.field, payload.value);
+    if (payload.field === 'tz') await reloadFingerprints();
     mainWindow.webContents.send("receiveUpdateStudent", data);
   } catch (error) {
     console.error(error);
@@ -399,6 +403,173 @@ ipcMain.on("sendDrawPrize", async (event, args) => {
   }
 });
 
+
+let fingerprint = null;
+let fpLoaded = null;
+const fpByFid = new Map();
+const fpByTz = new Map();
+let fpEnrolling = null;
+let fpSuspended = null;
+
+function sendFp(ev) {
+  if (mainWindow && mainWindow.webContents) {
+    mainWindow.webContents.send('receiveFingerprintEvent', ev);
+  }
+}
+
+function fp() {
+  if (!fingerprint) {
+    fingerprint = createFingerprint({ dir: app.getPath('userData'), onEvent: onFingerprintEvent });
+  }
+  return fingerprint;
+}
+
+function toTz(value) {
+  const tz = Number(String(value == null ? '' : value).trim());
+  return Number.isInteger(tz) && tz > 0 ? tz : null;
+}
+
+function rememberFingerprint(fid, tz, name, template) {
+  fpByFid.set(fid, { tz, name: name || '', template });
+  fpByTz.set(tz, fid);
+  fp().add(fid, template);
+}
+
+async function loadFingerprints() {
+  const rows = await readFingerprints();
+  for (const row of rows) {
+    const tz = toTz(row.tz);
+    if (tz) rememberFingerprint(row.id, tz, row.name, row.template);
+  }
+}
+
+async function startFingerprint() {
+  const reader = fp();
+  if (!fpLoaded) {
+    fpLoaded = loadFingerprints().catch((error) => {
+      console.error('Failed to load fingerprints.', error);
+      fpLoaded = null;
+    });
+  }
+  await fpLoaded;
+  return reader.start();
+}
+
+async function reloadFingerprints() {
+  if (!fingerprint || !fpLoaded) return;
+  cancelEnroll();
+  for (const fid of fpByFid.keys()) fingerprint.remove(fid);
+  fpByFid.clear();
+  fpByTz.clear();
+  fpLoaded = null;
+  await startFingerprint();
+}
+
+function restoreSuspended() {
+  if (fpSuspended) {
+    fp().add(fpSuspended.fid, fpSuspended.template);
+    fpSuspended = null;
+  }
+}
+
+function cancelEnroll() {
+  if (fingerprint) fingerprint.cancel();
+  fpEnrolling = null;
+  restoreSuspended();
+}
+
+async function onFingerprintEvent(ev) {
+  switch (ev.type) {
+    case 'match': {
+      const owner = fpByFid.get(ev.fid);
+      sendFp(owner ? { type: 'match', code: String(owner.tz) } : { type: 'nomatch' });
+      return;
+    }
+    case 'enrollDuplicate': {
+      const owner = fpByFid.get(ev.fid);
+      sendFp({ type: 'enrollDuplicate', name: owner ? owner.name : '' });
+      return;
+    }
+    case 'enrolled': {
+      const tz = fpEnrolling;
+      fpEnrolling = null;
+      if (!tz) return;
+      try {
+        const fid = await saveFingerprint(tz, ev.template);
+        if (!fid) throw new Error('fingerprint row not found after save');
+        const oldFid = fpByTz.get(tz);
+        if (oldFid && oldFid !== fid) {
+          fp().remove(oldFid);
+          fpByFid.delete(oldFid);
+        }
+        fpSuspended = null;
+        const student = await getStudentById(tz);
+        rememberFingerprint(fid, tz, student ? student.name : '', ev.template);
+        sendFp({ type: 'enrolled', tz });
+      } catch (error) {
+        console.error('Failed to save fingerprint.', error);
+        restoreSuspended();
+        sendFp({ type: 'enrollSaveFailed' });
+      }
+      return;
+    }
+    default:
+      sendFp(ev);
+  }
+}
+
+ipcMain.on('sendFingerprintStart', async (event, mode) => {
+  if (mode !== 'enroll') cancelEnroll();
+  sendFp(await startFingerprint());
+});
+
+ipcMain.on('sendFingerprintEnrollStudents', async () => {
+  try {
+    mainWindow.webContents.send('receiveFingerprintEnrollStudents', await readEnrollStudents());
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send('receiveFingerprintEnrollStudents', null);
+  }
+});
+
+ipcMain.on('sendFingerprintEnroll', async (event, value) => {
+  const tz = toTz(value);
+  if (!tz) return;
+  await startFingerprint();
+  fp().cancel();
+  if (fpSuspended && fpSuspended.tz !== tz) restoreSuspended();
+  const fid = fpByTz.get(tz);
+  if (fid && !fpSuspended) {
+    fpSuspended = { tz, fid, template: fpByFid.get(fid).template };
+    fp().remove(fid);
+  }
+  fpEnrolling = tz;
+  fp().enroll();
+});
+
+ipcMain.on('sendFingerprintCancel', () => {
+  cancelEnroll();
+});
+
+ipcMain.on('sendFingerprintDelete', async (event, value) => {
+  const tz = toTz(value);
+  try {
+    cancelEnroll();
+    if (!tz) throw new Error('missing tz');
+    await deleteFingerprint(tz);
+    const fid = fpByTz.get(tz);
+    if (fid) {
+      fp().remove(fid);
+      fpByFid.delete(fid);
+      fpByTz.delete(tz);
+    }
+    sendFp({ type: 'deleted', tz });
+  } catch (error) {
+    console.error(error);
+    sendFp({ type: 'deleteFailed' });
+  }
+});
+
 // -------------- utils ---------------- //
 
 // הרקע האישי נשמר במסד: קובץ בתיקיית העבודה לא נשמר במחשב שהתוכנה מותקנת בו
@@ -540,6 +711,7 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  if (fingerprint) fingerprint.stop();
   try {
     closeDatabase();
   } catch (error) {

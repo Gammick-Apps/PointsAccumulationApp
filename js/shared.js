@@ -52,6 +52,7 @@ function getBackground(device, color, step = "") {
         };
         case "2":
         case "4":
+        case "6":
             {
                 switch (color) {
                     case "1":

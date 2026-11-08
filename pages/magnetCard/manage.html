@@ -34,8 +34,18 @@
             { headerName: "כיתה", field: "grade", editable: true },
             { headerName: "שם", field: "name", editable: true },
             { headerName: "תעודת זהות", field: "tz", editable: true },
-            { headerName: "קוד", field: "code", editable: true },
+            {
+                headerName: "קוד", field: "code",
+                editable: () => !isFingerprintDevice(),
+                cellRenderer: params => isFingerprintDevice()
+                    ? (params.data.hasFingerprint ? 'רשום' : 'לא רשום')
+                    : params.value
+            },
             { headerName: "נקודות", field: "points", editable: true }];
+
+        function isFingerprintDevice() {
+            return !!systemConfig && systemConfig.device == "6";
+        }
 
         const MULTIPLE_LABELS = getMultipleLabels();
 
