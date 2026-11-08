@@ -2,7 +2,7 @@
   "name": "accumulatingpoints",
   "productName": "צבירת נקודות",
   "description": "צבירת נקודות דיגיטלית",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -34,9 +34,18 @@
     "npmRebuild": false,
     "extraResources": [
       "./extraResources/**",
-      { "from": "build/zk-driver-setup.exe", "to": "zk-driver-setup.exe" },
-      { "from": "build/install-drivers.cmd", "to": "install-drivers.cmd" },
-      { "from": "build/printer-driver", "to": "printer-driver" }
+      {
+        "from": "build/zk-driver-setup.exe",
+        "to": "zk-driver-setup.exe"
+      },
+      {
+        "from": "build/install-drivers.cmd",
+        "to": "install-drivers.cmd"
+      },
+      {
+        "from": "build/printer-driver",
+        "to": "printer-driver"
+      }
     ],
     "nsis": {
       "include": "build/installer.nsh"
