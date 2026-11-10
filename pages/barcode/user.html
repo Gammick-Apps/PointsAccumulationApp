@@ -210,18 +210,29 @@
       });
     }
 
+    // משימה עם נקודות שליליות היא כרטיס הורדה; מותר שהיתרה תרד מתחת לאפס.
+    // חד-פעמיות נקבעת כמו בכל כרטיס, ב"הגבלת תיקוף" = 3
+    function isDeduction() {
+      return !!currentResult && Number(currentResult.points) < 0;
+    }
+
     async function saveStudentData() {
       window.expose.sendDbData("sendSaveStudentTask", { currentStudent, currentResult });
       window.expose.receiveDbData("receiveSaveStudentData", (points) => {
         if (points !== false) {
           document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
           currentStudent.points = points;
-          updateLines(t('taskDone', { name: currentResult.name }), t('pointsNow', { points: currentStudent.points }), t('takeReceipt'));
+          const firstLine = isDeduction()
+            ? currentResult.name
+            : t('taskDone', { name: currentResult.name });
+          updateLines(firstLine, t('pointsNow', { points: currentStudent.points }), t('takeReceipt'));
 
           if (systemConfig.hasPrint == 1) {
             setTimeout(function () {
               toPrint();
             }, 2000);
+          } else if (isDeduction()) {
+            reset(2000);
           } else {
             setTimeout(function () {
               runPrizeDraw(0);
@@ -285,7 +296,10 @@
     // מאזין אחד לשתי ההדפסות; מאזין נוסף היה נורה גם על הקבלה ומאפס באמצע
     function registerPrintHandler() {
       window.expose.receive("receivePrint", () => {
-        if (printStage === "receipt") {
+        // אחרי כרטיס הורדה אין הגרלת צ'ופר
+        if (printStage === "receipt" && isDeduction()) {
+          reset(1800);
+        } else if (printStage === "receipt") {
           runPrizeDraw(1800);
         } else {
           reset(PRIZE_AFTER_PRINT_MS);
