@@ -36,10 +36,10 @@
                     </div>
                 </div>
                 <div class="default-task-pick">
-                    <label for="defaultTask">משימת ברירת מחדל:</label>
+                    <label for="defaultTask">משימה אוטומטית:</label>
                     <select id="defaultTask" class="form-select form-select-sm" onchange="changeDefaultTask()"></select>
                 </div>
-                <div class="report-hint">סימון ✓ = המשימה מוצגת לתלמידות. "הצגה" מציגה משמאל רק את התיקופים של המשימה</div>
+                <div class="report-hint">משימה אוטומטית נרשמת לבת מיד כשהיא מזדהה. "מוצג" = המשימה מופיעה ברשימה במסך הבחירה. "חד-פעמית" = כרטיס שמתוקף פעם אחת בכל המוסד. "הצגה" מציגה משמאל רק את התיקופים של המשימה</div>
                 <div id="listGrid" class="ag-theme-alpine report-grid"></div>
             </div>
 
@@ -77,6 +77,7 @@
                 insertSend: 'sendInsertTask',
                 insertReceive: 'receiveInsertTask',
                 recordsKey: 'taskId',
+                withSingleUse: true,
                 onListData: fillDefaultTaskSelect,
                 recordsColumns: [
                     { headerName: "שם הבת", field: "studentName", flex: 2 },

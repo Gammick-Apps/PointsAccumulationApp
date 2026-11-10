@@ -382,12 +382,10 @@
                 window.expose.sendDbData("sendHasStudentDoneSelected", { currentStudent, currentResult });
                 window.expose.receiveDbData("receiveHasStudentDoneSelected", (alreadyDone) => {
                     if (alreadyDone) {
-                        const daily = systemConfig.buy == 1
-                            ? t('alreadyBoughtToday')
-                            : t('alreadyValidatedToday');
-                        showAlert(Number(currentResult.multiple) === 2
-                            ? daily
-                            : t('alreadyChosen'));
+                        const messages = systemConfig.buy == 1
+                            ? { ever: 'alreadyChosen', daily: 'alreadyBoughtToday' }
+                            : { ever: 'alreadyChosen', daily: 'alreadyValidatedToday', singleUse: 'taskAlreadyUsed' };
+                        showAlert(t(alreadyDoneMessageKey(currentResult.multiple, messages)));
                         return;
                     }
                     saveStudentData();

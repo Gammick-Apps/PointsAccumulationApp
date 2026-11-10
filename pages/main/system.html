@@ -57,6 +57,10 @@
                         element.value = x[1];
                     }
                 })
+                // הערכים הישנים 1 (אישי) ו-3 (כללי ברקוד) הם עכשיו סריקת ברקוד
+                if (String(systemConfig.type) !== "2") {
+                    type.value = "0";
+                }
                 const changeEvent = new Event('change');
                 device.dispatchEvent(changeEvent);
                 hasBuy.dispatchEvent(changeEvent);
@@ -299,12 +303,10 @@
                     </div>
                     <div class="col-md-2" id="typeWrapper" style="display: none;">
                         <label for="type" class="form-label">סוג משחק</label>
+                        <!-- סוג המשחק קובע רק איך בוחרים משימה; אישי/כללי נקבע לכל משימה ב"הגבלת תיקוף" -->
                         <select class="form-control" id="type">
-                            <option value="0">בחר</option>
-                            <option value="1">אישי</option>
-                            <option value="2">כללי</option>
-                            <!-- סריקת ברקוד משימה, נבדק לפי multiple ולא כקוד חד-פעמי -->
-                            <option value="3">כללי ברקוד</option>
+                            <option value="0">סריקת ברקוד משימה</option>
+                            <option value="2">בחירה מהמסך</option>
                         </select>
                     </div>
                     <div class="col-md-1" id="hasParentsWrapper" style="display: none;">

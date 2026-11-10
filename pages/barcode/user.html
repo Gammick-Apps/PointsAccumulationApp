@@ -129,7 +129,7 @@
       window.expose.sendDbData("sendHasStudentDoneSelected", { currentStudent, currentResult });
       window.expose.receiveDbData("receiveHasStudentDoneSelected", (alreadyDone) => {
         if (alreadyDone) {
-          showAlert(t(Number(currentResult.multiple) === 2 ? messages.daily : messages.ever));
+          showAlert(t(alreadyDoneMessageKey(currentResult.multiple, messages)));
           return;
         }
         save();
@@ -138,7 +138,8 @@
 
     const TASK_MESSAGES = {
       ever: 'alreadyChosen',
-      daily: 'alreadyValidatedToday'
+      daily: 'alreadyValidatedToday',
+      singleUse: 'taskAlreadyUsed'
     };
 
     const PRODUCT_MESSAGES = {
@@ -156,24 +157,12 @@
           return;
         }
         currentResult = task
-        if (systemConfig.type === 1) {
-          window.expose.sendDbData("sendIsTaskUsed", { currentResult });
-          window.expose.receiveDbData("receiveIsTaskUsed", (used) => {
-            if (used) {
-              showAlert(t('taskAlreadyUsed'));
-              return;
-            }
-            saveStudentData();
-          });
-        }
-
-        else {
-          checkDuplicateThenSave(saveStudentData, TASK_MESSAGES);
-        }
+        // כרטיס חד-פעמי (multiple = 3) נבדק בשרת מול כל המוסד, כמו כל הגבלה אחרת
+        checkDuplicateThenSave(saveStudentData, TASK_MESSAGES);
       });
     }
 
-    // משימת ברירת מחדל משותפת לכל התלמידים, ולכן נבדקת לפי multiple שלה ולא כקוד חד-פעמי
+    // המשימה האוטומטית נבדקת לפי ההגבלה שלה, כמו כל משימה
     function saveDefaultTask() {
       step = Steps.step3;
       currentResult = defaultTask;

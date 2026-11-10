@@ -17,11 +17,9 @@
             window.expose.sendSystem("sendReadSystem", tableName);
             window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
                 systemConfig = data
-                if (systemConfig.device == 2 || systemConfig.device == 4 || systemConfig.device == 6 || systemConfig.device == 1 && (systemConfig.hasBuy == "1" || systemConfig.type=="2" || systemConfig.type=="3"))
+                // ברקוד, כרטיס מגנטי וטביעת אצבע חולקים ממשק ניהול אחד
+                if (systemConfig.device == 1 || systemConfig.device == 2 || systemConfig.device == 4 || systemConfig.device == 6)
                     login("../magnetCard/manage")
-                else if (systemConfig.device == 1)
-                    login("../barcode/manage")
-
                 else if (systemConfig.device == 3)
                     login("../digitalCard/manage")
                 else if (systemConfig.device == 5)

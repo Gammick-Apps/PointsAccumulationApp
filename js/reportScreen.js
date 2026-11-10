@@ -6,7 +6,7 @@ function initReportScreen(cfg) {
     var listApi = null;
     var recordsApi = null;
     var selected = null;
-    const MULTIPLE_LABELS = getMultipleLabels();
+    const MULTIPLE_LABELS = getMultipleLabels(!!cfg.withSingleUse);
 
     window.expose.sendSystem("sendReadSystem", 'systemConfig');
     window.expose.receiveSystem("receiveReadSystem" + 'systemConfig', (data) => {
@@ -48,7 +48,7 @@ function initReportScreen(cfg) {
     }
 
     var listColumns = [
-        { checkboxSelection: true, width: 50, maxWidth: 50 },
+        { headerName: "מוצג", checkboxSelection: true, width: 70, maxWidth: 70 },
         { headerName: "קוד", field: "code", editable: false, flex: 1 },
         { headerName: "שם", field: "name", editable: true, flex: 2 },
         { headerName: "נקודות", field: "points", editable: true, flex: 1 },

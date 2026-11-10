@@ -101,12 +101,29 @@ function getTextColor(color) {
 // ערכי tasks.multiple ו-products.multiple.
 // המשמעות ממומשת ב-hasStudentDoneSelected, ולכן הרשימה חיה בקוד ולא במסד:
 // ערך רביעי בטבלה לא היה יודע להתנהג.
-function getMultipleLabels() {
-    return {
+// ההודעה כשהבת כבר תיקפה/קנתה, לפי סוג ההגבלה. messages: { ever, daily, singleUse }
+function alreadyDoneMessageKey(multiple, messages) {
+    const value = Number(multiple);
+    if (value === 2) {
+        return messages.daily;
+    }
+    if (value === 3 && messages.singleUse) {
+        return messages.singleUse;
+    }
+    return messages.ever;
+}
+
+// 3 (חד-פעמית לכל המוסד) קיים רק במשימות, ולכן נוסף רק כשמבקשים
+function getMultipleLabels(withSingleUse = false) {
+    const labels = {
         0: 'פעם אחת בלבד',
         1: 'ללא הגבלה',
         2: 'פעם ביום'
     };
+    if (withSingleUse) {
+        labels[3] = 'חד-פעמית (לכל המוסד)';
+    }
+    return labels;
 }
 
 function getExcelFiles() {

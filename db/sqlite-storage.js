@@ -12,6 +12,8 @@ const TOP_STUDENTS_LIMIT = 6;
 const MULTIPLE_ONCE = 0;
 const MULTIPLE_UNLIMITED = 1;
 const MULTIPLE_ONCE_PER_DAY = 2;
+// משימה חד-פעמית: מתוקפת פעם אחת בכל המוסד (מה שהיה פעם "מצב אישי"). רק למשימות
+const MULTIPLE_SINGLE_USE = 3;
 
 // -------------- basic functions ---------------- //
 
@@ -418,6 +420,11 @@ async function hasStudentDoneSelected(studentId, taskId, multiple = MULTIPLE_ONC
   const isBuy = condition.buy === 1;
   const table = isBuy ? 'studentsProducts' : 'studentsTasks';
   const column = isBuy ? 'productId' : 'taskId';
+
+  // חד-פעמית: מספיק שבת כלשהי במוסד כבר תיקפה
+  if (!isBuy && Number(multiple) === MULTIPLE_SINGLE_USE) {
+    return isTaskUsed(taskId);
+  }
 
   const dayFilter = Number(multiple) === MULTIPLE_ONCE_PER_DAY
     ? " AND DATE(createDateTime) = DATE('now', 'localtime')"

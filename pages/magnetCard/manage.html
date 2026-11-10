@@ -62,9 +62,6 @@
                 showLabel();
                 showPrintLabel();
 
-                // אותם תנאים שבהם הטבלאות הוצגו כאן קודם
-                const hasTasks = systemConfig.device != "1" || systemConfig.type == "2" || systemConfig.type == "3";
-                document.getElementById("tasksBtn").style.display = hasTasks ? '' : 'none';
                 document.getElementById("giftsBtn").style.display = systemConfig.hasBuy == 1 ? '' : 'none';
             });
             tableName = 'students'
@@ -190,7 +187,7 @@
     <div class="background" id="background">
         <div class="manage-top-btns">
             <a href="#" class="prizes-open-btn" onclick="login('../main/prizes'); return false;">צ'ופרים</a>
-            <a href="#" class="prizes-open-btn" id="tasksBtn" style="display: none;" onclick="login('../main/taskValidations'); return false;">משימות</a>
+            <a href="#" class="prizes-open-btn" onclick="login('../main/taskValidations'); return false;">משימות</a>
             <a href="#" class="prizes-open-btn" id="giftsBtn" style="display: none;" onclick="login('../main/gifts'); return false;">מתנות</a>
         </div>
         <div class="closeBtn">
