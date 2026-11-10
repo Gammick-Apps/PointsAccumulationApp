@@ -1,0 +1,15 @@
+[LANGUAGE]
+COUNT=2
+CUR_INI=ENG_R880NP.res
+
+LANGUAGE0=English
+INI0=ENG_R880NP.res
+SYSLANG0=System Language
+
+LANGUAGE1=简体中文(Chinese-Simplified)
+INI1=CHN_R880NP.res
+SYSLANG1=系统语言(System)
+
+LANGUAGE2=繁體中文(Chinese-Traditional)
+INI2=CHF_R880NP.res
+SYSLANG2=系統語言(System)
