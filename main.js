@@ -4,7 +4,7 @@ const path = require('path')
 let mainWindow
 const { initDatabase, waitDB, readData, readSystem, updateSystem, saveBackground, readBackground, closeDatabase, insertExcelToDB,
   addStudent, updateStudent, addTask, updateTask, addProduct, updateProduct, getStudentById, getTaskByCode,
-  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, setDefaultTask, getDefaultTask, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, getStudentParentByCode, updateStudentText, getStatistics, addPrize, updatePrize, deletePrize, readPrizes, readPrizeWinners, updatePrizeWinner, drawPrize,
+  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, setDefaultTask, getDefaultTask, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, getStudentParentByCode, updateStudentText, getStatistics, addPrize, updatePrize, deletePrize, readPrizes, readPrizeWinners, updatePrizeWinner, drawPrize, readTaskValidations, readTaskValidationRecords, readGiftsSummary, readGiftPurchases,
   readFingerprints, readEnrollStudents, saveFingerprint, deleteFingerprint, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
 const { createFingerprint } = require('./fingerprint');
 
@@ -400,6 +400,44 @@ ipcMain.on("sendDrawPrize", async (event, args) => {
   } catch (error) {
     console.error("Error drawing prize:", error);
     mainWindow.webContents.send("receiveDrawPrize", null);
+  }
+});
+
+// -------------- reports ---------------- //
+
+ipcMain.on("sendReadTaskValidations", async () => {
+  try {
+    mainWindow.webContents.send("receiveReadTaskValidations", await readTaskValidations());
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveReadTaskValidations", []);
+  }
+});
+
+ipcMain.on("sendReadTaskValidationRecords", async () => {
+  try {
+    mainWindow.webContents.send("receiveReadTaskValidationRecords", await readTaskValidationRecords());
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveReadTaskValidationRecords", []);
+  }
+});
+
+ipcMain.on("sendReadGiftsSummary", async () => {
+  try {
+    mainWindow.webContents.send("receiveReadGiftsSummary", await readGiftsSummary());
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveReadGiftsSummary", []);
+  }
+});
+
+ipcMain.on("sendReadGiftPurchases", async () => {
+  try {
+    mainWindow.webContents.send("receiveReadGiftPurchases", await readGiftPurchases());
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveReadGiftPurchases", []);
   }
 });
 

@@ -750,6 +750,60 @@ async function drawPrize(studentId) {
   return prize;
 }
 
+//------------------ reports ----------------------//
+
+// כל משימה עם כמות התיקופים שלה, כולל משימות שעוד לא תוקפו
+async function readTaskValidations() {
+  await waitDB();
+  return all(
+    `SELECT tasks.*, COUNT(studentsTasks.id) AS validations
+       FROM tasks
+       LEFT JOIN studentsTasks ON studentsTasks.taskId = tasks.id
+      GROUP BY tasks.id
+      ORDER BY tasks.id;`
+  );
+}
+
+// כל תיקוף בנפרד, עם פרטי התלמידה
+async function readTaskValidationRecords() {
+  await waitDB();
+  return all(
+    `SELECT studentsTasks.id, studentsTasks.taskId, studentsTasks.createDateTime,
+            tasks.name AS taskName,
+            students.name AS studentName, students.tz AS tz, students.grade AS grade
+       FROM studentsTasks
+       JOIN students ON students.id = studentsTasks.studentId
+       JOIN tasks ON tasks.id = studentsTasks.taskId
+      ORDER BY studentsTasks.createDateTime DESC;`
+  );
+}
+
+// כל מתנה עם כמות הפעמים שנקנתה, כולל מתנות שעוד לא נקנו
+async function readGiftsSummary() {
+  await waitDB();
+  return all(
+    `SELECT products.*, COUNT(studentsProducts.id) AS purchases
+       FROM products
+       LEFT JOIN studentsProducts ON studentsProducts.productId = products.id
+      GROUP BY products.id
+      ORDER BY products.id;`
+  );
+}
+
+// תיעוד המתנות שנקנו בנקודות
+async function readGiftPurchases() {
+  await waitDB();
+  return all(
+    `SELECT studentsProducts.id, studentsProducts.productId, studentsProducts.createDateTime,
+            products.name AS productName,
+            students.name AS studentName, students.tz AS tz, students.grade AS grade
+       FROM studentsProducts
+       JOIN students ON students.id = studentsProducts.studentId
+       JOIN products ON products.id = studentsProducts.productId
+      ORDER BY studentsProducts.createDateTime DESC;`
+  );
+}
+
 
 
 async function readFingerprints() {
@@ -899,6 +953,10 @@ module.exports = {
   readPrizeWinners,
   updatePrizeWinner,
   drawPrize,
+  readTaskValidations,
+  readTaskValidationRecords,
+  readGiftsSummary,
+  readGiftPurchases,
   readFingerprints,
   readEnrollStudents,
   saveFingerprint,

@@ -108,6 +108,50 @@
     overflow: hidden;
 }
 
+/* מסכי התיעוד (תיקופים, מתנות): באותו מבנה של הצ'ופרים, רשימה מימין ותיעוד משמאל */
+.report-filters {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-shrink: 0;
+    padding-bottom: 0.5rem;
+}
+
+.report-filters .form-control {
+    width: 14rem;
+}
+
+.report-count {
+    margin-inline-start: auto;
+    font-size: 1rem;
+    opacity: 0.75;
+}
+
+.report-hint {
+    font-size: 0.9rem;
+    opacity: 0.7;
+    padding-bottom: 0.5rem;
+}
+
+/* לרשימה לעריכה יש יותר עמודות, ולכן היא מקבלת יותר רוחב */
+.prizes-grids.report-layout {
+    grid-template-columns: 3fr 2fr;
+}
+
+.report-show-link {
+    color: #1565c0;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.report-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
 .prizes-delete {
     color: #c62828;
     cursor: pointer;

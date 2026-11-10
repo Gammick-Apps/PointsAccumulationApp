@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>משימות</title>
+</head>
+
+<body onload="onLoad()">
+    <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link href="../../styleSheets/cardManageStyleSheet.css" rel="stylesheet" />
+    <link href="../../styleSheets/mainStyleSheet.css" rel="stylesheet" />
+    <link href="../../styleSheets/prizesStyleSheet.css" rel="stylesheet" />
+    <script src="../../js/ag-grid-community.min.js"></script>
+    <script src="../../js/jquery.min.js"></script>
+    <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="../../js/shared.js"></script>
+    <script src="../../js/reportScreen.js"></script>
+
+    <div class="background" id="background">
+    <div class="prizes-page">
+        <div class="prizes-header">
+            <div class="prizes-title">משימות</div>
+            <a href="#" class="glass-card prizes-back-btn" onclick="login('./manage'); return false;">
+                <span>&#8592;</span><span>חזרה</span>
+            </a>
+        </div>
+
+        <div class="prizes-grids report-layout">
+            <div class="glass-card prizes-section">
+                <div class="prizes-section-head">
+                    <div class="prizes-section-title">המשימות</div>
+                    <div class="report-filters">
+                        <button type="button" class="btn btn-dark" onclick="addItem()">הוספת משימה</button>
+                        <button type="button" class="btn btn-dark" onclick="exportGrid('list')">הורדה לאקסל</button>
+                    </div>
+                </div>
+                <div class="default-task-pick">
+                    <label for="defaultTask">משימת ברירת מחדל:</label>
+                    <select id="defaultTask" class="form-select form-select-sm" onchange="changeDefaultTask()"></select>
+                </div>
+                <div class="report-hint">סימון ✓ = המשימה מוצגת לתלמידות. "הצגה" מציגה משמאל רק את התיקופים של המשימה</div>
+                <div id="listGrid" class="ag-theme-alpine report-grid"></div>
+            </div>
+
+            <div class="glass-card prizes-section">
+                <div class="prizes-section-head">
+                    <div class="prizes-section-title" id="recordsTitle">תיקופים</div>
+                    <button type="button" class="btn btn-dark" onclick="exportGrid('records')">הורדה לאקסל</button>
+                </div>
+                <div class="report-filters">
+                    <input type="text" class="form-control" id="studentFilter" placeholder="חיפוש לפי שם הבת"
+                        oninput="applyFilter()">
+                    <span class="report-count" id="recordsCount"></span>
+                </div>
+                <div id="recordsGrid" class="ag-theme-alpine report-grid"></div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script>
+        function onLoad() {
+            // שינוי משימת ברירת המחדל מכבה את כל השאר, ולכן הרשימה נטענת מחדש
+            window.expose.receiveDbData("receiveSetDefaultTask", () => reloadList());
+
+            initReportScreen({
+                listTitle: 'המשימות',
+                recordsTitle: 'תיקופים',
+                countHeader: 'כמות תיקופים',
+                countField: 'validations',
+                listSend: 'sendReadTaskValidations',
+                listReceive: 'receiveReadTaskValidations',
+                recordsSend: 'sendReadTaskValidationRecords',
+                recordsReceive: 'receiveReadTaskValidationRecords',
+                updateSend: 'sendUpdateTask',
+                insertSend: 'sendInsertTask',
+                insertReceive: 'receiveInsertTask',
+                recordsKey: 'taskId',
+                onListData: fillDefaultTaskSelect,
+                recordsColumns: [
+                    { headerName: "שם הבת", field: "studentName", flex: 2 },
+                    { headerName: "כיתה", field: "grade", flex: 1 },
+                    { headerName: "תעודת זהות", field: "tz", flex: 1 },
+                    { headerName: "שם המשימה", field: "taskName", flex: 2 }
+                ]
+            });
+        }
+
+        function fillDefaultTaskSelect(tasks) {
+            const select = document.getElementById("defaultTask");
+            const current = tasks.find(task => Number(task.isDefault) === 1);
+
+            select.innerHTML = '<option value="0">ללא</option>';
+            // טריוויה דורשת מסך שאלות ולכן לא יכולה להיות משימת ברירת מחדל
+            tasks.filter(task => Number(task.type) !== 2).forEach(task => {
+                const option = document.createElement('option');
+                option.value = task.id;
+                option.textContent = task.name;
+                select.appendChild(option);
+            });
+            select.value = current ? String(current.id) : "0";
+        }
+
+        function changeDefaultTask() {
+            window.expose.sendDbData("sendSetDefaultTask", Number(document.getElementById("defaultTask").value));
+        }
+    </script>
+</body>
+
+</html>

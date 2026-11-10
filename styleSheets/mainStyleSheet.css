@@ -136,11 +136,17 @@ html {
 }
 
 /* פינה שמאלית, כדי לא להתנגש ב-closeBtn שצף לימין */
-.prizes-open-btn {
+/* כפתורי המסכים הנוספים (צ'ופרים, תיקופים, מתנות) יושבים יחד בפינה */
+.manage-top-btns {
     position: fixed;
     top: 2.5%;
     left: 2.5%;
     z-index: 5;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.prizes-open-btn {
     padding: 0.35rem 1.4rem;
     border: 1px solid #ccc;
     border-radius: 18px;
