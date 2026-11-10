@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>ניהול צ'ופרים</title>
+</head>
+
+<body onload="onLoad()">
+    <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link href="../../styleSheets/cardManageStyleSheet.css" rel="stylesheet" />
+    <link href="../../styleSheets/mainStyleSheet.css" rel="stylesheet" />
+    <link href="../../styleSheets/prizesStyleSheet.css" rel="stylesheet" />
+    <script src="../../js/ag-grid-community.min.js"></script>
+    <script src="../../js/jquery.min.js"></script>
+    <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="../../js/shared.js"></script>
+
+    <div class="background" id="background">
+    <div class="prizes-page">
+        <div class="prizes-header">
+            <div class="prizes-title">ניהול צ'ופרים</div>
+            <a href="#" class="glass-card prizes-back-btn" onclick="login('./manage'); return false;">
+                <span>&#8592;</span><span>חזרה</span>
+            </a>
+        </div>
+
+        <div class="glass-card prizes-chance">
+            <label for="prizeChance" class="form-label">אחוז סיכוי לזכייה בצ'ופר</label>
+            <div class="prizes-chance-row">
+                <input type="number" min="0" max="100" class="form-control" id="prizeChance">
+                <span>%</span>
+                <button type="button" class="btn btn-dark" onclick="savePrizeChance()">שמירה</button>
+                <span id="chanceSaved" class="prizes-saved"></span>
+            </div>
+            <div class="prizes-chance-note">
+                ההגרלה מתבצעת בסיום תיקוף משימה. תלמידה שזכתה זוכה פעם אחת בלבד באותו יום.
+            </div>
+        </div>
+
+        <div class="prizes-grids">
+            <div class="glass-card prizes-section">
+                <div class="prizes-section-head">
+                    <div class="prizes-section-title">הצ'ופרים</div>
+                    <button type="button" class="btn btn-dark" onclick="addPrize()">הוספת צ'ופר</button>
+                </div>
+                <div id="prizesGrid" class="ag-theme-alpine"></div>
+            </div>
+
+            <div class="glass-card prizes-section">
+                <div class="prizes-section-head">
+                    <div class="prizes-section-title">הזוכות</div>
+                </div>
+                <div id="winnersGrid" class="ag-theme-alpine"></div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script>
+        var systemConfig = "";
+        var prizes = [];
+        var winners = [];
+        var searchVal = "";
+        var pendingDelete = null;
+        var prizesGridApi = null;
+        var winnersGridApi = null;
+
+        var prizesColumnDefs = [
+            { headerName: "שם הצ'ופר", field: "name", editable: true, flex: 2 },
+            { headerName: "כמות במלאי", field: "quantity", editable: true, flex: 1 },
+            { headerName: "כמה נשאר", field: "remaining", editable: false, flex: 1 },
+            {
+                headerName: "מחיקה",
+                field: "delete",
+                editable: false,
+                flex: 1,
+                cellStyle: { textAlign: 'center', cursor: 'pointer' },
+                cellRenderer: function () {
+                    return '<span class="prizes-delete">מחיקה</span>';
+                }
+            }
+        ];
+
+        var winnersColumnDefs = [
+            { headerName: "שם התלמידה", field: "studentName", editable: false, flex: 2 },
+            { headerName: "כיתה", field: "grade", editable: false, flex: 1 },
+            { headerName: "הצ'ופר", field: "prizeName", editable: false, flex: 2 },
+            {
+                headerName: "ניתן",
+                field: "given",
+                editable: false,
+                flex: 1,
+                cellStyle: { textAlign: 'center' },
+                cellRenderer: function (params) {
+                    return `<input type="checkbox" class="prizes-given" ${params.value ? 'checked' : ''} />`;
+                }
+            }
+        ];
+
+        function onLoad() {
+            window.expose.sendSystem("sendReadSystem", 'systemConfig');
+            window.expose.receiveSystem("receiveReadSystem" + 'systemConfig', (data) => {
+                systemConfig = (!data || Object.keys(data).length == 0) ? getDefaultConfig() : data;
+                document.getElementById("background").style.backgroundImage =
+                    getBackground(systemConfig.device, systemConfig.color);
+                document.querySelector(".prizes-title").style.color = getTextColor(systemConfig.textColor);
+                document.getElementById("prizeChance").value = Number(systemConfig.prizeChance || 0);
+            });
+
+            window.expose.receiveDbData("receiveReadPrizes", showPrizes);
+            window.expose.receiveDbData("receiveAddPrize", showPrizes);
+            window.expose.receiveDbData("receiveUpdatePrize", showPrizes);
+            window.expose.receiveDbData("receiveDeletePrize", showPrizes);
+            window.expose.receiveDbData("receiveReadPrizeWinners", showWinners);
+
+            window.expose.sendDbData("sendReadPrizes");
+            window.expose.sendDbData("sendReadPrizeWinners");
+        }
+
+        // כל פעולה על צ'ופר מחזירה את הרשימה המעודכנת, כולל "כמה נשאר" המחושב
+        function showPrizes(data) {
+            if (!Array.isArray(data)) {
+                return;
+            }
+            prizes = data;
+            if (prizesGridApi) {
+                prizesGridApi.setRowData(prizes);
+                return;
+            }
+            const options = {
+                columnDefs: prizesColumnDefs,
+                rowData: prizes,
+                enableRtl: true,
+                defaultColDef: { sortable: true },
+                onCellClicked: onPrizeCellClicked,
+                onCellEditingStopped: onPrizeEdited
+            };
+            new agGrid.Grid(document.querySelector('#prizesGrid'), options);
+            prizesGridApi = options.api;
+        }
+
+        function showWinners(data) {
+            if (!Array.isArray(data)) {
+                return;
+            }
+            winners = data;
+            if (winnersGridApi) {
+                winnersGridApi.setRowData(winners);
+                return;
+            }
+            const options = {
+                columnDefs: winnersColumnDefs,
+                rowData: winners,
+                enableRtl: true,
+                defaultColDef: { sortable: true },
+                onCellClicked: onWinnerCellClicked
+            };
+            new agGrid.Grid(document.querySelector('#winnersGrid'), options);
+            winnersGridApi = options.api;
+        }
+
+        function addPrize() {
+            window.expose.sendDbData("sendAddPrize");
+        }
+
+        function onPrizeEdited(event) {
+            window.expose.sendDbData("sendUpdatePrize", {
+                id: event.data.id,
+                field: event.colDef.field,
+                value: event.newValue
+            });
+        }
+
+        function onPrizeCellClicked(event) {
+            if (event.colDef.field !== 'delete') {
+                return;
+            }
+            // מחיקת צ'ופר מוחקת גם את רשומות הזוכות שלו, ולכן נדרש אישור
+            pendingDelete = event.data;
+            document.getElementById("deleteModalBody").innerHTML =
+                'למחוק את "' + event.data.name + '"? הזוכות שכבר הוגרלו עבורו יימחקו גם הן.';
+            $('#deleteModal').modal('show');
+        }
+
+        function confirmDeletePrize() {
+            $('#deleteModal').modal('hide');
+            if (!pendingDelete) {
+                return;
+            }
+            window.expose.sendDbData("sendDeletePrize", pendingDelete.id);
+            pendingDelete = null;
+            window.expose.sendDbData("sendReadPrizeWinners");
+        }
+
+        function onWinnerCellClicked(event) {
+            if (event.colDef.field !== 'given') {
+                return;
+            }
+            const given = event.data.given ? 0 : 1;
+            event.data.given = given;
+            winnersGridApi.refreshCells({ force: true });
+            window.expose.sendDbData("sendUpdatePrizeWinner", { id: event.data.id, given: given });
+        }
+
+        function savePrizeChance() {
+            const value = Number(document.getElementById("prizeChance").value);
+            if (!(value >= 0 && value <= 100)) {
+                document.getElementById("chanceSaved").innerText = "יש להזין מספר בין 0 ל-100";
+                return;
+            }
+            systemConfig.prizeChance = value;
+            window.expose.sendSystem("sendUpdateSystem", JSON.stringify(systemConfig));
+            window.expose.receiveSystem("receiveUpdateSystem", () => {
+                document.getElementById("chanceSaved").innerText = "נשמר";
+                setTimeout(function () {
+                    document.getElementById("chanceSaved").innerText = "";
+                }, 2000);
+            });
+        }
+
+        document.addEventListener("keypress", function (e) {
+            if (e.key === "Enter") {
+                const scanned = searchVal;
+                searchVal = "";
+                if (scanned == '999999999')
+                    login("./manage")
+                else if (scanned == '011429519')
+                    login("./system")
+            } else {
+                searchVal += e.key;
+            }
+        });
+    </script>
+
+    <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">מחיקת צ'ופר</h5>
+                </div>
+                <div class="modal-body" id="deleteModalBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ביטול</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmDeletePrize()">מחיקה</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

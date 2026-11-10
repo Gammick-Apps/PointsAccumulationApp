@@ -1,0 +1,40 @@
+CAREFULLY READ THE FOLLOWING LEGAL AGREEMENT. THE SOFTWARE PROVIDED WITH THIS AGREEMENT (THE "SOFTWARE") IS LICENSED AND ITS USE IS SUBJECT TO THE TERMS AND CONDITIONS BELOW. IF YOU DO NOT AGREE TO THE TERMS OF THIS AGREEMENT, PROMPTLY DESTROY THE SOFTWARE AND DOCUMENTATION.
+
+1. LICENSE GRANT
+ ---------------- 
+This software is only to be used with the equipment for which it has be made. SNBC grants to you a non-exclusive, non-transferable right to use the SOFTWARE on the computer(s) that will print to the thermal printer(s). This license to use the SOFTWARE is conditioned upon your compliance with the terms of this Agreement. You agree you will only copy the SOFTWARE into any machine-readable or printed form as necessary to use it in accordance with this license or for backup purposes. Any copies must preserve all of the original SOFTWARE'S proprietary notices. You may not: 
+- permit other individuals to use the SOFTWARE except under the terms of this agreement; 
+- modify, translate, reverse engineer, decompile, disassemble, or create derivative works based on the SOFTWARE; 
+- copy the SOFTWARE other than as specified above;
+- rent, lease, grant a security interest in, or otherwise transfer rights to the SOFTWARE; or 
+- remove any proprietary notices or labels on the SOFTWARE. This license is effective until terminated. You may terminate it at any point by removing the SOFTWARE from your computers and destroying all copies. SNBC has the option to terminate if you fail to comply with any term or condition of this Agreement. You agree upon such termination to remove the SOFTWARE from your computers and destroy all copies. 
+
+2. COPYRIGHT
+ ------------ 
+The SOFTWARE is protected by Chinese copyright law and international treaty provisions. Title, ownership rights, and intellectual property rights in the SOFTWARE shall remain in SNBC and/or its suppliers. You acknowledge that no title to the intellectual property in the SOFTWARE is transferred to you. 
+
+3. LIMITED WARRANTY
+ ------------------- 
+SNBC supplies the SOFTWARE at no charge for anybody who uses this SOFTWARE in combination with the thermal printer. The software is supplied as-is without any warranties. For support please visit the World Wide Web home page at  http://www.newbeiyang.com THIS LIMITED WARRANTY IS THE ONLY WARRANTY MADE BY SNBC. SNBC MAKES NO OTHER EXPRESS WARRANTY AND NO WARRANTY OF NONINFRINGEMENT OF THIRD PARTIES' RIGHTS. THE DURATION OF IMPLIED WARRANTIES, INCLUDING WITHOUT LIMITATION, WARRANTIES OF MERCHANTABILITY AND OF FITNESS FOR A PARTICULAR PURPOSE, IS LIMITED TO THE ABOVE LIMITED WARRANTY PERIOD; SOME JURISDICTIONS DO NOT ALLOW LIMITATIONS ON HOW LONG AN IMPLIED WARRANTY LASTS, SO LIMITATIONS MAY NOT APPLY TO YOU. NO SNBC DEALER, AGENT, OR EMPLOYEE IS AUTHORIZED TO MAKE ANY MODIFICATIONS, EXTENSIONS, OR ADDITIONS TO THIS WARRANTY. THIS WARRANTY GIVES YOU SPECIFIC LEGAL RIGHTS, AND YOU MAY HAVE OTHER LEGAL RIGHTS THAT VARY BY JURISDICTION. 
+ 
+4. LIMITATION OF LIABILITY 
+-------------------------- 
+UNDER NO CIRCUMSTANCES AND UNDER NO LEGAL THEORY, TORT, CONTRACT, OR OTHERWISE, SHALL SNBC OR ITS SUPPLIERS OR RESELLERS BE LIABLE TO YOU OR ANY OTHER PERSON FOR ANY INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES OF ANY CHARACTER INCLUDING, WITHOUT LIMITATION, DAMAGES FOR LOSS OF GOODWILL, WORK STOPPAGE, COMPUTER FAILURE OR MALFUNCTION, OR ANY AND ALL OTHER COMMERCIAL DAMAGES OR LOSSES. IN NO EVENT WILL SNBC BE LIABLE FOR ANY DAMAGES IN EXCESS OF THE AMOUNT SNBC RECEIVED FROM YOU FOR A LICENSE TO THE SOFTWARE, EVEN IF SNBC SHALL HAVE BEEN INFORMED OF THE POSSIBILITY OF SUCH DAMAGES, OR FOR ANY CLAIM BY ANY OTHER PARTY. THIS LIMITATION OF LIABILITY SHALL NOT APPLY TO LIABILITY FOR DEATH OR PERSONAL INJURY TO THE EXTENT APPLICABLE LAW PROHIBITS SUCH LIMITATION. FURTHERMORE, SOME JURISDICTIONS DO NOT ALLOW THE EXCLUSION OR LIMITATION OF INCIDENTAL OR CONSEQUENTIAL DAMAGES, SO THIS LIMITATION AND EXCLUSION MAY NOT APPLY TO YOU. 
+ 
+5. CUSTOMER REMEDIES
+ -------------------- 
+If the SOFTWARE does not conform to the limited warranty in Section 3 above ("Limited Warranty"), SNBC's entire liability and your sole remedy shall be, at SNBC's option, either to (a) correct the error or (b) help you work around or avoid the error. The Limited Warranty is void if failure of the SOFTWARE has resulted from accident, abuse, or misapplication. Any replacement SOFTWARE will be warranted for the remainder of the original Limited Warranty period. 
+
+6. SEVERABILITY
+ --------------- 
+In the event of invalidity of any provision of this license, the parties agree that such invalidity shall not affect the validity of the remaining portions of this license. 
+
+7. GOVERNING LAW
+ ---------------- 
+This Agreement is governed by the laws of China, without reference to conflict of laws principles. The application of possible convention of contracts for the international sale of goods is expressly excluded. This Agreement sets forth all rights for the user of the SOFTWARE and is the entire agreement between the parties. This agreement supersedes any other communications with respect to the SOFTWARE and Documentation. This Agreement may not be modified except by a written addendum accompanied by an official signed letter, issued by a duly authorized representative of SNBC. No provision hereof shall be deemed waived unless such waiver shall be in writing and signed by SNBC or a duly authorized representative of SNBC. If any provision of this Agreement is held invalid, the remainder of this Agreement shall continue in full force and effect. The parties confirm that it is their wish that this Agreement has been written in the English language only. SNBC may identify you to the public as a customer of SNBC and describe in a customer case study the services and solutions that SNBC delivers to you. SNBC may also issue one or more press releases containing an announcement of the execution and delivery of this Agreement and/or of your implementation of the SOFTWARE. Nothing contained in this section 8 shall be construed as an obligation by you to disclose any of your proprietary or confidential information to any third party. 
+
+8. ENTIRE AGREEMENT
+ -------------------- 
+This is the entire agreement between you and SNBC which supersedes any prior agreement or understanding, whether written or oral, relating to the subject matter of this license. 
+
+CAREFULLY READ THE ABOVE LEGAL AGREEMENT. THE SOFTWARE PROVIDED WITH THIS AGREEMENT (THE "SOFTWARE") IS LICENSED AND ITS USE IS SUBJECT TO THE TERMS AND CONDITIONS ABOVE. IF YOU DO NOT AGREE TO THE TERMS OF THIS AGREEMENT, PROMPTLY REMOVE THE SOFTWARE TOGETHER WITH ALL COPIES FROM YOUR COMPUTER.

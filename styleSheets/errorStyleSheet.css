@@ -1,0 +1,24 @@
+﻿.text {
+    position: absolute;
+    left: 10%;
+    top:35%;
+    bottom: 20%;
+    width: 80%;
+    text-align: center;
+    margin-right: auto;
+    margin-left: auto;
+    line-height: 4vw;
+}
+
+#line1 {
+    font-size: 5vw;
+    font-weight: 800;
+}
+
+#line2 {
+    font-size: 3vw;}
+
+#line3 {
+    font-size: 2vw;
+}
+
