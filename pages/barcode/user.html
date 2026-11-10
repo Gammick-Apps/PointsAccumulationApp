@@ -216,7 +216,8 @@
         if (points !== false) {
           document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
           currentStudent.points = points;
-          updateLines(t('taskDone', { name: currentResult.name }), t('pointsNow', { points: currentStudent.points }), t('takeReceipt'));
+          // ויזניץ: במקום שם המשימה מוצג כמה נקודות נוספו
+          updateLines(t('pointsAdded', { points: currentResult.points }), t('pointsNow', { points: currentStudent.points }), t('takeReceipt'));
 
           if (systemConfig.hasPrint == 1) {
             setTimeout(function () {
