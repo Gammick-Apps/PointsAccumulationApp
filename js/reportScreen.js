@@ -52,6 +52,8 @@ function initReportScreen(cfg) {
         { headerName: "קוד", field: "code", editable: false, flex: 1 },
         { headerName: "שם", field: "name", editable: true, flex: 2 },
         { headerName: "נקודות", field: "points", editable: true, flex: 1 },
+        // בית מלכה: תיאור המשימה מוצג לתלמידה אחרי הסריקה
+        ...(cfg.withDescription ? [{ headerName: "תיאור", field: "description", editable: true, flex: 3 }] : []),
         {
             headerName: "הגבלת תיקוף", field: "multiple", editable: false, flex: 2,
             cellStyle: { textAlign: 'center' }, cellRenderer: multipleSelectRenderer

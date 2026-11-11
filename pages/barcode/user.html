@@ -14,6 +14,42 @@
   <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
   <script src="../../js/shared.js"></script>
   <script src="../../js/languages.js"></script>
+  <style>
+    /* בלוק עם line-height משלו, אחרת הגובה של 9vw עולה על השורה הראשונה */
+    .bm-big-line {
+      display: block;
+      font-size: 9vw;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-top: 0.5vw;
+    }
+
+    #line4 {
+      font-size: 2vw;
+    }
+
+    /* מסך אחרון: מד הרוויה והמשפט שאחריו נמוכים וגדולים יותר */
+    .bm-result #line1 {
+      font-size: 3.5vw;
+    }
+
+    .bm-result #line3 {
+      margin-top: 7vw;
+    }
+
+    /* מסך שני: שתי השורות באמצע הגובה של המסך */
+    .bm-hello {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .bm-result #line3,
+    .bm-result #line4 {
+      font-size: 2.8vw;
+      font-weight: 700;
+    }
+  </style>
 
   <script>
     var students = ""
@@ -47,7 +83,7 @@
       window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
         systemConfig = data
         setLanguage(systemConfig.language);
-        updateLines(t('barcodeHello'), t('validateCard'))
+        showWelcome()
         document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
         document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
 
@@ -67,7 +103,6 @@
           window.expose.receiveDbData("receiveGetDefaultTask", (task) => {
             if (task) {
               defaultTask = task;
-              updateLines(t('barcodeHello'), t('validateCard'), t('chosenTask', { name: task.name }))
             }
           });
           window.expose.sendDbData("sendGetDefaultTask");
@@ -117,10 +152,10 @@
           return;
         }
 
+        document.querySelector(".text").classList.add("bm-hello");
         updateLines(
-          t('barcodeHelloStudent', { name: currentStudent.name }),
-          systemConfig.buy == 1 ? t('scanGift') : t('scanTask'),
-          t('pointsSoFar', { points: currentStudent.points }))
+          t('bmHelloStudent', { name: currentStudent.name }),
+          systemConfig.buy == 1 ? t('scanGift') : t('bmChooseTask'))
       });
     }
 
@@ -216,7 +251,14 @@
         if (points !== false) {
           document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color, step);
           currentStudent.points = points;
-          updateLines(t('taskDone', { name: currentResult.name }), t('pointsNow', { points: currentStudent.points }), t('takeReceipt'));
+          // בית מלכה: השורה הראשונה היא תיאור המשימה מהאקסל, ואם אין - שם המשימה
+          document.querySelector(".text").classList.remove("bm-hello");
+          document.querySelector(".text").classList.add("bm-result");
+          updateLines(
+            currentResult.description || currentResult.name,
+            t('bmSipsAdded', { points: currentResult.points }),
+            t('bmQuenchMeter', { points: currentStudent.points }),
+            t('bmCloser'));
 
           if (systemConfig.hasPrint == 1) {
             setTimeout(function () {
@@ -369,10 +411,16 @@
       document.getElementById("graphsBtn").style.display = "none";
     }
 
-    function updateLines(line1Text, line2Text, line3Text = "") {
+    // בית מלכה: מסך הפתיחה, "לרויה!" בגדול
+    function showWelcome() {
+      updateLines(t('bmAskSip'), '<span class="bm-big-line">' + t('bmCheers') + '</span>', t('bmSwipeChip'));
+    }
+
+    function updateLines(line1Text, line2Text, line3Text = "", line4Text = "") {
       document.getElementById("line1").innerHTML = line1Text;
       document.getElementById("line2").innerHTML = line2Text;
       document.getElementById("line3").innerHTML = line3Text;
+      document.getElementById("line4").innerHTML = line4Text;
     }
 
     function showAlert(message) {
@@ -394,10 +442,12 @@
   <div class="background" id="background">
     <a href="#" class="glass-card graphs-open-btn" id="graphsBtn"
       onclick="login('../main/graphs'); return false;" data-t="graphsBtn">גרפים</a>
-    <div class="text">
+    <!-- בית מלכה: rtl כדי שהפיסוק בטקסטים ובתיאור מהאקסל ייכתב במקומו הרגיל -->
+    <div class="text" dir="rtl">
       <div id="line1"></div>
       <div id="line2"></div>
       <div id="line3"></div>
+      <div id="line4"></div>
       <br><br>
     </div>
     <div id="position" data-t="position">עמדה</div>

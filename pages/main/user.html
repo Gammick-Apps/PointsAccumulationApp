@@ -20,9 +20,10 @@
                 systemConfig = data
                 if (currentDate > systemConfig.date)
                     login('expired')
-                else if (systemConfig.device == 2 || systemConfig.device == 4 || systemConfig.device == 6 || systemConfig.device == "1" && (systemConfig.type == "2" || systemConfig.buy == "1"))
+                // בית מלכה: צ'יפים (4) עוברים למסך הסריקה, חוץ ממצב קנייה
+                else if (systemConfig.device == 2 || systemConfig.device == 6 || (systemConfig.device == 4 || systemConfig.device == "1") && (systemConfig.type == "2" || systemConfig.buy == "1"))
                     login("../magnetCard/user")
-                else if (systemConfig.device == 1)
+                else if (systemConfig.device == 1 || systemConfig.device == 4)
                     login("../barcode/user")
                 else if (systemConfig.device == 3)
                     login("../digitalCard/user")

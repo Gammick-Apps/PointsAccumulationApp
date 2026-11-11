@@ -28,6 +28,7 @@
         { "name": "code", "type": "INTEGER", "unique": true, "nullable": false },
         { "name": "name", "type": "TEXT", "nullable": false, "default": "'--------'" },
         { "name": "points", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "description", "type": "TEXT", "nullable": false, "default": "''" },
         { "name": "multiple", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "type", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "class", "type": "INTEGER", "nullable": false, "default": "0" },

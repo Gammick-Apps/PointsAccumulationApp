@@ -2,7 +2,7 @@
   "name": "accumulatingpoints",
   "productName": "צבירת נקודות",
   "description": "צבירת נקודות דיגיטלית",
-  "version": "2.4.0",
+  "version": "2.4.0-beit-malka-new",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

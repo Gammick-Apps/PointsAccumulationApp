@@ -265,8 +265,8 @@ async function insertExcelToDB(tableName, payload) {
           break;
         case 'tasks':
           await run(
-            'INSERT OR REPLACE INTO tasks (code, name, points, multiple, type, class, show) VALUES ( ?, ?, ?, ?, ?, ?, ?);',
-            [row.code, row.name, row.points, row.multiple, row.type, row.class, row.show]
+            'INSERT OR REPLACE INTO tasks (code, name, points, description, multiple, type, class, show) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?);',
+            [row.code, row.name, row.points, row.description || '', row.multiple, row.type, row.class, row.show]
           );
           break;
         case 'products':
@@ -480,7 +480,7 @@ async function addTask() {
 
 async function updateTask(code, field, value) {
   await waitDB();
-  const correctValue = field === 'name' ? value : Number(value);
+  const correctValue = (field === 'name' || field === 'description') ? value : Number(value);
   try {
     await run(
       `UPDATE tasks SET ${quoteIdentifier(field)} = ? WHERE code = ?;`,
@@ -495,7 +495,7 @@ async function updateTask(code, field, value) {
 async function getTaskByCode(code) {
   await waitDB();
   return get(`
-    SELECT id, code, name, multiple, points FROM tasks WHERE code = ?`, [code]);
+    SELECT id, code, name, description, multiple, points FROM tasks WHERE code = ?`, [code]);
 }
 
 // -------------- products ---------------- //
