@@ -105,7 +105,6 @@ const TEXTS = {
     printingProgram: { he: 'התוכניה בהדפסה...', yi: 'די פראגראם ווערט געדרוקט...' },
     programPrinted: { he: 'התוכניה הודפסה!', yi: 'די פראגראם איז געדרוקט געווארן!' },
     printFailed: { he: 'ההדפסה נכשלה, גשו למורה', yi: "דאס דרוקן איז נישט געלונגען, גייט צו די מרכזות" },
-    receiptDate: { he: 'תאריך', yi: 'דאטום' },
     receiptTime: { he: 'שעה', yi: 'שעה' },
     receiptNumber: { he: "מס' קבלה", yi: "קבלה נומער" },
     videosBtn: { he: 'הסרטות', yi: 'ווידיאס' },

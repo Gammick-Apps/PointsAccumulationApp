@@ -22,19 +22,34 @@
     var buffer = ""
     var printing = false
 
-    // ===== טקסט התוכניה - יוחלף בטקסט הסופי =====
-    // כותרת, ואחריה שורות: [ימין, שמאל] כמו פריט ומחיר בקבלה. שורה עם מחרוזת אחת = טקסט רגיל.
+    // ===== טקסט התוכניה - מתוך "תוכניה ערכים.docx" =====
+    // שעות כתובות כמו במסמך המקורי (סוף – התחלה), כי כך הן נראות נכון בשורה מימין לשמאל
     const PROGRAM = {
-      title: 'תוכניה',
-      subtitle: 'טקסט לדוגמה - יוחלף בטקסט הסופי',
-      lines: [
-        ['פתיחה', '09:00'],
-        ['הפעלה ראשונה', '09:30'],
-        ['הפסקה', '10:30'],
-        ['הפעלה שנייה', '11:00'],
-        ['סיום', '12:30']
+      blessing: 'בסיעתא דשמיא',
+      store: 'אדם ביקר בע"מ',
+      purchaseDate: 'תאריך הקניה: ח\' כסליו תשפ"ז',
+      copy: 'נאמן למקור',
+      columns: ['ברקוד (שעה)', 'תיאור', 'סכום (אורך)'],
+      items: [
+        { time: '8:30', title: 'מדייקים בערך...', desc: 'יצאנו לדרך', amount: '30 דקות' },
+        { time: '9:00 – 8:30', title: 'אערוך שועי', desc: 'תפילת שחרית', amount: '30 דקות' },
+        { time: '1:00 – 10:00', title: 'מוקדש בהערכה', desc: 'לכל אחת ואחת', amount: '180 דקות' },
+        { time: '2:00 – 1:00', title: 'תעריכו!', desc: 'תוכנית שווה', amount: '60 דקות' },
+        { time: '3:00 – 2:00', title: 'שולחן ערוך', desc: 'ערכים תזונתיים (ולא רק)', amount: '60 דקות' },
+        { time: '4:00 – 3:00', title: 'טיפוס ערכי', desc: 'תוכנית מבחוץ "ניצבת"', amount: '60 דקות' },
+        { time: '4:00', title: 'ערך צבור', desc: 'מוטענות, יצאנו לדרך', amount: '' }
       ],
-      footer: 'תודה ולהתראות!'
+      totals: [
+        ['סה"כ', 'אינסוף'],
+        ['שולם', 'מאת ה\''],
+        ['אמצעי תשלום', 'אשרי!']
+      ],
+      notes: [
+        'שימי לב להשתמש בכוחות רק למטרה שלשמם נועדו ובהתאם להוראות ה\'.',
+        'אין החלפות בשום הון.'
+      ],
+      hours: 'פתוח מ: יום הולדתך  עד: נצח נצחים.',
+      thanks: 'תודה שקניתם אצלנו!'
     };
 
     function onLoad() {
@@ -99,17 +114,25 @@
       return String(text).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     }
 
-    // קבלה למדפסת 80 מ"מ: כותרת, קווים מקווקווים, שורות פריט/ערך, ברקוד וכיתוב תודה
+    // קבלה למדפסת 80 מ"מ, כמה שיותר דומה לקבלה אמיתית:
+    // כותרת חנות, פרטי קנייה, טבלת פריטים (שעה | תיאור | אורך), סיכום, ברקוד, תנאים ותודה
     function buildReceipt() {
       const now = new Date();
       const pad = n => String(n).padStart(2, '0');
-      const date = pad(now.getDate()) + '/' + pad(now.getMonth() + 1) + '/' + now.getFullYear();
       const time = pad(now.getHours()) + ':' + pad(now.getMinutes());
       const number = pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
 
-      const rows = PROGRAM.lines.map(line => Array.isArray(line)
-        ? `<div class="row"><span>${escapeHtml(line[0])}</span><span class="dots"></span><span>${escapeHtml(line[1])}</span></div>`
-        : `<div class="free">${escapeHtml(line)}</div>`).join('');
+      const items = PROGRAM.items.map(item => `
+        <div class="item">
+          <div class="time">${escapeHtml(item.time)}</div>
+          <div class="desc"><b>${escapeHtml(item.title)}</b><br>${escapeHtml(item.desc)}</div>
+          <div class="amount">${escapeHtml(item.amount)}</div>
+        </div>`).join('');
+
+      const totals = PROGRAM.totals.map(([label, value], i) =>
+        `<div class="total${i === 0 ? ' grand' : ''}"><span>${escapeHtml(label)}:</span><span>${escapeHtml(value)}</span></div>`).join('');
+
+      const notes = PROGRAM.notes.map(n => `<div>${escapeHtml(n)}</div>`).join('');
 
       return `<!DOCTYPE html>
       <html>
@@ -117,37 +140,49 @@
         <meta charset="utf-8" />
         <title>Print</title>
         <style>
-          body { font-size: 14px; color: #000; }
+          body { font-size: 13px; color: #000; }
           /* השטח המודפס בפועל צר מ-80 מ"מ; בלי זה הצד השמאלי נחתך */
-          .receipt { width: 66mm; }
+          .receipt { width: 62mm; }
           .center { text-align: center; }
-          .store { font-size: 30px; font-weight: bold; letter-spacing: 2px; }
-          .sub { font-size: 13px; margin-top: 2px; }
-          .sep { border-top: 2px dashed #000; margin: 8px 0; }
+          .blessing { font-size: 11px; text-align: right; }
+          .store { font-size: 26px; font-weight: bold; letter-spacing: 1px; margin-top: 4px; }
+          .meta { font-size: 12px; margin-top: 2px; }
+          .copy { display: inline-block; border: 1.5px solid #000; padding: 1px 8px; font-size: 12px; font-weight: bold; margin-top: 4px; }
+          .sep { border-top: 1.5px dashed #000; margin: 7px 0; }
           .sep.double { border-top: 4px double #000; }
-          .meta { display: flex; justify-content: space-between; font-size: 12px; }
-          .row { display: flex; align-items: baseline; gap: 4px; margin: 5px 0; font-size: 15px; }
-          .row .dots { flex: 1; border-bottom: 1px dotted #000; transform: translateY(-3px); }
-          .free { margin: 5px 0; font-size: 15px; }
-          .thanks { font-size: 18px; font-weight: bold; margin-top: 6px; }
-          .barcode { height: 40px; margin: 12px 6mm 2px;
+          .item, .head { display: grid; grid-template-columns: 16mm 1fr 13mm; column-gap: 2mm; align-items: start; }
+          .head { font-size: 11px; font-weight: bold; padding-bottom: 3px; border-bottom: 1px solid #000; }
+          .item { padding: 15px 0; font-size: 13px; border-bottom: 1px dotted #000; }
+          .time { font-weight: bold; white-space: nowrap; font-size: 12px; }
+          .amount { text-align: left; white-space: nowrap; font-size: 12px; }
+          .total { display: flex; justify-content: space-between; font-size: 14px; margin: 3px 0; }
+          .total.grand { font-size: 18px; font-weight: bold; }
+          .barcode { height: 40px; margin: 10px 6mm 2px;
             background: repeating-linear-gradient(90deg, #000 0 2px, #fff 2px 3px, #000 3px 4px, #fff 4px 7px, #000 7px 10px, #fff 10px 11px); }
           .barNum { font-size: 11px; letter-spacing: 3px; direction: ltr; }
+          .notes { font-size: 11px; line-height: 1.4; }
+          .hours { font-size: 12px; margin-top: 4px; }
+          .thanks { font-size: 17px; font-weight: bold; margin-top: 6px; }
         </style>
       </head>
       <body>
        <div class="receipt">
-        <div class="center store">${escapeHtml(PROGRAM.title)}</div>
-        ${PROGRAM.subtitle ? `<div class="center sub">${escapeHtml(PROGRAM.subtitle)}</div>` : ''}
+        <div class="blessing">${escapeHtml(PROGRAM.blessing)}</div>
+        <div class="center store">${escapeHtml(PROGRAM.store)}</div>
+        <div class="center meta">${escapeHtml(PROGRAM.purchaseDate)}</div>
+        <div class="center meta">${t('receiptNumber')}: ${number} &nbsp;|&nbsp; ${t('receiptTime')}: ${time}</div>
+        <div class="center"><span class="copy">${escapeHtml(PROGRAM.copy)}</span></div>
         <div class="sep"></div>
-        <div class="meta"><span>${t('receiptDate')}: ${date}</span><span>${t('receiptTime')}: ${time}</span></div>
-        <div class="meta"><span>${t('receiptNumber')}: ${number}</span></div>
-        <div class="sep"></div>
-        ${rows}
+        <div class="head"><div>${escapeHtml(PROGRAM.columns[0])}</div><div>${escapeHtml(PROGRAM.columns[1])}</div><div class="amount">${escapeHtml(PROGRAM.columns[2])}</div></div>
+        ${items}
         <div class="barcode"></div>
         <div class="center barNum">${number}</div>
         <div class="sep double"></div>
-        <div class="center thanks">${escapeHtml(PROGRAM.footer)}</div>
+        ${totals}
+        <div class="sep"></div>
+        <div class="center notes">${notes}</div>
+        <div class="center hours">${escapeHtml(PROGRAM.hours)}</div>
+        <div class="center thanks">${escapeHtml(PROGRAM.thanks)}</div>
        </div>
       </body>
       </html>`;
