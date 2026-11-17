@@ -101,3 +101,20 @@
 #triviaModal .modal-content {
     height: 85%; /* התאמה אישית של הגובה */
 }
+/* הכרטיסים נשענים על .glass-card מ-mainStyleSheet; כאן רק מה שנוגע לתוכן */
+#cards .card-body {
+    background: transparent;
+}
+
+#cards .card-footer {
+    background: rgba(255, 255, 255, 0.25);
+    border-top: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+#cards .card-footer small {
+    color: #222 !important;
+}
+
+#cards .card:hover {
+    background: rgba(255, 255, 255, 0.45);
+}

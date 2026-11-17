@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>ממשק ניהול</title>
+</head>
+
+<body onload="onLoad()">
+    <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link href="../../styleSheets/dailyActivationManageStyleSheet.css" rel="stylesheet" />
+    <link href="../../styleSheets/mainStyleSheet.css" rel="stylesheet" />
+    <script src="../../js/jquery.min.js"></script>
+    <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="../../js/shared.js"></script>
+
+    <script>
+        var systemConfig = "";
+        var tableName
+        var searchVal = ""
+
+        function onLoad() {
+            tableName = 'systemConfig'
+           window.expose.sendSystem("sendReadSystem", tableName);
+            window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
+                systemConfig = data
+                document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color);
+                document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
+                document.getElementById("dailyTitle").value = systemConfig.dailyTitle || "";
+                document.getElementById("dailySubtitle").value = systemConfig.dailySubtitle || "";
+            });
+            window.expose.receiveDbData("receiveUpdateDailyTitles", (success) => {
+                showAlert(success ? "הכותרות נשמרו" : "שמירת הכותרות נכשלה");
+            });
+        }
+
+        function saveTitles() {
+            window.expose.sendDbData("sendUpdateDailyTitles", {
+                title: document.getElementById("dailyTitle").value,
+                subtitle: document.getElementById("dailySubtitle").value
+            });
+        }
+
+        document.addEventListener("keypress", function (e) {
+            // הקלדה בשדות הכותרות היא לא סריקת ברקוד
+            if (e.target.tagName === "INPUT") return;
+            if (e.key === "Enter") {
+                if (searchVal.length > 0) {
+                    if (searchVal == '999999999')
+                        login("./classPoints")
+                    if (searchVal == '011429519')
+                        login("../main/system")
+                }
+            } else {
+                searchVal += e.key;
+            }
+        });
+
+        window.expose.receiveDbData("receiveResetClassPoints", (success) => {
+            showAlert(success ? "הנקודות אופסו בהצלחה!" : "איפוס הנקודות נכשל");
+        });
+
+        function resetPoints() {
+            window.expose.sendDbData("sendResetClassPoints");
+        }
+
+        // לא alert() - חלון מערכת מקפיא את המסך ואת קליטת הברקוד
+        function showAlert(message) {
+            document.querySelector(".modal-body").innerHTML = message;
+            $('#modal').modal('show');
+            setTimeout(function () {
+                $('#modal').modal('hide');
+            }, 2500);
+        }
+    </script>
+
+    <div class="background" id="background">
+        <div class="manage-top-btns">
+            <a href="#" class="prizes-open-btn" onclick="login('../main/prizes'); return false;">צ'ופרים</a>
+        </div>
+        <div class="closeBtn">
+            <img onclick="expose.appClose()" src="../../resources/barcode/x-light.svg" />
+        </div>
+        <div class="text">
+            <div id="line1">ברוכים הבאים לממשק ניהול</div>
+            <br>
+            <br>
+            <div class="titles-form" style="direction: rtl; max-width: 520px; margin: 0 auto 30px; text-align: right; line-height: normal;">
+                <label for="dailyTitle" class="form-label">כותרת ראשית</label>
+                <input type="text" class="form-control mb-3" id="dailyTitle" placeholder="ברוכות הבאות!" />
+                <label for="dailySubtitle" class="form-label">כותרת משנה</label>
+                <input type="text" class="form-control mb-2" id="dailySubtitle" placeholder="מי הכיתה המנצחת?..." />
+                <small style="opacity: .8;">שדה ריק = הכותרת הרגילה לפי השפה</small>
+                <div style="text-align: center; margin-top: 14px;">
+                    <button onclick="saveTitles(); this.blur();" class="action-btn">שמירת כותרות</button>
+                </div>
+            </div>
+            <button onclick="resetPoints(); this.blur();" class="action-btn">איפוס נקודות</button>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalLabel">הודעת מערכת</h5>
+                </div>
+                <div class="modal-body"></div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
