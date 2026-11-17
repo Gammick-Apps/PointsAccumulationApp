@@ -3,9 +3,10 @@
 
 <head>
   <meta charset="utf-8" />
-  <title> גרפולוגיה</title>   
+  <title>הדפסת קבלה</title>
 </head>
 
+<!-- בידרמן: במקום מסך הגרפולוגית - כפתור גדול שמדפיס תוכניה אחידה בסגנון קבלה מהחנות -->
 <body onload="onLoad()">
   <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
   <link href="../../styleSheets/mainStyleSheet.css" rel="stylesheet" />
@@ -18,30 +19,29 @@
 
   <script>
     var systemConfig = ""
-    var searchVal = ""
-    var tableName
-    var result = "";
-    var step
-    const Steps = {
-      step1: "1",
-      step2: "2",
-      step3: "3"
-    }; 
-    
+    var buffer = ""
+    var printing = false
+
+    // ===== טקסט התוכניה - יוחלף בטקסט הסופי =====
+    // כותרת, ואחריה שורות: [ימין, שמאל] כמו פריט ומחיר בקבלה. שורה עם מחרוזת אחת = טקסט רגיל.
+    const PROGRAM = {
+      title: 'תוכניה',
+      subtitle: 'טקסט לדוגמה - יוחלף בטקסט הסופי',
+      lines: [
+        ['פתיחה', '09:00'],
+        ['הפעלה ראשונה', '09:30'],
+        ['הפסקה', '10:30'],
+        ['הפעלה שנייה', '11:00'],
+        ['סיום', '12:30']
+      ],
+      footer: 'תודה ולהתראות!'
+    };
 
     function onLoad() {
-      step = Steps.step1;
-      tableName = 'systemConfig'
-      window.expose.sendSystem("sendReadSystem", tableName);
-      window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
-        if (!data || Object.keys(data).length == 0) {
-          systemConfig = getDefaultConfig()
-        }
-        else {
-          systemConfig = data
-        }
+      window.expose.sendSystem("sendReadSystem", 'systemConfig');
+      window.expose.receiveSystem("receiveReadSystemsystemConfig", (data) => {
+        systemConfig = (!data || Object.keys(data).length == 0) ? getDefaultConfig() : data;
         setLanguage(systemConfig.language);
-        updateLines(t('welcomeAllEnd'), t('whatGraphologistWrote'));
         document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
         document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
         applyDailyBackground(systemConfig);
@@ -54,179 +54,124 @@
           document.getElementById("position").style.display = "none";
         }
       })
-    }
 
-    document.addEventListener("keypress", function (e) {
-      if (e.key === "Enter") {
-        if (searchVal.length > 0) {
-          if (step == Steps.step1) {
-            if (searchVal == '011429519')
-              login('../main/system')
-            else if (searchVal == '207594581')
-              login('../main/user')
-            else if (searchVal == '999999999')
-              login('./manage')
-            else //כיתה או בת
-              searchInExcel();
-          }
-        }
-      } else {
-        searchVal += e.key;
-      }
-    });
-
-    function searchInExcel() {
-      window.expose.sendDbData("sendGetStudentById", searchVal);
-      window.expose.receiveDbData("receiveGetStudentById", (student) => {
-        result = student;
-        if (result == null) {
-          showAlert(t('notFound'))
-          return;
-        }
-        showResult()
+      // נרשם פעם אחת, אחרת כל הדפסה הייתה מוסיפה עוד מאזין
+      window.expose.receive("receivePrint", (success) => {
+        setStatus(success ? t('programPrinted') : t('printFailed'));
+        setTimeout(() => {
+          printing = false;
+          document.getElementById("printBtn").classList.remove("busy");
+          setStatus('');
+        }, 3000);
       });
     }
 
-    function showResult() {
-      step = Steps.step2;
-      document.getElementById("idle").style.display = "none";
-      document.getElementById("resultName").textContent = result.name;
-      document.getElementById("resultGrade").textContent = result.grade;
-      revealWords(result.text ? result.text : t('noGraphology'));
-      document.getElementById("resultCard").classList.add("show");
-      if (result.text) {
-        setTimeout(function () {
-          toPrint();
-        }, 2500);
+    // ברקודי ניהול בלבד - אין כאן סריקת תלמידות
+    document.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        if (buffer.length > 0) {
+          if (buffer == '011429519')
+            login('../main/system')
+          else if (buffer == '207594581')
+            login('../main/user')
+          else if (buffer == '999999999')
+            login('./manage')
+          buffer = "";
+        }
+      } else {
+        buffer += e.key;
       }
-      else {
-        // בלי ניתוח אין הדפסה; בלי זה המסך היה נתקע על ההודעה
-        reset(6000);
-      }
+    });
+
+    function printProgram() {
+      if (printing) return;
+      printing = true;
+      document.getElementById("printBtn").classList.add("busy");
+      setStatus(t('printingProgram'));
+      window.expose.send("sendPrint", buildReceipt());
     }
 
-    function toPrint() {
-      const dynamicHTML = `
-      <!DOCTYPE html>
+    function setStatus(text) {
+      document.getElementById("status").textContent = text;
+    }
+
+    function escapeHtml(text) {
+      return String(text).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    }
+
+    // קבלה למדפסת 80 מ"מ: כותרת, קווים מקווקווים, שורות פריט/ערך, ברקוד וכיתוב תודה
+    function buildReceipt() {
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const date = pad(now.getDate()) + '/' + pad(now.getMonth() + 1) + '/' + now.getFullYear();
+      const time = pad(now.getHours()) + ':' + pad(now.getMinutes());
+      const number = pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+
+      const rows = PROGRAM.lines.map(line => Array.isArray(line)
+        ? `<div class="row"><span>${escapeHtml(line[0])}</span><span class="dots"></span><span>${escapeHtml(line[1])}</span></div>`
+        : `<div class="free">${escapeHtml(line)}</div>`).join('');
+
+      return `<!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8" />
         <title>Print</title>
         <style>
-          #title {
-            font-size: 40px;
-            text-align: center;
-          }
-          #content div {
-            font-size: 17px;
-            margin: 10px 0;
-          }
-          #footer {
-            font-size: 12px;
-            text-align: center;
-            margin-top: 20px;
-          }
+          body { font-size: 14px; color: #000; }
+          /* השטח המודפס בפועל צר מ-80 מ"מ; בלי זה הצד השמאלי נחתך */
+          .receipt { width: 66mm; }
+          .center { text-align: center; }
+          .store { font-size: 30px; font-weight: bold; letter-spacing: 2px; }
+          .sub { font-size: 13px; margin-top: 2px; }
+          .sep { border-top: 2px dashed #000; margin: 8px 0; }
+          .sep.double { border-top: 4px double #000; }
+          .meta { display: flex; justify-content: space-between; font-size: 12px; }
+          .row { display: flex; align-items: baseline; gap: 4px; margin: 5px 0; font-size: 15px; }
+          .row .dots { flex: 1; border-bottom: 1px dotted #000; transform: translateY(-3px); }
+          .free { margin: 5px 0; font-size: 15px; }
+          .thanks { font-size: 18px; font-weight: bold; margin-top: 6px; }
+          .barcode { height: 40px; margin: 12px 6mm 2px;
+            background: repeating-linear-gradient(90deg, #000 0 2px, #fff 2px 3px, #000 3px 4px, #fff 4px 7px, #000 7px 10px, #fff 10px 11px); }
+          .barNum { font-size: 11px; letter-spacing: 3px; direction: ltr; }
         </style>
       </head>
       <body>
-        <div id="title"><b>${t('printEspeciallyForYou')}</b></div>
-        <br>
-        <div id="content">
-          <div>${result.name}</div>
-          <div>${result.grade}</div>
-          <br>
-          <div><b>${t('printGraphologyAnalysis')}</b></div>
-          <div>${result.text}</div>
-        </div>
-        <br>
-        <div id="footer">${t('printFooter')}</div>
+       <div class="receipt">
+        <div class="center store">${escapeHtml(PROGRAM.title)}</div>
+        ${PROGRAM.subtitle ? `<div class="center sub">${escapeHtml(PROGRAM.subtitle)}</div>` : ''}
+        <div class="sep"></div>
+        <div class="meta"><span>${t('receiptDate')}: ${date}</span><span>${t('receiptTime')}: ${time}</span></div>
+        <div class="meta"><span>${t('receiptNumber')}: ${number}</span></div>
+        <div class="sep"></div>
+        ${rows}
+        <div class="barcode"></div>
+        <div class="center barNum">${number}</div>
+        <div class="sep double"></div>
+        <div class="center thanks">${escapeHtml(PROGRAM.footer)}</div>
+       </div>
       </body>
-      </html>
-      `;
-
-      window.expose.send("sendPrint", dynamicHTML);
-      window.expose.receive("receivePrint", () => {
-        reset(8000);
-      });
-    }
-
-    // הניתוח נחשף מילה אחרי מילה; כל החשיפה נגמרת תוך 2.5 שניות, לפני ההדפסה
-    function revealWords(text) {
-      const box = document.getElementById("resultText");
-      box.innerHTML = "";
-      const words = String(text).split(/(\s+)/);
-      const delay = Math.min(60, 2500 / Math.max(1, words.length));
-      words.forEach((word, i) => {
-        const span = document.createElement("span");
-        span.textContent = word;
-        span.style.animationDelay = (600 + i * delay) + "ms";
-        box.appendChild(span);
-      });
-    }
-
-    function updateLines(line1Text, line2Text, line3Text = "") {
-      if (line1Text != "*")
-        document.getElementById("line1").innerHTML = line1Text;
-      document.getElementById("line2").innerHTML = line2Text;
-      document.getElementById("line3").innerHTML = line3Text;
-    }
-
-    function reset(time = 0) {
-      setTimeout(function () {
-        location.reload();
-      }, time);
-    }
-
-    function showAlert(message) {
-      document.querySelector(".modal-body").innerHTML = message;
-      $(document).ready(function () {
-        $('#modal').modal('show')
-      });
-      setTimeout(function () {
-        $(document).ready(function () {
-          $('#modal').modal('hide')
-        });
-      }, 2500);
-      reset(2500)
+      </html>`;
     }
   </script>
 
   <div class="background" id="background">
-     <div class="closeBtn">
-      <img onclick="expose.appClose()" src="../../resources/barcode/x-light.svg" />
-    </div>
     <div class="stars" id="stars"></div>
     <div class="spotlight"></div>
+    <div class="closeBtn">
+      <img onclick="expose.appClose()" src="../../resources/barcode/x-light.svg" />
+    </div>
     <div id="position" data-t="position">עמדה</div>
 
     <div class="graph">
-      <div id="idle">
-        <div id="line1"></div>
-        <div id="line2"></div>
-        <div id="line3"></div>
-        <div class="orb">✍️</div>
-      </div>
-      <div id="resultCard">
-        <div id="resultName"></div>
-        <div id="resultGrade"></div>
-        <div id="resultText"></div>
-      </div>
+      <button id="printBtn" class="printBtn" onclick="printProgram(); this.blur();">
+        <span class="printIcon">🧾</span>
+        <span data-t="printProgramBtn">הדפסת תוכניה</span>
+      </button>
+      <div id="status" class="status"></div>
     </div>
 
     <div class="bottom-actions d-flex flex-row justify-content-center">
       <button onclick="login('./classPoints'); this.blur();" class="action-btn glass-btn" data-t="back">חזרה</button>
-    </div>
-  </div>
-
-  <div class="modal fade" style="direction: rtl" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalLabel" data-t="systemMessage">הודעת מערכת</h5>
-        </div>
-        <div class="modal-body"></div>
-      </div>
     </div>
   </div>
 </body>
