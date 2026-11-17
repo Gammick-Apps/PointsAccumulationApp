@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>רישום טביעות אצבע</title>
+</head>
+
+<body onload="onLoad()">
+    <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link href="../../styleSheets/mainStyleSheet.css" rel="stylesheet" />
+    <link href="../../styleSheets/fingerprintStyleSheet.css" rel="stylesheet" />
+    <script src="../../js/jquery.min.js"></script>
+    <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="../../js/shared.js"></script>
+
+    <div class="background" id="background">
+
+        <div class="fp-code-stage" id="codeStage">
+            <form class="glass-card fp-code-card" id="codeForm" autocomplete="off">
+                <div class="fp-icon-holder"><svg class="fp-icon" viewBox="0 0 64 64" aria-hidden="true">
+                        <use href="#fpIcon"></use>
+                    </svg></div>
+                <div class="fp-code-title">רישום טביעות אצבע</div>
+                <label for="adminCode" class="fp-code-label">קוד ממשק ניהול</label>
+                <input type="password" id="adminCode" class="fp-code-input" autocomplete="off" spellcheck="false" />
+                <div class="fp-code-error" id="codeError"></div>
+                <button type="submit" class="action-btn fp-primary-btn">כניסה</button>
+                <a href="#" class="fp-back-link" onclick="leave(); return false;">&#8594; חזרה לעמדה</a>
+            </form>
+        </div>
+
+        <div class="fp-page" id="listStage" style="display: none;">
+            <div class="fp-header">
+                <div>
+                    <div class="fp-title">רישום טביעות אצבע</div>
+                    <div class="fp-subtitle" id="enrolledCount"></div>
+                </div>
+                <a href="#" class="glass-card fp-done-btn" onclick="leave(); return false;">
+                    <span>&#8592;</span><span>סיום</span>
+                </a>
+            </div>
+
+            <div class="fp-reader-banner" id="readerBanner" style="display: none;"></div>
+
+            <div class="glass-card fp-toolbar">
+                <div class="fp-grades" id="grades"></div>
+                <input type="text" id="search" class="fp-search" placeholder="חיפוש לפי שם" spellcheck="false" />
+            </div>
+
+            <div class="fp-list-scroll">
+                <div class="fp-students" id="students"></div>
+                <div class="fp-empty" id="emptyList" style="display: none;">אין שמות להצגה</div>
+            </div>
+        </div>
+
+        <div id="position">עמדה</div>
+    </div>
+
+    <div class="modal fade" id="scanModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content fp-scan-card">
+                <div class="fp-scan-name" id="scanName"></div>
+                <div class="fp-scan-grade" id="scanGrade"></div>
+
+                <div id="scanChoose" class="fp-scan-part">
+                    <div class="fp-note fp-note-ok">טביעת האצבע כבר רשומה</div>
+                    <button class="action-btn fp-primary-btn" onclick="startTouches()">רישום מחדש</button>
+                    <button class="fp-danger-btn" id="deleteBtn" onclick="removeFingerprint()">מחיקת טביעת האצבע</button>
+                </div>
+
+                <div id="scanTouch" class="fp-scan-part">
+                    <div class="fp-icon-holder"><svg class="fp-icon fp-icon-big" id="touchIcon" viewBox="0 0 64 64"
+                            aria-hidden="true">
+                            <use href="#fpIcon"></use>
+                        </svg></div>
+                    <div class="fp-steps" id="steps">
+                        <span class="fp-step">1</span>
+                        <span class="fp-step">2</span>
+                        <span class="fp-step">3</span>
+                    </div>
+                    <div class="fp-note" id="touchNote"></div>
+                </div>
+
+                <div id="scanSaving" class="fp-scan-part">
+                    <div class="fp-note fp-note-ok">שומרים...</div>
+                </div>
+
+                <div id="scanDone" class="fp-scan-part">
+                    <div class="fp-done-check">&#10004;</div>
+                    <div class="fp-done-text">הטביעה נשמרה בהצלחה!</div>
+                </div>
+
+                <div id="scanFailed" class="fp-scan-part">
+                    <div class="fp-note fp-note-bad" id="failedNote"></div>
+                    <button class="action-btn fp-primary-btn" onclick="startTouches()">נסו שוב</button>
+                </div>
+
+                <a href="#" class="fp-back-link" id="scanBack" onclick="closeStudent(); return false;">&#8594; חזרה
+                    לרשימה</a>
+            </div>
+        </div>
+    </div>
+
+    <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+        <symbol id="fpIcon" viewBox="0 0 64 64">
+            <g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                <path d="M14 22c4-8 11-12 18-12s14 4 18 12" />
+                <path d="M12 34c0-11 9-19 20-19s20 8 20 19c0 4-1 8-2 11" />
+                <path d="M19 47c-1-4-2-8-2-13 0-8 7-14 15-14s15 6 15 14c0 5-1 10-3 14" />
+                <path d="M25 53c-2-5-3-11-3-19 0-5 4-9 10-9s10 4 10 9c0 6-1 12-3 17" />
+                <path d="M32 33c0 9-1 16-4 23" />
+                <path d="M37 35c0 7-1 13-3 18" />
+            </g>
+        </symbol>
+    </svg>
+
+    <script>
+        const ADMIN_CODE = '999999999';
+        const IDLE_CLOSE_MS = 2 * 60 * 1000;
+        const SUCCESS_MS = 1800;
+        const ALL = '__all__';
+
+        var systemConfig;
+        var students = [];
+        var grade = ALL;
+        var activeStudent = null;
+        var scanPhase = null;
+        var reader = null;
+        var lastTouch = Date.now();
+        var scanModal;
+
+        function onLoad() {
+            scanModal = new bootstrap.Modal(document.getElementById('scanModal'));
+
+            window.expose.sendSystem("sendReadSystem", "systemConfig");
+            window.expose.receiveSystem("receiveReadSystem" + "systemConfig", (data) => {
+                systemConfig = (!data || Object.keys(data).length == 0) ? getDefaultConfig() : data;
+                document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color);
+                document.querySelector(".fp-title").style.color = getTextColor(systemConfig.textColor);
+                document.querySelector(".fp-subtitle").style.color = getTextColor(systemConfig.textColor);
+                const position = document.getElementById("position");
+                const colors = getPosition(systemConfig.color);
+                if (colors) {
+                    position.style.backgroundColor = colors[0];
+                    position.style.color = colors[1];
+                }
+                if (systemConfig.numPosition && systemConfig.numPosition.length > 0) {
+                    position.innerHTML += ' ' + systemConfig.numPosition;
+                } else {
+                    position.style.display = "none";
+                }
+            });
+
+            document.getElementById("codeForm").addEventListener("submit", submitCode);
+            document.getElementById("search").addEventListener("input", renderStudents);
+            document.getElementById("adminCode").focus();
+
+            window.expose.receiveDbData("receiveFingerprintEnrollStudents", (list) => {
+                students = Array.isArray(list) ? list : [];
+                renderGrades();
+                renderStudents();
+            });
+            window.expose.receive("receiveFingerprintEvent", onReaderEvent);
+
+            window.addEventListener("beforeunload", () => window.expose.send("sendFingerprintCancel"));
+
+            const touch = () => { lastTouch = Date.now(); };
+            window.addEventListener("pointerdown", touch);
+            window.addEventListener("keydown", touch);
+            setInterval(() => {
+                if (Date.now() - lastTouch > IDLE_CLOSE_MS) leave();
+            }, 5000);
+        }
+
+        function leave() {
+            window.expose.send("sendFingerprintCancel");
+            login('../main/user');
+        }
+
+        function submitCode(e) {
+            e.preventDefault();
+            const input = document.getElementById("adminCode");
+            if (input.value.trim() !== ADMIN_CODE) {
+                document.getElementById("codeError").textContent = "קוד שגוי, נסו שוב";
+                input.value = "";
+                input.focus();
+                return;
+            }
+            document.getElementById("codeStage").style.display = "none";
+            document.getElementById("listStage").style.display = "";
+            window.expose.send("sendFingerprintStart", "enroll");
+            window.expose.sendDbData("sendFingerprintEnrollStudents");
+        }
+
+        function hasTz(s) {
+            const tz = Number(String(s.tz || '').trim());
+            return Number.isInteger(tz) && tz > 0;
+        }
+
+        function renderGrades() {
+            const holder = document.getElementById("grades");
+            holder.innerHTML = "";
+            const grades = [...new Set(students.map(s => s.grade).filter(Boolean))]
+                .sort((a, b) => a.localeCompare(b, "he", { numeric: true }));
+            [{ value: ALL, label: "כל הכיתות" }, ...grades.map(g => ({ value: g, label: g }))].forEach(item => {
+                const chip = document.createElement("button");
+                chip.type = "button";
+                chip.className = "fp-grade-chip" + (grade === item.value ? " selected" : "");
+                chip.textContent = item.label;
+                chip.addEventListener("click", () => {
+                    grade = item.value;
+                    renderGrades();
+                    renderStudents();
+                });
+                holder.appendChild(chip);
+            });
+        }
+
+        function renderStudents() {
+            const query = document.getElementById("search").value.trim();
+            const shown = students
+                .filter(s => grade === ALL || s.grade === grade)
+                .filter(s => !query || String(s.name).includes(query))
+                .sort((a, b) => String(a.name).localeCompare(String(b.name), "he"));
+
+            const holder = document.getElementById("students");
+            holder.innerHTML = "";
+            shown.forEach((s, i) => {
+                const card = document.createElement("button");
+                card.type = "button";
+                const usable = hasTz(s);
+                card.className = "glass-card fp-student" + (s.enrolled ? " enrolled" : "") + (usable ? "" : " disabled");
+                card.style.animationDelay = Math.min(i * 30, 300) + "ms";
+                card.disabled = !usable;
+
+                const name = document.createElement("div");
+                name.className = "fp-student-name";
+                name.textContent = s.name;
+                card.appendChild(name);
+
+                const gradeEl = document.createElement("div");
+                gradeEl.className = "fp-student-grade";
+                gradeEl.textContent = s.grade;
+                card.appendChild(gradeEl);
+
+                if (!usable) {
+                    const badge = document.createElement("div");
+                    badge.className = "fp-badge fp-badge-muted";
+                    badge.textContent = "חסרה תעודת זהות";
+                    card.appendChild(badge);
+                } else if (s.enrolled) {
+                    const badge = document.createElement("div");
+                    badge.className = "fp-badge";
+                    badge.textContent = "✓ טביעה רשומה";
+                    card.appendChild(badge);
+                }
+
+                if (usable) card.addEventListener("click", () => openStudent(s));
+                holder.appendChild(card);
+            });
+
+            document.getElementById("emptyList").style.display = shown.length ? "none" : "";
+            const enrolled = shown.filter(s => s.enrolled).length;
+            document.getElementById("enrolledCount").textContent = `טביעות רשומות: ${enrolled} מתוך ${shown.length}`;
+        }
+
+        function renderReaderBanner() {
+            let text = "";
+            if (!reader) text = "מפעילים את קורא טביעות האצבע...";
+            else if (reader.driver === "installing") text = "מתקינים את הדרייבר של הקורא. אשרו את החלון של Windows אם הוא מופיע";
+            else if (reader.driver === "missing" || reader.driver === "failed") text = "הדרייבר של קורא טביעות האצבע לא מותקן במחשב הזה";
+            else if (!reader.connected) text = "חברו את קורא טביעות האצבע למחשב";
+            const banner = document.getElementById("readerBanner");
+            banner.textContent = text;
+            banner.style.display = text ? "" : "none";
+        }
+
+        function openStudent(s) {
+            activeStudent = s;
+            document.getElementById("scanName").textContent = s.name;
+            document.getElementById("scanGrade").textContent = s.grade;
+            if (s.enrolled) {
+                setPhase("choose");
+            } else {
+                startTouches();
+            }
+            scanModal.show();
+        }
+
+        function startTouches() {
+            if (!activeStudent) return;
+            setPhase("touch", { step: 0, hint: "none" });
+            window.expose.send("sendFingerprintEnroll", activeStudent.tz);
+        }
+
+        function closeStudent() {
+            if (scanPhase === "saving" || scanPhase === "done") return;
+            window.expose.send("sendFingerprintCancel");
+            activeStudent = null;
+            scanPhase = null;
+            scanModal.hide();
+        }
+
+        function removeFingerprint() {
+            if (!activeStudent) return;
+            document.getElementById("deleteBtn").disabled = true;
+            window.expose.send("sendFingerprintDelete", activeStudent.tz);
+        }
+
+        function markEnrolled(tz, enrolled) {
+            students.forEach(s => {
+                if (Number(s.tz) === Number(tz)) s.enrolled = enrolled ? 1 : 0;
+            });
+            renderStudents();
+        }
+
+        function onReaderEvent(ev) {
+            if (!ev) return;
+            if (ev.type === "status") {
+                reader = ev;
+                renderReaderBanner();
+                if (scanPhase === "touch") renderTouch();
+                return;
+            }
+            if (!activeStudent) return;
+            lastTouch = Date.now();
+            switch (ev.type) {
+                case "enrollStep":
+                    setPhase("touch", { step: ev.step, hint: "none" });
+                    if (ev.step >= 3) setPhase("saving");
+                    break;
+                case "enrollRetry":
+                    if (scanPhase === "touch") setPhase("touch", { ...touchState, hint: "retry" });
+                    break;
+                case "enrollDuplicate":
+                    if (scanPhase === "touch") setPhase("touch", { ...touchState, hint: "duplicate", name: ev.name });
+                    break;
+                case "enrollFailed":
+                    setPhase("failed", "הקריאות לא התאימו זו לזו. ננסה שוב?");
+                    break;
+                case "enrollSaveFailed":
+                    setPhase("failed", "השמירה נכשלה. נסו שוב.");
+                    break;
+                case "enrolled":
+                    markEnrolled(ev.tz, true);
+                    setPhase("done");
+                    setTimeout(() => {
+                        activeStudent = null;
+                        scanPhase = null;
+                        scanModal.hide();
+                    }, SUCCESS_MS);
+                    break;
+                case "deleted":
+                    markEnrolled(ev.tz, false);
+                    activeStudent = null;
+                    scanPhase = null;
+                    scanModal.hide();
+                    break;
+                case "deleteFailed":
+                    setPhase("failed", "המחיקה נכשלה. נסו שוב.");
+                    break;
+            }
+        }
+
+        var touchState = { step: 0, hint: "none" };
+
+        function setPhase(phase, detail) {
+            scanPhase = phase;
+            ["choose", "touch", "saving", "done", "failed"].forEach(p => {
+                const id = "scan" + p.charAt(0).toUpperCase() + p.slice(1);
+                document.getElementById(id).style.display = p === phase ? "" : "none";
+            });
+            document.getElementById("scanBack").style.display = (phase === "saving" || phase === "done") ? "none" : "";
+            document.getElementById("deleteBtn").disabled = false;
+            if (phase === "touch") {
+                touchState = detail;
+                renderTouch();
+            }
+            if (phase === "failed") {
+                document.getElementById("failedNote").textContent = detail;
+            }
+        }
+
+        function renderTouch() {
+            const ready = !!(reader && reader.connected);
+            document.querySelectorAll("#steps .fp-step").forEach((el, i) => {
+                const done = i < touchState.step;
+                el.classList.toggle("done", done);
+                el.textContent = done ? "✓" : String(i + 1);
+            });
+            document.getElementById("touchIcon").classList.toggle("ready", ready);
+
+            let text;
+            let bad = true;
+            if (!ready) text = "חברו את הקורא למחשב";
+            else if (touchState.hint === "retry") text = "זו לא אותה אצבע, נסו שוב";
+            else if (touchState.hint === "duplicate") text = touchState.name
+                ? `האצבע הזו כבר רשומה ל${touchState.name}`
+                : "האצבע הזו כבר רשומה בשם אחר";
+            else {
+                bad = false;
+                text = touchState.step === 0 ? "הניחו אצבע על הקורא"
+                    : touchState.step === 1 ? "מצוין! הרימו והניחו שוב"
+                        : "עוד פעם אחת אחרונה";
+            }
+            const note = document.getElementById("touchNote");
+            note.textContent = text;
+            note.className = "fp-note " + (bad ? "fp-note-bad" : "fp-note-ok");
+        }
+    </script>
+</body>
+
+</html>

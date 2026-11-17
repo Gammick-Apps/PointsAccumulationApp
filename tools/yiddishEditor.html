@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>עריכת תרגום לאידיש</title>
+<!-- דף עזר לעריכת האידיש ב-js/languages.js. לא חלק מהמערכת: נפתח ב-Edge/Chrome, קורא את הקובץ וכותב אליו ישירות -->
+<style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f4f5f7; color: #222; }
+    header { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #ddd; padding: 12px 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; z-index: 1; }
+    h1 { font-size: 20px; margin: 0 0 0 auto; }
+    button { font-size: 15px; padding: 7px 16px; border: 1px solid #888; border-radius: 6px; background: #fff; cursor: pointer; }
+    button.primary { background: #2b6cb0; color: #fff; border-color: #2b6cb0; }
+    button:disabled { opacity: .5; cursor: default; }
+    input[type=search] { font-size: 15px; padding: 6px 10px; width: 220px; }
+    #status { font-size: 14px; color: #555; }
+    main { padding: 16px 20px 60px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; }
+    th, td { border: 1px solid #ddd; padding: 8px; vertical-align: top; text-align: right; }
+    th { background: #eef1f5; position: sticky; top: 57px; }
+    td.he { width: 45%; white-space: pre-wrap; }
+    td.key { width: 1%; font-size: 12px; color: #999; direction: ltr; white-space: nowrap; }
+    tr.section td { background: #fafafa; font-weight: bold; color: #2b6cb0; }
+    tr.changed td.yi { background: #fff8db; }
+    tr.missing td.yi textarea { border-color: #e53e3e; }
+    textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 15px; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; resize: vertical; min-height: 30px; }
+    textarea + textarea { margin-top: 4px; }
+    .empty { text-align: center; padding: 80px 20px; color: #666; font-size: 17px; }
+</style>
+</head>
+<body>
+<header>
+    <h1>עריכת תרגום לאידיש</h1>
+    <input type="search" id="filter" placeholder="חיפוש..." disabled>
+    <span id="status"></span>
+    <button id="openBtn" class="primary">פתיחת languages.js</button>
+    <button id="saveBtn" disabled>שמירה</button>
+</header>
+<main id="main">
+    <div class="empty">יש ללחוץ על "פתיחת languages.js" ולבחור את הקובץ מתוך התיקייה js של הפרויקט.</div>
+</main>
+
+<script>
+    const TARGET = 'yi';
+    let fileHandle = null;
+    let source = '';
+    let entries = [];      // { key, section, he, yi, original }
+
+    // ---------- קריאת הקובץ ----------
+
+    // מדלג על מחרוזת שמתחילה ב-i ומחזיר את האינדקס שאחריה
+    function skipString(text, i) {
+        const quote = text[i];
+        i++;
+        while (i < text.length && text[i] !== quote) {
+            if (text[i] === '\\') i++;
+            i++;
+        }
+        return i + 1;
+    }
+
+    // הסוגר שסוגר את הפותח שב-i, תוך דילוג על מחרוזות
+    function matchingBracket(text, i) {
+        let depth = 0;
+        while (i < text.length) {
+            const c = text[i];
+            if (c === "'" || c === '"' || c === '`') { i = skipString(text, i); continue; }
+            if (c === '{' || c === '[') depth++;
+            if (c === '}' || c === ']') { depth--; if (depth === 0) return i; }
+            i++;
+        }
+        return -1;
+    }
+
+    // הטווח של כל טקסט בתוך TEXTS, יחד עם כותרת הסקשן שמעליו
+    function locateEntries(text) {
+        const start = text.indexOf('const TEXTS = {');
+        const end = matchingBracket(text, text.indexOf('{', start));
+        const found = [];
+        const re = /^ {4}(?:\/\/ -+ (.+?) -+ \/\/|(\w+): \{)/gm;
+        re.lastIndex = start;
+        let section = '';
+        let m;
+        while ((m = re.exec(text)) && m.index < end) {
+            if (m[1]) { section = m[1]; continue; }
+            const open = m.index + m[0].length - 1;
+            const close = matchingBracket(text, open);
+            found.push({ key: m[2], section, open, close });
+            re.lastIndex = close;
+        }
+        return found;
+    }
+
+    // הטווח של הערך של yi בתוך טקסט אחד (או null אם אין)
+    function locateValue(text, open, close) {
+        let i = open + 1;
+        while (i < close) {
+            const c = text[i];
+            if (c === "'" || c === '"' || c === '`') { i = skipString(text, i); continue; }
+            if (c === '[' || c === '{') { i = matchingBracket(text, i) + 1; continue; }
+            if (text.startsWith(TARGET + ':', i) && /[\s{,]/.test(text[i - 1])) {
+                let v = i + TARGET.length + 1;
+                while (/\s/.test(text[v])) v++;
+                const vEnd = text[v] === '[' ? matchingBracket(text, v) + 1 : skipString(text, v);
+                return { start: v, end: vEnd };
+            }
+            i++;
+        }
+        return null;
+    }
+
+    function loadSource(text) {
+        const TEXTS = new Function(text + '\nreturn TEXTS;')();
+        source = text;
+        entries = locateEntries(text).map(({ key, section }) => {
+            const value = TEXTS[key];
+            const yi = value[TARGET] !== undefined ? value[TARGET] : (Array.isArray(value.he) ? value.he.map(() => '') : '');
+            return { key, section, he: value.he, yi: structuredClone(yi), original: value[TARGET] };
+        });
+    }
+
+    // ---------- כתיבת הקובץ ----------
+
+    function quote(s) {
+        return "'" + s.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
+    }
+
+    function serialize(value) {
+        if (!Array.isArray(value)) return quote(value);
+        return '[' + value.map(quote).join(', ') + ']';
+    }
+
+    function isChanged(entry) {
+        if (entry.original === undefined) return !isEmpty(entry.yi);
+        return JSON.stringify(entry.yi) !== JSON.stringify(entry.original);
+    }
+
+    function isEmpty(value) {
+        return Array.isArray(value) ? value.every(v => v === '') : value === '';
+    }
+
+    // מחליף מהסוף להתחלה כדי שהאינדקסים הקודמים יישארו נכונים
+    function buildSource() {
+        let text = source;
+        const spans = locateEntries(text);
+        for (let n = spans.length - 1; n >= 0; n--) {
+            const entry = entries[n];
+            if (!isChanged(entry) || isEmpty(entry.yi)) continue;
+            const { open, close } = spans[n];
+            const span = locateValue(text, open, close);
+            const value = serialize(entry.yi);
+            if (span) {
+                text = text.slice(0, span.start) + value + text.slice(span.end);
+            } else {
+                // אין עדיין אידיש: מוסיפים אחרי העברית
+                const he = locateHe(text, open, close);
+                text = text.slice(0, he) + ', ' + TARGET + ': ' + value + ' ' + text.slice(he).replace(/^\s*/, '');
+            }
+        }
+        return text;
+    }
+
+    // סוף הערך של he, כדי להוסיף אחריו
+    function locateHe(text, open, close) {
+        let v = text.indexOf('he:', open) + 3;
+        while (/\s/.test(text[v])) v++;
+        return text[v] === '[' ? matchingBracket(text, v) + 1 : skipString(text, v);
+    }
+
+    // ---------- תצוגה ----------
+
+    function render() {
+        const main = document.getElementById('main');
+        const table = document.createElement('table');
+        table.innerHTML = '<thead><tr><th>עברית</th><th>אידיש</th><th></th></tr></thead>';
+        const body = document.createElement('tbody');
+        let lastSection = null;
+        entries.forEach((entry, index) => {
+            if (entry.section !== lastSection) {
+                lastSection = entry.section;
+                const row = body.insertRow();
+                row.className = 'section';
+                row.dataset.section = entry.section;
+                const cell = row.insertCell();
+                cell.colSpan = 3;
+                cell.textContent = entry.section;
+            }
+            const row = body.insertRow();
+            row.dataset.index = index;
+            row.dataset.section = entry.section;
+            const he = row.insertCell();
+            he.className = 'he';
+            he.textContent = Array.isArray(entry.he) ? entry.he.join('\n') : entry.he;
+            const yi = row.insertCell();
+            yi.className = 'yi';
+            const values = Array.isArray(entry.yi) ? entry.yi : [entry.yi];
+            values.forEach((value, i) => {
+                const area = document.createElement('textarea');
+                area.rows = 1;
+                area.value = value;
+                area.addEventListener('input', () => {
+                    if (Array.isArray(entry.yi)) entry.yi[i] = area.value; else entry.yi = area.value;
+                    autoSize(area);
+                    markRow(row, entry);
+                    updateStatus();
+                });
+                yi.appendChild(area);
+            });
+            const key = row.insertCell();
+            key.className = 'key';
+            key.textContent = entry.key;
+            markRow(row, entry);
+        });
+        table.appendChild(body);
+        main.replaceChildren(table);
+        main.querySelectorAll('textarea').forEach(autoSize);
+    }
+
+    function autoSize(area) {
+        area.style.height = 'auto';
+        area.style.height = area.scrollHeight + 'px';
+    }
+
+    function markRow(row, entry) {
+        row.classList.toggle('changed', isChanged(entry));
+        row.classList.toggle('missing', isEmpty(entry.yi));
+    }
+
+    function updateStatus(message) {
+        const changed = entries.filter(isChanged).length;
+        const missing = entries.filter(e => isEmpty(e.yi)).length;
+        document.getElementById('status').textContent = message ||
+            `${entries.length} משפטים · ${missing} חסרים · ${changed} שינויים שלא נשמרו`;
+        document.getElementById('saveBtn').disabled = changed === 0;
+    }
+
+    function applyFilter() {
+        const q = document.getElementById('filter').value.trim();
+        const rows = document.querySelectorAll('tbody tr');
+        const visibleSections = new Set();
+        rows.forEach(row => {
+            if (row.classList.contains('section')) return;
+            const show = !q || row.textContent.includes(q) || [...row.querySelectorAll('textarea')].some(a => a.value.includes(q));
+            row.style.display = show ? '' : 'none';
+            if (show) visibleSections.add(row.dataset.section);
+        });
+        rows.forEach(row => {
+            if (row.classList.contains('section')) row.style.display = visibleSections.has(row.dataset.section) ? '' : 'none';
+        });
+    }
+
+    // ---------- כפתורים ----------
+
+    document.getElementById('openBtn').addEventListener('click', async () => {
+        if (!window.showOpenFilePicker) {
+            alert('הדפדפן לא תומך בעריכת קבצים. יש לפתוח את הדף ב-Edge או ב-Chrome.');
+            return;
+        }
+        try {
+            [fileHandle] = await window.showOpenFilePicker({ types: [{ description: 'languages.js', accept: { 'text/javascript': ['.js'] } }] });
+            const file = await fileHandle.getFile();
+            loadSource(await file.text());
+        } catch (e) {
+            if (e.name !== 'AbortError') alert('לא הצלחתי לקרוא את הקובץ: ' + e.message);
+            return;
+        }
+        render();
+        document.getElementById('filter').disabled = false;
+        updateStatus();
+    });
+
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+        try {
+            const text = buildSource();
+            new Function(text + '\nreturn TEXTS;')(); // לוודא שהקובץ תקין לפני שכותבים
+            const writable = await fileHandle.createWritable();
+            await writable.write(text);
+            await writable.close();
+            loadSource(text);
+            render();
+            applyFilter();
+            updateStatus('נשמר ✓');
+        } catch (e) {
+            alert('השמירה נכשלה, הקובץ לא שונה: ' + e.message);
+        }
+    });
+
+    document.getElementById('filter').addEventListener('input', applyFilter);
+
+    window.addEventListener('beforeunload', e => {
+        if (entries.some(isChanged)) e.preventDefault();
+    });
+</script>
+</body>
+</html>
