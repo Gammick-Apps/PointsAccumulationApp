@@ -103,7 +103,8 @@
         currentIndex = 0;
       }
       closeVideo();
-      updateLines(questions[currentIndex].question + "?", t('thinkItsYou'));
+      // בידרמן: בלי "חושבת שזו את? עלי לבמה"
+      updateLines(questions[currentIndex].question + "?", "");
       document.getElementById("counter").innerHTML = t('questionOf', { n: currentIndex + 1, total: questions.length });
       restartAnimation(document.getElementById("questionCard"), "enter");
     }
