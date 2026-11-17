@@ -4,7 +4,7 @@ const path = require('path')
 let mainWindow
 const { initDatabase, waitDB, readData, readSystem, updateSystem, saveBackground, readBackground, closeDatabase, insertExcelToDB,
   addStudent, updateStudent, addTask, updateTask, addProduct, updateProduct, getStudentById, getTaskByCode,
-  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, setDefaultTask, getDefaultTask, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, getStudentParentByCode, updateStudentText, getStatistics, addPrize, updatePrize, deletePrize, readPrizes, readPrizeWinners, updatePrizeWinner, drawPrize, readTaskValidations, readTaskValidationRecords, readGiftsSummary, readGiftPurchases,
+  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, setDefaultTask, getDefaultTask, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, getStudentParentByCode, updateStudentText, getStatistics, readClassPoints, addClassPoints, resetClassPoints, updateDailyTitles, addPrize, updatePrize, deletePrize, readPrizes, readPrizeWinners, updatePrizeWinner, drawPrize, readTaskValidations, readTaskValidationRecords, readGiftsSummary, readGiftPurchases,
   readFingerprints, readEnrollStudents, saveFingerprint, deleteFingerprint, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
 const { createFingerprint } = require('./fingerprint');
 
@@ -331,6 +331,44 @@ ipcMain.on("sendGetDefaultTask", async () => {
   } catch (error) {
     console.error(error);
     mainWindow.webContents.send("receiveGetDefaultTask", null);
+  }
+});
+
+// -------------- class points (daily activation) ---------------- //
+
+ipcMain.on("sendReadClassPoints", async (event, args) => {
+  try {
+    mainWindow.webContents.send("receiveReadClassPoints", await readClassPoints(args));
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveReadClassPoints", null);
+  }
+});
+
+ipcMain.on("sendAddClassPoints", async (event, args) => {
+  try {
+    mainWindow.webContents.send("receiveAddClassPoints", await addClassPoints(args.grades, args.points));
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveAddClassPoints", null);
+  }
+});
+
+ipcMain.on("sendUpdateDailyTitles", async (event, args) => {
+  try {
+    mainWindow.webContents.send("receiveUpdateDailyTitles", await updateDailyTitles(args.title, args.subtitle));
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveUpdateDailyTitles", false);
+  }
+});
+
+ipcMain.on("sendResetClassPoints", async () => {
+  try {
+    mainWindow.webContents.send("receiveResetClassPoints", await resetClassPoints());
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveResetClassPoints", false);
   }
 });
 

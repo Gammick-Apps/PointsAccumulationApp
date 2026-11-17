@@ -6,3 +6,6 @@ dist/builder-debug.yml
 dist/latest.yml
 dist/win-unpacked/resources/app-update.yml
 dist/win-unpacked/resources/app.asar
+
+# סרטוני ההפעלה היומית - תוכן של כל מוסד, נכנסים רק לברנץ' של המוסד
+resources/dailyActivity/

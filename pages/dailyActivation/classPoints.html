@@ -8,14 +8,12 @@
 
 <body onload="onLoad()">
   <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
-  <link href="../../styleSheets/dailyActivationUserStyleSheet.css" rel="stylesheet" />
   <link href="../../styleSheets/mainStyleSheet.css" rel="stylesheet" />
+  <link href="../../styleSheets/dailyActivationWheelStyleSheet.css" rel="stylesheet" />
   <script src="../../js/jquery.min.js"></script>
   <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
   <script src="../../js/shared.js"></script>
   <script src="../../js/languages.js"></script>
-   <script src="../../js/chart.js"></script>
-  <script src="../../js/chartjs-plugin-datalabels.js"></script>
 
   <script>
     var students = ""
@@ -24,11 +22,14 @@
     var buffer = "";
     var studentResult = ""
     var tableName
-    var classesPoints = ""
+    // { code, name, points, color, el, rank } - code הוא שם הכיתה כמו שהוא בקובץ התלמידות
+    var classesPoints = []
     // מספר הנקודות שמתווספות לכיתה בכל תיקוף
     const POINTS_PER_SCAN = 5
-    // מספר הכיתות המוצגות בגרף ובכרטיסים
-    const MAX_DISPLAYED_CLASSES = 8
+    // כל כמה זמן הגלגל עובר לכיתה הבאה כשאין פעילות
+    const IDLE_STEP_MS = 1800
+    // כמה זמן ההודעה וה-+5 נשארים על המסך אחרי סריקה
+    const HOLD_AFTER_SCAN_MS = 3000
     // ברקודי שכבה - כל ברקוד מוסיף נקודות לשתי הכיתות של אותה שכבה
     const gradeBarcodes = {
       "331277925": "כיתה ט'",
@@ -40,36 +41,21 @@
       "331277931": 'כיתה י"ב',
       "331277932": 'כיתה י"ב'
     };
-    const colorPool = [
-      { color: '#00a597', used: false },
-      { color: '#ff9800', used: false },
-      { color: '#e91e63', used: false },
-      { color: '#4caf50', used: false },
-      { color: '#3f51b5', used: false },
-      { color: '#9c27b0', used: false },
-      { color: '#f44336', used: false },
-      { color: '#009688', used: false },
-      { color: '#cddc39', used: false },
-      { color: '#607d8b', used: false },
-      { color: '#795548', used: false },
-      { color: '#ffc107', used: false },
-      { color: '#2196f3', used: false },
-      { color: '#8bc34a', used: false },
-      { color: '#ff5722', used: false }
-    ];
+    // מאגר הצבעים לכיתות חדשות; הצבע נבחר ונשמר ב-SQLite בפעם הראשונה שהכיתה מופיעה
+    const colorPool = ['#00e5d0', '#ff9800', '#ff4f9a', '#5dff9d', '#6c7dff', '#c86bff', '#ff5a4f',
+      '#18c7b0', '#d7ec47', '#8fb3c9', '#ffb36b', '#ffd54a', '#40b4ff', '#a6e05a', '#ff7a45'];
 
     function onLoad() {
       tableName = 'systemConfig';
       window.expose.sendSystem("sendReadSystem", tableName);
       window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
-          systemConfig = data
+        systemConfig = data
         setLanguage(systemConfig.language);
-        updateLines(t('welcomeAll'), t('whoWins'));
+        showIdleTitles();
         document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
         document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
-
-        document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color)
-        document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
+        document.querySelector(".header").style.color = getTextColor(systemConfig.textColor);
+        applyDailyBackground(systemConfig);
 
         if (systemConfig.numPosition.length > 0) {
           document.getElementById("position").innerHTML += ' ' + systemConfig.numPosition
@@ -79,37 +65,44 @@
         }
         loadStudents();
       })
+      window.expose.receiveDbData("receiveReadClassPoints", (rows) => {
+        if (!rows) return;
+        classesPoints = rows.map(row => ({ code: row.grade, name: row.grade, points: row.points, color: row.color }));
+        buildWheel();
+        if (classesPoints.length > 0) renderBars(classesPoints[0]);
+        scheduleIdle();
+      });
+      // הנקודות כבר עודכנו במסך; כאן רק מיישרים מול מה שנשמר בפועל
+      window.expose.receiveDbData("receiveAddClassPoints", (rows) => {
+        if (!rows) return;
+        rows.forEach(row => {
+          const c = classesPoints.find(x => x.code == row.grade);
+          if (c) c.points = row.points;
+        });
+      });
+    }
+
+    function showIdleTitles() {
+      // כותרת שנערכה בממשק הניהול נכתבת בעברית רגילה, ולכן מוצגת מימין לשמאל.
+      // טקסטי ברירת המחדל ב-languages.js כתובים עם הפיסוק בהתחלה, ולכן משמאל לימין.
+      const custom = systemConfig.dailyTitle || systemConfig.dailySubtitle;
+      setLines(
+        systemConfig.dailyTitle || (custom ? '' : t('welcomeAll')),
+        systemConfig.dailySubtitle || (custom ? '' : t('whoWins')),
+        custom ? 'rtl' : 'ltr');
     }
 
     // נטען אחרי השפה, כי הגרף כותב "נקודות" כבר בציור הראשון
     function loadStudents() {
-        tableName = 'students'
-            window.expose.sendDbData("sendGetDataByTable", tableName);
-            window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
+      tableName = 'students'
+      window.expose.sendDbData("sendGetDataByTable", tableName);
+      window.expose.receiveDbData("receiveGetDataByTable" + tableName, (data) => {
         if (data != 0) {
           students = data;
-          // בניית רשימת כיתות דינמית מתוך students, עם הגרלת צבע ייחודי לכל כיתה
-          const classMap = {};
-          students.forEach(stu => {
-            if (stu.grade && !classMap[stu.grade]) {
-              classMap[stu.grade] = {
-                code: stu.grade,
-                name: stu.grade,
-                points: 0,
-                color: pickUniqueColor()
-              };
-            }
-          });
-          // אם אין localStorage, שמור את הרשימה הדינמית
-          if (!localStorage.getItem("classesPoints")) {
-            localStorage.setItem("classesPoints", JSON.stringify(Object.values(classMap)));
-          }
-          classesPoints = JSON.parse(localStorage.getItem("classesPoints"));
-          renderClassCards(); // Render cards for the classes
-          renderChart();
+          // הכיתות נבנות מחדש מטבלת התלמידות בכל טעינה, הנקודות נשמרות ב-SQLite
+          window.expose.sendDbData("sendReadClassPoints", colorPool);
         }
       });
-
     }
 
     document.addEventListener("keypress", function (e) {
@@ -122,11 +115,11 @@
           else if (searchVal == '011429519')
             login('../main/system')
           else if (searchVal == '207594581')
-              login('../parentsMeeting/user')
+            login('../parentsMeeting/user')
           else if (gradeBarcodes[searchVal])
-              addPointsToGrade(gradeBarcodes[searchVal]);//ברקוד שכבה
+            addPointsToGrade(gradeBarcodes[searchVal]);//ברקוד שכבה
           else
-              searchInExcel();//בת
+            searchInExcel();//בת
         }
       } else {
         buffer += e.key;
@@ -149,217 +142,332 @@
     }
 
     function saveData() {
-      for (var i = 0; i < classesPoints.length; i++) {
-        if (classesPoints[i]["code"] == studentResult.grade) {
-          classesPoints[i]["points"] += POINTS_PER_SCAN;
-          updateLines(t('wellDoneStudent', { name: studentResult.name, grade: studentResult.grade }), t('classPointsSoFar', { points: classesPoints[i]["points"] }));
-          localStorage.setItem("classesPoints", JSON.stringify(classesPoints));
-          renderClassCards();
-          renderChart();
-          break;
-        }
-      }
-      reset(3000);
+      var grade = studentResult.grade;
+      if (!classesPoints.find(c => c.code == grade)) return;
+      window.expose.sendDbData("sendAddClassPoints", { grades: [grade], points: POINTS_PER_SCAN });
+      enqueue({ grades: [grade], message: t('wellDoneStudent', { name: studentResult.name, grade: grade }) });
     }
 
     // ברקוד שכבה - מוסיף נקודות לכל הכיתות של אותה שכבה (לדוגמה: כיתה ט'1 וכיתה ט'2)
     function addPointsToGrade(gradePrefix) {
-      var matched = false;
-      for (var i = 0; i < classesPoints.length; i++) {
-        if (String(classesPoints[i]["code"]).indexOf(gradePrefix) === 0) {
-          classesPoints[i]["points"] += POINTS_PER_SCAN;
-          matched = true;
-        }
-      }
-      if (!matched) {
+      var grades = classesPoints
+        .filter(c => String(c.code).indexOf(gradePrefix) === 0)
+        .map(c => c.code);
+      if (grades.length === 0) {
         showAlert(t('noClassesForGrade'));
         return;
       }
-      localStorage.setItem("classesPoints", JSON.stringify(classesPoints));
-      renderClassCards();
-      renderChart();
+      window.expose.sendDbData("sendAddClassPoints", { grades: grades, points: POINTS_PER_SCAN });
       var gradeLabel = gradePrefix.replace("כיתה ", "");
-      updateLines(t('wellDoneClasses', { grade: gradeLabel }), t('eachClassGot', { points: POINTS_PER_SCAN }));
-      reset(3000);
+      enqueue({ grades: grades, message: t('wellDoneClasses', { grade: gradeLabel }) });
     }
 
-    function reset(time = 0) {
-      setTimeout(function () {
-        updateLines(t('welcomeAll'), t('whoWins'));
-      }, time);
+    function setLines(line1Text, line2Text, direction = 'ltr') {
+      const l1 = document.getElementById("line1"), l2 = document.getElementById("line2");
+      l1.style.opacity = 0; l2.style.opacity = 0;
+      setTimeout(() => {
+        l1.innerHTML = line1Text; l2.innerHTML = line2Text;
+        l1.style.direction = direction; l2.style.direction = direction;
+        l1.style.opacity = 1; l2.style.opacity = line2Text ? .85 : 0;
+      }, 300);
     }
 
-    function updateLines(line1Text, line2Text, line3Text = "") {
-      document.getElementById("line1").innerHTML = line1Text;
-      document.getElementById("line2").innerHTML = line2Text;
-      document.getElementById("line3").innerHTML = line3Text;
-    }
-
+    // מודאל ולא alert() - חלון מערכת מקפיא את המסך ואת קליטת הברקוד
     function showAlert(message) {
       document.querySelector(".modal-body").innerHTML = message;
-      $(document).ready(function () {
-        $('#modal').modal('show')
-      });
+      $('#modal').modal('show');
       setTimeout(function () {
-        $(document).ready(function () {
-          $('#modal').modal('hide')
-        });
-        reset(0)
+        $('#modal').modal('hide');
+      }, 2500);
+    }
+
+    // ================= גלגל הכיתות ================= //
+    var wheelStep, wheelRadius, wheelRotation = 0, focusIndex = 0;
+    var busy = false;
+    var idleTimer = null;
+    const scanQueue = [];
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+
+    // בשוויון נקודות נשמר הדירוג הקודם - כיתה שהשיגה רק השוותה, לא עקפה
+    function sortedByPoints() {
+      return [...classesPoints].sort((a, b) => (b.points - a.points) || ((a.rank || 0) - (b.rank || 0)));
+    }
+
+    function buildWheel() {
+      const wheel = document.getElementById('wheel');
+      wheel.innerHTML = '';
+      const n = classesPoints.length;
+      if (n === 0) return;
+      wheelStep = 360 / n;
+      // רוחב הכרטיס כמו --card-w ב-CSS; רדיוס מינימלי גדול כדי שהגלגל ייפרש לרוחב המסך
+      const WHEEL_CARD_W = 260;
+      const MIN_RADIUS = 650;
+      wheelRadius = n < 3 ? MIN_RADIUS : Math.max(MIN_RADIUS, Math.round((WHEEL_CARD_W + 50) / (2 * Math.tan(Math.PI / n))));
+      classesPoints.forEach((c, i) => {
+        const el = document.createElement('div');
+        el.className = 'card';
+        el.style.setProperty('--c', c.color);
+        el.innerHTML = `<div class="medal"></div><div class="rank"></div>
+          <div class="name"></div><div class="points"></div><div class="label">${t('points')}</div>`;
+        el.querySelector('.name').textContent = c.name;
+        el.querySelector('.points').textContent = c.points;
+        el.style.transform = `rotateY(${i * wheelStep}deg) translateZ(${wheelRadius}px)`;
+        c.el = el;
+        wheel.appendChild(el);
+      });
+      wheelRotation = 0;
+      focusIndex = 0;
+      wheel.style.transition = 'none';
+      wheel.style.transform = `translateZ(${-wheelRadius}px) rotateY(0deg)`;
+      refreshRanks();
+      applyDepth();
+    }
+
+    function refreshRanks() {
+      sortedByPoints().forEach((c, i) => { c.rank = i + 1; });
+      classesPoints.forEach(c => {
+        c.el.querySelector('.rank').textContent = '#' + c.rank;
+        c.el.querySelector('.medal').textContent = c.rank <= 3 ? c.rank : '';
+        c.el.classList.toggle('top1', c.rank === 1);
+        c.el.classList.toggle('top2', c.rank === 2);
+        c.el.classList.toggle('top3', c.rank === 3);
+      });
+    }
+
+    // כרטיסים רחוקים מהמרכז מתעמעמים
+    function applyDepth() {
+      const n = classesPoints.length;
+      classesPoints.forEach((c, i) => {
+        let d = Math.abs(i - focusIndex);
+        d = Math.min(d, n - d);
+        c.el.style.opacity = Math.max(0.12, 1 - d * 0.22);
+        c.el.style.filter = d === 0 ? 'none' : `blur(${Math.min(d, 4) * 0.6}px) saturate(${1 - Math.min(d, 4) * 0.15})`;
+        c.el.classList.toggle('focus', d === 0);
+      });
+    }
+
+    // סיבוב לכיתה, תמיד באותו כיוון
+    function rotateTo(index, durationMs) {
+      const wheel = document.getElementById('wheel');
+      const target = -index * wheelStep;
+      const forward = ((wheelRotation - target) % 360 + 360) % 360;
+      wheelRotation -= forward;
+      wheel.style.transition = `transform ${durationMs}ms cubic-bezier(.25,.8,.25,1)`;
+      wheel.style.transform = `translateZ(${-wheelRadius}px) rotateY(${wheelRotation}deg)`;
+      focusIndex = index;
+      setTimeout(applyDepth, durationMs * 0.6);
+      return wait(durationMs);
+    }
+
+    function countUp(el, from, to, ms) {
+      const start = performance.now();
+      function tick(now) {
+        const p = Math.min(1, (now - start) / ms);
+        el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - p, 3)));
+        if (p < 1) requestAnimationFrame(tick);
       }
-        , 2500);
+      requestAnimationFrame(tick);
     }
-     function renderClassCards() {
-      const cardsContainer = document.getElementById('cards-container');
-      cardsContainer.innerHTML = '';
-      cardsContainer.className = 'd-flex flex-row flex-wrap justify-content-center';
-      // מיון כל הכיתות מהגבוה לנמוך והצגת עד MAX_DISPLAYED_CLASSES המובילות
-      const sortedClasses = [...classesPoints].sort((a, b) => b.points - a.points).slice(0, MAX_DISPLAYED_CLASSES);
-      sortedClasses.forEach((classData) => {
-        const card = document.createElement('div');
-        card.className = 'class-card';
-        card.style.background = '#f8f9fa';
-        card.style.border = '6px solid ' + (classData.color || '#00a597');
-        card.style.borderRadius = '18px';
-        card.style.margin = '6px';
-        card.style.minWidth = '120px';
-        card.style.maxWidth = '135px';
-        card.style.width = '45%';
-        card.style.textAlign = 'center';
-        card.style.boxShadow = '0 2px 8px ' + (classData.color || '#00a597') + '33';
-        card.style.transition = 'transform 0.2s';
-        card.onmouseover = () => card.style.transform = 'scale(1.04)';
-        card.onmouseout = () => card.style.transform = 'scale(1)';
-        const cardTitle = document.createElement('div');
-        cardTitle.className = 'class-title';
-        cardTitle.textContent = classData.name;
-        cardTitle.style.fontSize = '1.2rem';
-        cardTitle.style.fontWeight = 'bold';
-        cardTitle.style.color = classData.color || '#00a597';
-        cardTitle.style.marginBottom = '0';
-        cardTitle.style.lineHeight = '3';
-        const cardPoints = document.createElement('div');
-        cardPoints.className = 'class-points';
-        cardPoints.textContent = classData.points;
-        cardPoints.style.fontSize = '2rem';
-        cardPoints.style.color = classData.color || '#ff9800';
-        cardPoints.style.fontWeight = 'bold';
-        cardPoints.style.lineHeight = '1';
-        cardPoints.style.marginBottom = '0.5rem';
-        card.appendChild(cardTitle);
-        card.appendChild(cardPoints);
-        cardsContainer.appendChild(card);
+
+    // גרף תחתון - כל הכיתות לפי הדירוג, הכיתה שבמרכז מודגשת
+    function renderBars(activeClass) {
+      const barsEl = document.getElementById('bars');
+      const windowClasses = sortedByPoints();
+      const from = 0;
+      const max = Math.max(...classesPoints.map(c => c.points), 1);
+      // הרבה כיתות - עמודות צרות יותר וטקסט קטן יותר
+      barsEl.classList.toggle('dense', windowClasses.length > 14);
+
+      // שימוש חוזר באלמנטים כדי שהגבהים ינועו בצורה חלקה
+      while (barsEl.children.length < windowClasses.length) {
+        const b = document.createElement('div');
+        b.className = 'bar';
+        b.innerHTML = '<div class="fill" style="height:0"><div class="val"></div></div><div class="bname"></div>';
+        barsEl.appendChild(b);
+      }
+      [...barsEl.children].forEach((b, i) => {
+        const c = windowClasses[i];
+        if (!c) { b.style.display = 'none'; return; }
+        b.style.display = '';
+        b.style.setProperty('--c', c.color);
+        b.classList.toggle('active', c === activeClass);
+        b.querySelector('.fill').style.height = Math.max(4, (c.points / max) * 85) + '%';
+        b.querySelector('.val').textContent = c.points;
+        // "כיתה" לא נכנס לעמודה צרה, השם המלא מופיע בכרטיס שבגלגל
+        b.querySelector('.bname').textContent = String(c.name).replace(/^כיתה\s*/, '');
       });
     }
 
-    let chartInstance;
-    function renderChart() {
-      const ctx = document.getElementById('pointsChart').getContext('2d');
-      // מיון יורד לפי נקודות והצגת עד MAX_DISPLAYED_CLASSES המובילות
-      const sortedClasses = [...classesPoints].sort((a, b) => b.points - a.points).slice(0, MAX_DISPLAYED_CLASSES);
-      const labels = sortedClasses.map(c => c.name);
-      const data = sortedClasses.map(c => c.points);
-      const barColors = sortedClasses.map(c => c.color || '#00a597');
-      if (chartInstance) chartInstance.destroy();
-      chartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [
-            {
-              label: t('points'),
-              data: data,
-              backgroundColor: barColors,
-              borderWidth: 2,
-              borderRadius: 18,
-              maxBarThickness: 60,
-              datalabels: {
-                anchor: 'end',
-                align: 'end',
-                color: '#333',
-                font: { weight: 'bold', size: 18 },
-                formatter: function (value) { return value; }
-              }
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              enabled: true,
-              callbacks: {
-                label: function (context) {
-                  return context.label + ': ' + t('pointsCount', { points: context.parsed.y });
-                }
-              }
-            },
-            datalabels: {
-              display: true,
-              color: '#333',
-              font: { weight: 'bold', size: 18 },
-              formatter: function (value) { return value; }
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { color: '#00a597', font: { size: 16 } },
-              grid: { color: '#e0e0e0' }
-            },
-            x: {
-              ticks: { color: '#000000', font: { size: 16 } },
-              grid: { display: false }
-            }
-          }
-        },
-        plugins: [ChartDataLabels]
+    function scheduleIdle() {
+      clearTimeout(idleTimer);
+      if (classesPoints.length < 2) return;
+      idleTimer = setTimeout(async () => {
+        if (busy) return;
+        const next = (focusIndex + 1) % classesPoints.length;
+        await rotateTo(next, 700);
+        if (busy) return;
+        renderBars(classesPoints[next]);
+        scheduleIdle();
+      }, IDLE_STEP_MS);
+    }
+
+    // סריקות שמגיעות באמצע אנימציה נכנסות לתור, כדי שאף סריקה לא תלך לאיבוד
+    function enqueue(event) {
+      scanQueue.push(event);
+      if (!busy) runQueue();
+    }
+
+    async function runQueue() {
+      busy = true;
+      clearTimeout(idleTimer);
+      while (scanQueue.length) await playScan(scanQueue.shift());
+      busy = false;
+      showIdleTitles();
+      scheduleIdle();
+    }
+
+    async function playScan({ grades, message }) {
+      const scanned = classesPoints.filter(c => grades.includes(c.code));
+      if (scanned.length === 0) return;
+      const oldLeader = sortedByPoints()[0];
+      const main = scanned[0];
+      const oldRank = main.rank;
+
+      document.body.classList.add('scanning');
+      setLines(message, '');
+      await rotateTo(classesPoints.indexOf(main), 600);
+
+      scanned.forEach(c => {
+        const before = c.points;
+        c.points += POINTS_PER_SCAN;
+        countUp(c.el.querySelector('.points'), before, c.points, 1100);
       });
+      const burst = document.getElementById('burst');
+      burst.textContent = '+' + POINTS_PER_SCAN;
+      burst.classList.remove('show'); void burst.offsetWidth; burst.classList.add('show');
+      sparkles(main.color);
+
+      refreshRanks();
+      renderBars(main);
+
+      const rc = document.getElementById('rankChange');
+      rc.innerHTML = main.rank < oldRank
+        ? t('rankMoved', { from: oldRank, to: main.rank })
+        : t('rankOf', { rank: main.rank, total: classesPoints.length });
+      rc.classList.toggle('up', main.rank < oldRank);
+      rc.classList.add('show');
+
+      await wait(HOLD_AFTER_SCAN_MS);
+      rc.classList.remove('show');
+
+      // מובילה חדשה רק כשהכיתה עקפה את המובילה הקודמת, לא כשהגיעה לאותו מספר נקודות
+      const newLeader = sortedByPoints()[0];
+      if (newLeader !== oldLeader && scanned.includes(newLeader) && newLeader.points > oldLeader.points)
+        await showLeader(newLeader);
+
+      document.body.classList.remove('scanning');
     }
 
-    // מגריל צבע ייחודי מתוך המאגר ומסמן אותו כ-used; אם נגמרו - צבע ברירת מחדל
-    function pickUniqueColor() {
-      const available = colorPool.filter(c => !c.used);
-      if (available.length === 0) return '#00a597';
-      const idx = Math.floor(Math.random() * available.length);
-      available[idx].used = true;
-      return available[idx].color;
+    async function showLeader(c) {
+      const leader = document.getElementById('leader');
+      const name = document.getElementById('leaderName');
+      name.textContent = c.name;
+      name.style.color = c.color;
+      leader.classList.add('show');
+      confetti();
+      await wait(4000);
+      leader.classList.remove('show');
+      await wait(500);
     }
 
+    // ================= חלקיקים ================= //
+    var particles = [];
+    var fxCtx;
+
+    function sparkles(color) {
+      const cx = innerWidth / 2, cy = innerHeight * 0.46;
+      for (let i = 0; i < 90; i++) {
+        const a = Math.random() * Math.PI * 2, s = 3 + Math.random() * 9;
+        particles.push({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 2, life: 1, size: 2 + Math.random() * 4,
+          color: Math.random() < .5 ? color : '#ffd54a', g: .12, shape: 'dot' });
+      }
+    }
+
+    function confetti() {
+      for (let i = 0; i < 260; i++) {
+        particles.push({ x: Math.random() * innerWidth, y: -20 - Math.random() * innerHeight * .5,
+          vx: (Math.random() - .5) * 3, vy: 2 + Math.random() * 4, life: 1.6, size: 6 + Math.random() * 8,
+          color: colorPool[i % colorPool.length], g: .03, rot: Math.random() * 6, vr: (Math.random() - .5) * .3, shape: 'rect' });
+      }
+    }
+
+    function fxLoop() {
+      const fx = document.getElementById('fx');
+      fxCtx.clearRect(0, 0, fx.width, fx.height);
+      particles = particles.filter(p => p.life > 0 && p.y < fx.height + 40);
+      for (const p of particles) {
+        p.x += p.vx; p.y += p.vy; p.vy += p.g; p.life -= p.shape === 'dot' ? 0.018 : 0.004;
+        fxCtx.globalAlpha = Math.max(0, Math.min(1, p.life));
+        fxCtx.fillStyle = p.color;
+        if (p.shape === 'dot') {
+          fxCtx.beginPath(); fxCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2); fxCtx.fill();
+        } else {
+          p.rot += p.vr;
+          fxCtx.save(); fxCtx.translate(p.x, p.y); fxCtx.rotate(p.rot);
+          fxCtx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2); fxCtx.restore();
+        }
+      }
+      fxCtx.globalAlpha = 1;
+      requestAnimationFrame(fxLoop);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const fx = document.getElementById('fx');
+      fxCtx = fx.getContext('2d');
+      const resize = () => { fx.width = innerWidth; fx.height = innerHeight; };
+      addEventListener('resize', resize); resize();
+      fxLoop();
+    });
   </script>
 
   <div class="background" id="background">
+    <div class="stars" id="stars"></div>
+    <div class="spotlight"></div>
+
     <div class="closeBtn">
       <img onclick="expose.appClose()" src="../../resources/barcode/x-light.svg" />
     </div>
-    <div class="text">
+    <div id="position" data-t="position">עמדה</div>
+
+    <div class="header">
       <div id="line1"></div>
       <div id="line2"></div>
-      <div id="line3"></div>
-      <br>
-      <div class="d-flex flex-row justify-content-center align-items-start" style="direction: rtl;">
-        <div style="min-width:220px; width:300px; margin-left: 5%;">
-          <div id="cards-scroll"
-            style="max-height:520px; overflow-y:auto; overflow-x:hidden; direction:ltr; scrollbar-width:thin;">
-            <div id="cards-container" class="d-flex flex-row flex-wrap justify-content-center"></div>
-          </div>
-        </div>
-        <div id="chart-container" style="flex:1; min-width:0; max-width:1000px; width:100%;">
-          <div style="position:relative; width:100%; aspect-ratio:2/1; min-width:220px;">
-            <canvas id="pointsChart" style="background:#fff;direction:ltr; display:block; margin:auto; border-radius:18px; box-shadow:0 2px 8px #00a59733;
-               width:100%;  max-width:1000px; max-height:450px;"></canvas>
-          </div>
-        </div>
-      </div>
-      <div class="bottom-actions d-flex flex-row justify-content-center" style="gap: 24px;">
-        <button onclick="login('./graphology'); this.blur();" class="action-btn" data-t="graphologyBtn">גרפולוגית</button>
-        <button onclick="login('./questions'); this.blur();" class="action-btn" data-t="videosBtn">הסרטות</button>
-      </div>
     </div>
-    <div id="position" data-t="position">עמדה</div>
+
+    <div class="stage">
+      <div class="wheel" id="wheel"></div>
+    </div>
+
+    <div class="bars" id="bars"></div>
+    <!-- בתוך .background כדי שהגלגל והכותרת יוכלו לעלות מעל ההחשכה -->
+    <div class="dim"></div>
+
+    <div class="bottom-actions d-flex flex-row justify-content-center" style="gap: 24px;">
+      <button onclick="login('./graphology'); this.blur();" class="action-btn glass-btn" data-t="graphologyBtn">גרפולוגית</button>
+      <button onclick="login('./questions'); this.blur();" class="action-btn glass-btn" data-t="videosBtn">הסרטות</button>
+    </div>
   </div>
 
-  <!-- Cards Container -->
+  <div class="burst" id="burst">+5</div>
+  <div class="rankChange" id="rankChange"></div>
+
+  <div class="leader" id="leader">
+    <div class="crown">👑</div>
+    <div class="title" data-t="newLeader">יש לנו מובילה חדשה!</div>
+    <div class="who" id="leaderName"></div>
+  </div>
+
+  <canvas id="fx"></canvas>
 
   <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">

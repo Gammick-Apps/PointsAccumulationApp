@@ -79,6 +79,15 @@ function getBackground(device, color, step = "") {
     }
 }
 
+// מסכי ההפעלה היומית: רקע אישי או רקע Gammick מחליפים את רקע הכוכבים (#stars)
+function applyDailyBackground(systemConfig) {
+    const bg = getBackground(systemConfig.device, systemConfig.color);
+    if (systemConfig.color == "4" || bg) {
+        document.getElementById("stars").style.display = "none";
+        if (bg) document.getElementById("background").style.backgroundImage = bg;
+    }
+}
+
 function getPosition(color) {
     switch (color) {
         case "1":
@@ -90,6 +99,10 @@ function getPosition(color) {
             return ["#ffffff","#000000"];
         case "5":
             return ["#ffffff","#00eac8"];
+        case "6":
+            return ["#ffffff","#1a1050"];
+        default:
+            return ["#ffffff","#000000"];
     }
 }
 

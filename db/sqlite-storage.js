@@ -211,11 +211,20 @@ async function updateSystem(payload) {
   await waitDB();
   const config = payload || {};
   try {
-    await run(`INSERT OR REPLACE INTO systemConfig (id, device, color, textColor, date, numPosition, type, hasPrint, hasBuy, hasParents, hasTests, buy, timer, prizeChance, language) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-      [1, config.device, config.color, config.textColor, config.date, config.numPosition, config.type, config.hasPrint, config.hasBuy, config.hasParents, config.hasTests, config.buy, config.timer, config.prizeChance || 0, config.language || 'he']);
+    // dailyTitle/dailySubtitle נכתבים גם כאן, אחרת ה-REPLACE היה מאפס את הכותרות של ההפעלה היומית
+    await run(`INSERT OR REPLACE INTO systemConfig (id, device, color, textColor, date, numPosition, type, hasPrint, hasBuy, hasParents, hasTests, buy, timer, prizeChance, language, dailyTitle, dailySubtitle) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+      [1, config.device, config.color, config.textColor, config.date, config.numPosition, config.type, config.hasPrint, config.hasBuy, config.hasParents, config.hasTests, config.buy, config.timer, config.prizeChance || 0, config.language || 'he', config.dailyTitle || '', config.dailySubtitle || '']);
   } catch (error) {
     throw error;
   }
+  return true;
+}
+
+// הכותרות של מסך ההפעלה היומית; ריק = ברירת המחדל לפי השפה
+async function updateDailyTitles(title, subtitle) {
+  await waitDB();
+  await run('UPDATE systemConfig SET dailyTitle = ?, dailySubtitle = ? WHERE id = 1;',
+    [String(title || '').trim(), String(subtitle || '').trim()]);
   return true;
 }
 
@@ -646,6 +655,63 @@ async function saveStudentProduct(studentId, productId) {
   }
 }
 
+//------------------ class points (daily activation) ----------------------//
+
+// מסנכרן את רשימת הכיתות מול טבלת התלמידות: כיתה חדשה נכנסת עם 0 נקודות וצבע פנוי מהמאגר,
+// כיתה שכבר לא קיימת בקובץ נמחקת, וכיתה קיימת שומרת על הנקודות והצבע שלה
+async function readClassPoints(colorPool = []) {
+  await waitDB();
+  const gradeRows = await all(
+    `SELECT DISTINCT grade FROM students WHERE grade IS NOT NULL AND TRIM(grade) != '' AND grade != '--------';`
+  );
+  const grades = gradeRows.map(row => row.grade);
+  const existing = await all('SELECT grade, color FROM classPoints;');
+  const existingGrades = new Set(existing.map(row => row.grade));
+  const usedColors = new Set(existing.filter(row => grades.includes(row.grade)).map(row => row.color));
+
+  await run('BEGIN TRANSACTION;');
+  try {
+    for (const row of existing) {
+      if (!grades.includes(row.grade))
+        await run('DELETE FROM classPoints WHERE grade = ?;', [row.grade]);
+    }
+    for (const grade of grades) {
+      if (existingGrades.has(grade)) continue;
+      const available = colorPool.filter(color => !usedColors.has(color));
+      const color = available.length > 0
+        ? available[Math.floor(Math.random() * available.length)]
+        : '#00a597';
+      usedColors.add(color);
+      await run('INSERT INTO classPoints (grade, color) VALUES (?, ?);', [grade, color]);
+    }
+    await run('COMMIT;');
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
+  return all('SELECT grade, points, color FROM classPoints ORDER BY id;');
+}
+
+async function addClassPoints(grades, points) {
+  await waitDB();
+  await run('BEGIN TRANSACTION;');
+  try {
+    for (const grade of grades)
+      await run('UPDATE classPoints SET points = points + ? WHERE grade = ?;', [Number(points), grade]);
+    await run('COMMIT;');
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
+  return all('SELECT grade, points, color FROM classPoints ORDER BY id;');
+}
+
+async function resetClassPoints() {
+  await waitDB();
+  await run('UPDATE classPoints SET points = 0;');
+  return true;
+}
+
 //------------------ prizes ----------------------//
 
 async function addPrize() {
@@ -912,6 +978,7 @@ async function resetDatabase() {
     await run('DELETE FROM studentsPrizes;');
     await run('UPDATE students SET points = 0;');
     await run('UPDATE products SET used = 0;');
+    await run('UPDATE classPoints SET points = 0;');
     await run('COMMIT;');
     return true;
   } catch (error) {
@@ -953,6 +1020,10 @@ module.exports = {
   saveStudentTask,
   saveStudentProduct,
   getStatistics,
+  updateDailyTitles,
+  readClassPoints,
+  addClassPoints,
+  resetClassPoints,
   addPrize,
   updatePrize,
   deletePrize,

@@ -8,8 +8,8 @@
 
 <body onload="onLoad()">
   <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
-  <link href="../../styleSheets/dailyActivationUserStyleSheet.css" rel="stylesheet" />
   <link href="../../styleSheets/mainStyleSheet.css" rel="stylesheet" />
+  <link href="../../styleSheets/dailyActivationWheelStyleSheet.css" rel="stylesheet" />
   <link href="../../styleSheets/graphologyStyleSheet.css" rel="stylesheet" />
   <script src="../../js/jquery.min.js"></script>
   <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
@@ -44,8 +44,8 @@
         updateLines(t('welcomeAllEnd'), t('whatGraphologistWrote'));
         document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
         document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
-        document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color)
-        document.querySelector(".text").style.color = getTextColor(systemConfig.textColor);
+        applyDailyBackground(systemConfig);
+        document.querySelector(".graph").style.color = getTextColor(systemConfig.textColor);
 
         if (systemConfig.numPosition.length > 0) {
           document.getElementById("position").innerHTML += ' ' + systemConfig.numPosition
@@ -89,14 +89,19 @@
 
     function showResult() {
       step = Steps.step2;
-      updateLines(
-        result.name + " " + result.grade,
-        result.text ? result.text : t('noGraphology')
-      );
+      document.getElementById("idle").style.display = "none";
+      document.getElementById("resultName").textContent = result.name;
+      document.getElementById("resultGrade").textContent = result.grade;
+      revealWords(result.text ? result.text : t('noGraphology'));
+      document.getElementById("resultCard").classList.add("show");
       if (result.text) {
         setTimeout(function () {
           toPrint();
         }, 2500);
+      }
+      else {
+        // בלי ניתוח אין הדפסה; בלי זה המסך היה נתקע על ההודעה
+        reset(6000);
       }
     }
 
@@ -145,6 +150,20 @@
       });
     }
 
+    // הניתוח נחשף מילה אחרי מילה; כל החשיפה נגמרת תוך 2.5 שניות, לפני ההדפסה
+    function revealWords(text) {
+      const box = document.getElementById("resultText");
+      box.innerHTML = "";
+      const words = String(text).split(/(\s+)/);
+      const delay = Math.min(60, 2500 / Math.max(1, words.length));
+      words.forEach((word, i) => {
+        const span = document.createElement("span");
+        span.textContent = word;
+        span.style.animationDelay = (600 + i * delay) + "ms";
+        box.appendChild(span);
+      });
+    }
+
     function updateLines(line1Text, line2Text, line3Text = "") {
       if (line1Text != "*")
         document.getElementById("line1").innerHTML = line1Text;
@@ -176,13 +195,27 @@
      <div class="closeBtn">
       <img onclick="expose.appClose()" src="../../resources/barcode/x-light.svg" />
     </div>
-    <div class="text">
-      <div id="line1"> </div>
-      <div id="line2"> </div>
-      <div id="line3"> </div>
-
-    </div>
+    <div class="stars" id="stars"></div>
+    <div class="spotlight"></div>
     <div id="position" data-t="position">עמדה</div>
+
+    <div class="graph">
+      <div id="idle">
+        <div id="line1"></div>
+        <div id="line2"></div>
+        <div id="line3"></div>
+        <div class="orb">✍️</div>
+      </div>
+      <div id="resultCard">
+        <div id="resultName"></div>
+        <div id="resultGrade"></div>
+        <div id="resultText"></div>
+      </div>
+    </div>
+
+    <div class="bottom-actions d-flex flex-row justify-content-center">
+      <button onclick="login('./classPoints'); this.blur();" class="action-btn glass-btn" data-t="back">חזרה</button>
+    </div>
   </div>
 
   <div class="modal fade" style="direction: rtl" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel"

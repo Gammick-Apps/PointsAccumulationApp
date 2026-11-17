@@ -116,6 +116,12 @@
                     hasParents.dispatchEvent(changeEvent);
                 }
                 uploadQuestionsWrapper.style.display = (selectedOption == '5') ? "unset" : "none";
+                // רקע הכוכבים קיים רק במסך ההפעלה היומית
+                document.getElementById('starsOption').style.display = (selectedOption == '5') ? "" : "none";
+                if (selectedOption != '5' && color.value === '6') {
+                    color.value = "0";
+                    color.dispatchEvent(changeEvent);
+                }
             });
 
             color.addEventListener('change', function () {
@@ -290,6 +296,7 @@
                             <option value="3">רב קו</option>
                             <option value="4">עיצוב אישי</option>
                             <option value="5">עיצוב Gammick </option>
+                            <option value="6" id="starsOption">כוכבים</option>
                         </select>
                     </div>
                     <div class="col-md-1">

@@ -17,7 +17,9 @@
         { "name": "buy", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "timer", "type": "INTEGER", "nullable": false, "default": "0" },
         { "name": "prizeChance", "type": "INTEGER", "nullable": false, "default": "0" },
-        { "name": "language", "type": "TEXT", "nullable": false, "default": "'he'" }
+        { "name": "language", "type": "TEXT", "nullable": false, "default": "'he'" },
+        { "name": "dailyTitle", "type": "TEXT", "nullable": false, "default": "''" },
+        { "name": "dailySubtitle", "type": "TEXT", "nullable": false, "default": "''" }
       ],
       "foreignKeys": []
     },
@@ -155,6 +157,16 @@
           "referencesColumns": ["id"]
         }
       ]
+    },
+    {
+      "name": "classPoints",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "primaryKey": true, "nullable": false },
+        { "name": "grade", "type": "TEXT", "unique": true, "nullable": false },
+        { "name": "points", "type": "INTEGER", "nullable": false, "default": "0" },
+        { "name": "color", "type": "TEXT", "nullable": false, "default": "'#00a597'" }
+      ],
+      "foreignKeys": []
     },
     {
       "name": "questions",
