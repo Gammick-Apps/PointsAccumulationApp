@@ -8,8 +8,6 @@
     --bg1: #070b1f;
     --bg2: #1a1050;
     --gold: #ffd54a;
-    --silver: #d9e2ec;
-    --bronze: #e8955a;
     /* רוחב הכרטיס חייב להתאים ל-WHEEL_CARD_W ב-classPoints.html */
     --card-w: 260px;
     --card-h: 330px;
@@ -156,36 +154,6 @@ body {
     transition: opacity .8s, filter .8s, box-shadow .6s;
 }
 
-.card .rank {
-    position: absolute;
-    top: 12px;
-    right: 14px;
-    font-family: "secular", sans-serif;
-    font-size: 1.1rem;
-    opacity: .8;
-}
-
-.card .medal {
-    position: absolute;
-    top: -18px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    font-family: "secular", sans-serif;
-    color: #222;
-    font-size: 1.2rem;
-}
-
-.card.top1 .medal { display: flex; background: var(--gold); box-shadow: 0 0 20px var(--gold); }
-.card.top2 .medal { display: flex; background: var(--silver); box-shadow: 0 0 16px var(--silver); }
-.card.top3 .medal { display: flex; background: var(--bronze); box-shadow: 0 0 16px var(--bronze); }
-.card.top1 { border-color: var(--gold); box-shadow: 0 0 40px #ffd54a99, inset 0 0 30px #ffd54a22; }
-
 .card .name {
     font-family: "secular", sans-serif;
     font-size: 2.7rem;
@@ -311,54 +279,6 @@ body.scanning .header { z-index: 6; }
     70% { opacity: 1; transform: translate(-50%, -110%) scale(1); }
     100% { opacity: 0; transform: translate(-50%, -150%) scale(.9); }
 }
-
-.rankChange {
-    position: fixed;
-    left: 50%;
-    top: 70vh;
-    transform: translateX(-50%);
-    direction: rtl;
-    font-family: "secular", sans-serif;
-    font-size: 2.4rem;
-    color: #fff;
-    background: #ffffff14;
-    border: 2px solid #ffffff33;
-    padding: 8px 30px;
-    border-radius: 40px;
-    opacity: 0;
-    z-index: 9;
-    transition: opacity .4s, transform .4s;
-    white-space: nowrap;
-}
-
-.rankChange.show { opacity: 1; transform: translateX(-50%) translateY(-10px); }
-.rankChange.up { color: #5dff9d; border-color: #5dff9d88; }
-
-/* מובילה חדשה */
-.leader {
-    position: fixed;
-    inset: 0;
-    z-index: 20;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    direction: rtl;
-    background: radial-gradient(circle at 50% 50%, #ffd54a55, #070b1fee 65%);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity .5s;
-}
-
-.leader.show { opacity: 1; }
-.leader .crown { font-size: 7rem; animation: float 1.6s ease-in-out infinite alternate; }
-.leader .title { font-family: "secular", sans-serif; font-size: 4rem; color: var(--gold); text-shadow: 0 0 40px var(--gold); }
-.leader .who { font-family: "secular", sans-serif; font-size: 7rem; margin-top: 10px; }
-.leader.show .who { animation: slam .7s cubic-bezier(.2, 1.6, .4, 1) both .3s; }
-
-@keyframes float { to { transform: translateY(-16px) rotate(4deg); } }
-@keyframes slam { from { transform: scale(3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 #fx {
     position: fixed;

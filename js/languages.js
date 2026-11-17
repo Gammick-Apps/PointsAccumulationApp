@@ -99,10 +99,6 @@ const TEXTS = {
     noClassesForGrade: { he: 'לא נמצאו כיתות לשכבה זו. גשו למורה!', yi: "מ'האט נישט געפונען קיין כיתות פאר די שכבה. גייט צו די מרכזות!" },
     wellDoneClasses: { he: '!כל הכבוד לכיתות {grade}', yi: '!יישר כח די כיתות {grade}' },
     eachClassGot: { he: '!כל כיתה קיבלה {points} נקודות', yi: '!יעדע כתה האט באקומען {points} פונקטן' },
-    // גלגל הכיתות - מוצגים בשורה עם direction: rtl, ולכן הפיסוק במקומו הרגיל
-    rankMoved: { he: 'מקום {from} ⟵ מקום {to} ▲', yi: 'ארט {from} ⟵ ארט {to} ▲' },
-    rankOf: { he: 'מקום {rank} מתוך {total}', yi: 'ארט {rank} פון {total}' },
-    newLeader: { he: 'יש לנו מובילה חדשה!', yi: 'מיר האבן א נייע פירערין!' },
     graphologyBtn: { he: 'גרפולוגית', yi: 'גראפאלאגיסטין' },
     videosBtn: { he: 'הסרטות', yi: 'ווידיאס' },
     whatGraphologistWrote: { he: 'מה הגרפולוגית רשמה על...?', yi: 'וואס האט די גראפאלאגיסטין געשריבן וועגן...?' },

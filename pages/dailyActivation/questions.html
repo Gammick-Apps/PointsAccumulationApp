@@ -60,6 +60,17 @@
         }
       })
 
+      // שם התלמידה והכיתה מעל ההסרטה
+      window.expose.receiveDbData("receiveGetStudentById", (student) => {
+        document.getElementById("mediaCaption").innerHTML = student
+          ? '<span class="capName"></span><span class="capGrade"></span>'
+          : '';
+        if (student) {
+          document.querySelector("#mediaCaption .capName").textContent = student.name;
+          document.querySelector("#mediaCaption .capGrade").textContent = student.grade;
+        }
+      });
+
       // כשההסרטה מסתיימת - סוגרים אותה וחוזרים לשאלה
       document.getElementById("quizVideo").addEventListener("ended", function () {
         closeVideo();
@@ -115,6 +126,8 @@
       var matchIndex = correctBarcodes.indexOf(searchVal);
       // אם נסרק ברקוד של אחת התלמידות הנכונות - מנגן ישירות את ההסרטה התואמת; אחרת מציג איקס אדום גדול
       if (matchIndex != -1) {
+        document.getElementById("mediaCaption").innerHTML = "";
+        window.expose.sendDbData("sendGetStudentById", searchVal);
         playVideo(correctPath + correctVideos[matchIndex] + ".mp4");
       } else {
        showWrongMark();
@@ -124,6 +137,7 @@
      // מציג בפופאפ איקס אדום גדול במקום הסרטון השגוי
     function showWrongMark() {
       restartAnimation(document.getElementById("questionCard"), "shake");
+      document.getElementById("mediaCaption").innerHTML = "";
       stopVideo();
       document.getElementById("quizVideo").style.display = "none";
       document.getElementById("wrongMark").style.display = "flex";
@@ -145,7 +159,8 @@
 
     // סוגר את פופאפ ההסרטה וחוזר לשאלה
     function closeVideo() {
-     clearTimeout(wrongMarkTimer);
+      document.getElementById("mediaCaption").innerHTML = "";
+      clearTimeout(wrongMarkTimer);
       stopVideo();
       document.getElementById("wrongMark").style.display = "none";
       document.getElementById("quizVideo").style.display = "block";
@@ -218,7 +233,8 @@
 
   <!-- פופאפ ההסרטה -->
   <div id="videoWrapper">
-    <img id="videoClose" onclick="closeVideo()" src="../../resources/barcode/x-light.svg" />
+    <button id="videoClose" onclick="closeVideo(); this.blur();" aria-label="סגירה">✕</button>
+    <div id="mediaCaption"></div>
     <video id="quizVideo" controls></video>
     <div id="wrongMark">✗</div>
   </div>
