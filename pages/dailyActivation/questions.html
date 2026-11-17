@@ -151,7 +151,9 @@
     // בקובץ השאלות כותבים רק שם, למשל 3: אם יש 3.mp4 הוא מתנגן,
     // ואם אין - מחפשים תמונה 3.jpg / 3.jpeg / 3.png ומציגים אותה IMAGE_SECONDS שניות
     const IMAGE_SECONDS = 20
-    const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png"]
+    // אחרי בנייה הנתיבים רגישים לאותיות גדולות/קטנות (app.asar), ולכן מנסים את שתיהן
+    const VIDEO_EXTENSIONS = ["mp4", "MP4"]
+    const IMAGE_EXTENSIONS = ["jpg", "JPG", "jpeg", "JPEG", "png", "PNG"]
     // ההסרטות שנשארו לנגן ברצף הנוכחי
     var mediaQueue = []
 
@@ -176,14 +178,22 @@
       document.getElementById("wrongMark").style.display = "none";
       document.getElementById("quizVideo").style.display = "block";
       document.getElementById("videoWrapper").classList.add("show");
+      tryVideo(name, 0);
+    }
+
+    function tryVideo(name, extIndex) {
       var video = document.getElementById("quizVideo");
-      // אין סרטון בשם הזה - עוברים לחיפוש תמונה
-      video.onerror = function () {
+      if (extIndex >= VIDEO_EXTENSIONS.length) {
+        // אין סרטון בשם הזה - עוברים לחיפוש תמונה
         video.onerror = null;
         video.style.display = "none";
         tryImage(name, 0);
+        return;
+      }
+      video.onerror = function () {
+        tryVideo(name, extIndex + 1);
       };
-      video.src = correctPath + name + ".mp4";
+      video.src = correctPath + name + "." + VIDEO_EXTENSIONS[extIndex];
       video.load();
       video.play().catch(function () { });
     }
