@@ -400,7 +400,8 @@
                 window.expose.sendDbData("sendSaveStudentTask", { currentStudent, currentResult });
             }
             window.expose.receiveDbData("receiveSaveStudentData", (points) => {
-                if (points == false) {
+                // 0 נקודות אחרי קנייה זה תקין — רק false מהשרת אומר שאין מספיק נקודות
+                if (points === false) {
                     showAlert(t('notEnoughPoints'));
                     return;
                 } else {
