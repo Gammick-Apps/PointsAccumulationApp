@@ -286,8 +286,9 @@ async function insertExcelToDB(tableName, payload) {
           break;
         case 'questions':
           await run(
-            'INSERT OR REPLACE INTO questions (question, answers, videos) VALUES (?, ?, ?);',
-            [row.question, row.answers, row.videos]
+            // type: 1 = הסרטה, 0 = רגיל (ריק = רגיל). בשאלה רגילה אין answers/videos, ולכן ברירת מחדל ריקה
+            'INSERT OR REPLACE INTO questions (question, answers, videos, type) VALUES (?, ?, ?, ?);',
+            [row.question ?? '', row.answers ?? '', row.videos ?? '', String(row.type ?? '').trim()]
           );
           break;
         case 'tests':

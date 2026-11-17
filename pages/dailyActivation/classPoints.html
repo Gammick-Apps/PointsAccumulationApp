@@ -10,6 +10,28 @@
   <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
   <link href="../../styleSheets/mainStyleSheet.css" rel="stylesheet" />
   <link href="../../styleSheets/dailyActivationWheelStyleSheet.css" rel="stylesheet" />
+  <link href="../../styleSheets/mediaOverlayStyleSheet.css" rel="stylesheet" />
+  <!-- בידרמן: שאלה במקום הכותרות, כפתור הקבלה למעלה משמאל -->
+  <style>
+    .top-actions { position: fixed; top: 2.5vh; left: 2%; z-index: 50; display: flex; gap: 12px; direction: rtl; }
+    .top-actions .action-btn { margin: 0; }
+    /* מספר העמדה עובר מתחת לכפתורים */
+    #position { top: 10vh; }
+    /* גודל הגופן של השאלה נקבע ב-fitQuestion: שאלה ארוכה קטנה עד שהיא נכנסת בגובה הקבוע */
+    .header.question-mode #line1 { line-height: 1.3; max-width: 76vw; margin: 0 auto; overflow-wrap: anywhere; }
+    .qNav { display: flex; justify-content: center; gap: 12px; margin-bottom: 8px; direction: rtl; }
+    .qNav .action-btn { margin: 0; }
+    .glass-btn.small { padding: 4px 18px; font-size: 1rem; }
+    /* אזור קבוע מעל הגלגל: הכפתורים למעלה, והשאלה ממורכזת לגובה בשטח שנשאר עד הגלגל */
+    .header.question-mode { top: 2.5vh; height: 25vh; display: flex; flex-direction: column; align-items: center; }
+    .header.question-mode #line1 { margin: auto auto 0; }
+    .header.question-mode #line2 { margin: 0 auto auto; }
+    /* הגלגל יורד ומתקרב לגרף (שירד לתחתית המסך), כדי לפנות מקום לשאלה של עד 3 שורות */
+    .stage { top: 27vh; height: 50vh; }
+    .bars { bottom: 3vh; }
+    /* בזמן סריקה מוצגת רק ההודעה "כל הכבוד ל..." */
+    body.scanning .qNav { visibility: hidden; }
+  </style>
   <script src="../../js/jquery.min.js"></script>
   <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
   <script src="../../js/shared.js"></script>
@@ -64,7 +86,10 @@
           document.getElementById("position").style.display = "none";
         }
         loadStudents();
+        loadQuestions();
       })
+      // סרטון שנגמר - עוברים להסרטה הבאה ברצף
+      document.getElementById("quizVideo").addEventListener("ended", playNextMedia);
       window.expose.receiveDbData("receiveReadClassPoints", (rows) => {
         if (!rows) return;
         classesPoints = rows.map(row => ({ code: row.grade, name: row.grade, points: row.points, color: row.color }));
@@ -72,7 +97,6 @@
         if (classesPoints.length > 0) renderBars(classesPoints[0]);
         scheduleIdle();
       });
-      // הנקודות כבר עודכנו במסך; כאן רק מיישרים מול מה שנשמר בפועל
       // לא מעדכנים כאן את הנקודות שעל המסך: התשובה מה-DB מגיעה לפעמים לפני שהאנימציה
       // מוסיפה את ה-5, ואז הם נספרו פעמיים על המסך (10 במקום 5). המסך מוסיף 5 בעצמו,
       // וה-DB נשמר בנפרד; בטעינה הבאה המסך נטען שוב מה-DB.
@@ -81,7 +105,47 @@
       });
     }
 
+    // ===== בידרמן: השאלות מקובץ השאלות מוצגות במקום הכותרות, עם מעבר בין שאלות =====
+    var questions = [];
+    var currentQ = 0;
+
+    function loadQuestions() {
+      window.expose.sendDbData("sendGetDataByTable", 'questions');
+      window.expose.receiveDbData("receiveGetDataByTablequestions", (data) => {
+        questions = Array.isArray(data) ? data.filter(q => q.question) : [];
+        document.getElementById("qNav").style.display = questions.length > 1 ? "" : "none";
+        if (!busy) showIdleTitles();
+      });
+    }
+
+    // רשימת מספרים עם פסיקים בלי רווחים (למשל ת"ז) היא "מילה" אחת ארוכה שלא יורדת שורה
+    // ונחתכת בצד; מוסיפים אחרי כל פסיק נקודת שבירה בלתי נראית.
+    // השאלה מוצגת בדיוק כמו בקובץ - בלי להוסיף "?"
+    function formatQuestion(text) {
+      const div = document.createElement("div");
+      div.textContent = String(text).trim();
+      return div.innerHTML.replace(/,/g, ",<wbr>");
+    }
+
+    function nextQuestion() {
+      if (questions.length === 0) return;
+      currentQ = (currentQ + 1) % questions.length;
+      if (!busy) showIdleTitles();
+    }
+
+    function prevQuestion() {
+      if (questions.length === 0) return;
+      currentQ = (currentQ - 1 + questions.length) % questions.length;
+      if (!busy) showIdleTitles();
+    }
+
     function showIdleTitles() {
+      if (questions.length > 0) {
+        document.querySelector(".header").classList.add("question-mode");
+        setLines(formatQuestion(questions[currentQ].question), '', 'rtl');
+        return;
+      }
+      document.querySelector(".header").classList.remove("question-mode");
       // כותרת שנערכה בממשק הניהול נכתבת בעברית רגילה, ולכן מוצגת מימין לשמאל.
       // טקסטי ברירת המחדל ב-languages.js כתובים עם הפיסוק בהתחלה, ולכן משמאל לימין.
       const custom = systemConfig.dailyTitle || systemConfig.dailySubtitle;
@@ -140,11 +204,40 @@
       saveData();
     }
 
+    // בידרמן: לפי סוג השאלה שמוצגת כרגע
+    // - רגיל (או בלי סוג): כל תלמידה מוסיפה 5 נקודות לכיתה שלה
+    // - הסרטה: ברקוד נכון = ההסרטות של השאלה ברצף + 5 נקודות; ברקוד לא נכון = X אדום, בלי נקודות
     function saveData() {
       var grade = studentResult.grade;
       if (!classesPoints.find(c => c.code == grade)) return;
+      var message = t('wellDoneStudent', { name: studentResult.name, grade: grade });
+      var q = currentQuestion();
+      var media = [];
+      if (q && isVideoQuestion(q)) {
+        var answers = splitList(q.answers);
+        var isCorrect = answers.includes(String(searchVal)) ||
+          answers.includes(String(studentResult.tz)) || answers.includes(String(studentResult.code));
+        if (!isCorrect) {
+          enqueue({ wrong: true });
+          return;
+        }
+        media = splitList(q.videos);
+      }
       window.expose.sendDbData("sendAddClassPoints", { grades: [grade], points: POINTS_PER_SCAN });
-      enqueue({ grades: [grade], message: t('wellDoneStudent', { name: studentResult.name, grade: grade }) });
+      enqueue({ grades: [grade], message: message, media: media, student: { name: studentResult.name, grade: grade } });
+    }
+
+    function currentQuestion() {
+      return questions.length > 0 ? questions[currentQ] : null;
+    }
+
+    // עמודת type בקובץ השאלות: 1 = הסרטה, 0 (או ריק) = רגיל
+    function isVideoQuestion(q) {
+      return String(q.type ?? '').trim() === '1';
+    }
+
+    function splitList(value) {
+      return String(value || '').split(',').map(s => s.trim()).filter(s => s !== '');
     }
 
     // ברקוד שכבה - מוסיף נקודות לכל הכיתות של אותה שכבה (לדוגמה: כיתה ט'1 וכיתה ט'2)
@@ -167,8 +260,30 @@
       setTimeout(() => {
         l1.innerHTML = line1Text; l2.innerHTML = line2Text;
         l1.style.direction = direction; l2.style.direction = direction;
+        fitQuestion();
         l1.style.opacity = 1; l2.style.opacity = line2Text ? .85 : 0;
       }, 300);
+    }
+
+    // שאלה ארוכה: מתחילים בגופן גדול ומקטינים עד שהטקסט נכנס בגובה של כ-3 שורות,
+    // כדי שהשאלה תמיד תוצג במלואה ולא תעלה על הגלגל
+    const QUESTION_MAX_FONT_VW = 3.2
+    const QUESTION_MIN_FONT_VW = 1.4
+    const QUESTION_MAX_HEIGHT_VH = 17
+    function fitQuestion() {
+      const l1 = document.getElementById("line1");
+      if (!document.querySelector(".header").classList.contains("question-mode")) {
+        l1.style.fontSize = "";
+        return;
+      }
+      const maxHeight = innerHeight * QUESTION_MAX_HEIGHT_VH / 100;
+      let size = QUESTION_MAX_FONT_VW;
+      l1.style.fontSize = size + "vw";
+      // גם גובה וגם רוחב - טקסט שגולש לצד נחשב לא נכנס
+      while ((l1.scrollHeight > maxHeight || l1.scrollWidth > l1.clientWidth) && size > QUESTION_MIN_FONT_VW) {
+        size -= 0.1;
+        l1.style.fontSize = size.toFixed(1) + "vw";
+      }
     }
 
     // מודאל ולא alert() - חלון מערכת מקפיא את המסך ואת קליטת הברקוד
@@ -305,6 +420,126 @@
     }
 
     // סריקות שמגיעות באמצע אנימציה נכנסות לתור, כדי שאף סריקה לא תלך לאיבוד
+    // ================= הסרטות ותמונות (שאלות מסוג הסרטה) ================= //
+    // בעמודה videos כותבים רק שם, למשל 3: אם יש 3.mp4 הוא מתנגן, ואם אין -
+    // מחפשים תמונה 3.jpg / 3.jpeg / 3.png ומציגים אותה IMAGE_SECONDS שניות
+    const CORRECT_PATH = "../../resources/dailyActivity/correct/"
+    const IMAGE_SECONDS = 20
+    const WRONG_MARK_SECONDS = 2.5
+    // אחרי בנייה הנתיבים רגישים לאותיות גדולות/קטנות (app.asar), ולכן מנסים את שתיהן
+    const VIDEO_EXTENSIONS = ["mp4", "MP4"]
+    const IMAGE_EXTENSIONS = ["jpg", "JPG", "jpeg", "JPEG", "png", "PNG"]
+    var mediaQueue = []
+    var mediaTimer = null
+    var mediaDone = null
+
+    // מחזיר Promise שמסתיים כשהרצף נגמר או כשלוחצים על האיקס
+    function playMediaSequence(names, student) {
+      return new Promise(resolve => {
+        mediaDone = resolve;
+        const caption = document.getElementById("mediaCaption");
+        caption.innerHTML = '<span class="capName"></span><span class="capGrade"></span>';
+        caption.querySelector(".capName").textContent = student.name;
+        caption.querySelector(".capGrade").textContent = student.grade;
+        mediaQueue = names.slice();
+        playNextMedia();
+      });
+    }
+
+    function showWrongMark() {
+      return new Promise(resolve => {
+        mediaDone = resolve;
+        mediaQueue = [];
+        document.getElementById("mediaCaption").innerHTML = "";
+        stopVideo();
+        hideImage();
+        document.getElementById("quizVideo").style.display = "none";
+        document.getElementById("wrongMark").style.display = "flex";
+        document.getElementById("videoWrapper").classList.add("show");
+        clearTimeout(mediaTimer);
+        mediaTimer = setTimeout(closeVideo, WRONG_MARK_SECONDS * 1000);
+      });
+    }
+
+    function playNextMedia() {
+      if (mediaQueue.length === 0) {
+        closeVideo();
+        return;
+      }
+      const name = String(mediaQueue.shift()).replace(/\.(mp4|jpe?g|png)$/i, "");
+      stopVideo();
+      hideImage();
+      document.getElementById("wrongMark").style.display = "none";
+      document.getElementById("quizVideo").style.display = "block";
+      document.getElementById("videoWrapper").classList.add("show");
+      tryVideo(name, 0);
+    }
+
+    function tryVideo(name, extIndex) {
+      const video = document.getElementById("quizVideo");
+      if (extIndex >= VIDEO_EXTENSIONS.length) {
+        // אין סרטון בשם הזה - עוברים לחיפוש תמונה
+        video.onerror = null;
+        video.style.display = "none";
+        tryImage(name, 0);
+        return;
+      }
+      video.onerror = () => tryVideo(name, extIndex + 1);
+      video.src = CORRECT_PATH + name + "." + VIDEO_EXTENSIONS[extIndex];
+      video.load();
+      video.play().catch(() => { });
+    }
+
+    function tryImage(name, extIndex) {
+      if (extIndex >= IMAGE_EXTENSIONS.length) {
+        // אין לא סרטון ולא תמונה בשם הזה - מדלגים להבא ברצף
+        playNextMedia();
+        return;
+      }
+      const img = document.getElementById("quizImage");
+      img.onload = () => {
+        img.style.display = "block";
+        clearTimeout(mediaTimer);
+        mediaTimer = setTimeout(playNextMedia, IMAGE_SECONDS * 1000);
+      };
+      img.onerror = () => tryImage(name, extIndex + 1);
+      img.src = CORRECT_PATH + name + "." + IMAGE_EXTENSIONS[extIndex];
+    }
+
+    function hideImage() {
+      const img = document.getElementById("quizImage");
+      img.onload = null;
+      img.onerror = null;
+      img.removeAttribute("src");
+      img.style.display = "none";
+    }
+
+    function stopVideo() {
+      const video = document.getElementById("quizVideo");
+      // בלי זה ריקון ה-src היה נחשב "סרטון לא נמצא" ומפעיל חיפוש תמונה
+      video.onerror = null;
+      video.pause();
+      video.removeAttribute("src");
+      video.load();
+    }
+
+    // סוגר את החלון (גם מהאיקס) וממשיך לגלגל
+    function closeVideo() {
+      mediaQueue = [];
+      clearTimeout(mediaTimer);
+      stopVideo();
+      hideImage();
+      document.getElementById("mediaCaption").innerHTML = "";
+      document.getElementById("wrongMark").style.display = "none";
+      document.getElementById("quizVideo").style.display = "block";
+      document.getElementById("videoWrapper").classList.remove("show");
+      if (mediaDone) {
+        const done = mediaDone;
+        mediaDone = null;
+        done();
+      }
+    }
+
     function enqueue(event) {
       scanQueue.push(event);
       if (!busy) runQueue();
@@ -319,7 +554,14 @@
       scheduleIdle();
     }
 
-    async function playScan({ grades, message }) {
+    async function playScan({ grades, message, media, student, wrong }) {
+      if (wrong) {
+        await showWrongMark();
+        return;
+      }
+      // שאלת הסרטה: קודם ההסרטה, ואחריה ה-+5 על הגלגל
+      if (media && media.length > 0) await playMediaSequence(media, student);
+
       const scanned = classesPoints.filter(c => grades.includes(c.code));
       if (scanned.length === 0) return;
       const main = scanned[0];
@@ -397,7 +639,16 @@
     </div>
     <div id="position" data-t="position">עמדה</div>
 
+    <!-- בידרמן: כפתורי המסכים למעלה משמאל -->
+    <div class="top-actions">
+      <button onclick="login('./graphology'); this.blur();" class="action-btn glass-btn" data-t="graphologyBtn">גרפולוגית</button>
+    </div>
+
     <div class="header">
+      <div id="qNav" class="qNav" style="display: none;">
+        <button onclick="nextQuestion(); this.blur();" class="action-btn glass-btn small" data-t="nextQuestion">שאלה הבאה</button>
+        <button onclick="prevQuestion(); this.blur();" class="action-btn glass-btn small" data-t="prevQuestion">שאלה קודמת</button>
+      </div>
       <div id="line1"></div>
       <div id="line2"></div>
     </div>
@@ -409,11 +660,15 @@
     <div class="bars" id="bars"></div>
     <!-- בתוך .background כדי שהגלגל והכותרת יוכלו לעלות מעל ההחשכה -->
     <div class="dim"></div>
+  </div>
 
-    <div class="bottom-actions d-flex flex-row justify-content-center" style="gap: 24px;">
-      <button onclick="login('./graphology'); this.blur();" class="action-btn glass-btn" data-t="graphologyBtn">גרפולוגית</button>
-      <button onclick="login('./questions'); this.blur();" class="action-btn glass-btn" data-t="videosBtn">הסרטות</button>
-    </div>
+  <!-- חלון ההסרטה / התמונה / ה-X האדום של שאלות מסוג הסרטה -->
+  <div id="videoWrapper">
+    <button id="videoClose" onclick="closeVideo(); this.blur();" aria-label="סגירה">✕</button>
+    <div id="mediaCaption"></div>
+    <video id="quizVideo" controls></video>
+    <img id="quizImage" alt="" />
+    <div id="wrongMark">✗</div>
   </div>
 
   <div class="burst" id="burst">+5</div>

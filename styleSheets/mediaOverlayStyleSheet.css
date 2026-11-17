@@ -1,0 +1,129 @@
+/* חלון ההסרטה/התמונה וה-X האדום - במסך הגלגל (בידרמן) */
+
+/* פופאפ ההסרטה - שכבת רקע כהה על כל המסך */
+#videoWrapper {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle at 50% 50%, #1a105099, #000000ee 70%);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+#videoWrapper.show {
+    display: flex;
+    flex-direction: column;
+    animation: fadeIn .4s ease both;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* איקס בולט לסגירת ההסרטה / התמונה - תמיד מעל הכול */
+#videoClose {
+    position: fixed;
+    top: 3vh;
+    right: 3vw;
+    width: 3.6vw;
+    height: 3.6vw;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 50%;
+    border: 2px solid #ffffffcc;
+    background: #ffffff14;
+    color: #fff;
+    font-size: 1.8vw;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1001;
+    box-shadow: 0 2px 8px #0008;
+    outline: none;
+    transition: transform .15s;
+}
+
+#videoClose:hover {
+    transform: scale(1.08);
+}
+
+#videoClose:active {
+    transform: scale(.94);
+}
+
+#quizVideo {
+    width: 90vw;
+    max-width: 1600px;
+    max-height: 75vh;
+    background: #000;
+    border-radius: 24px;
+    border: 3px solid #ffd54a;
+    box-shadow: 0 0 60px #ffd54a88, 0 0 140px #ff980044;
+    display: block;
+    animation: videoIn .6s cubic-bezier(.2, 1.3, .4, 1) both;
+}
+
+/* שם התלמידה והכיתה מעל ההסרטה */
+#mediaCaption {
+    direction: rtl;
+    display: flex;
+    align-items: baseline;
+    gap: 1.5vw;
+    margin-bottom: 2vh;
+    color: #fff;
+}
+
+#mediaCaption:empty {
+    display: none;
+}
+
+#mediaCaption .capName {
+    font-family: "secular", sans-serif;
+    font-size: 3.6vw;
+    color: #ffd54a;
+    text-shadow: 0 0 30px #ffd54a88, 0 2px 6px #0008;
+}
+
+#mediaCaption .capGrade {
+    font-size: 2.4vw;
+    opacity: .9;
+}
+
+/* תמונה שמוצגת במקום סרטון - באותה מסגרת */
+#quizImage {
+    display: none;
+    max-width: 90vw;
+    max-height: 75vh;
+    object-fit: contain;
+    border-radius: 24px;
+    border: 3px solid #ffd54a;
+    box-shadow: 0 0 60px #ffd54a88, 0 0 140px #ff980044;
+    animation: videoIn .6s cubic-bezier(.2, 1.3, .4, 1) both;
+}
+
+@keyframes videoIn {
+    from { opacity: 0; transform: scale(.7); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* איקס אדום גדול שמופיע כאשר הברקוד שגוי */
+#wrongMark {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    font-size: 40vh;
+    line-height: 1;
+    font-weight: 900;
+    color: #ff1a1a;
+    text-shadow: 0 0 30px #ff1a1a, 0 0 60px #ff000088;
+    animation: wrongPulse 0.8s ease-in-out infinite;
+}
+
+@keyframes wrongPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.15); opacity: 0.7; }
+}
