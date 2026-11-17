@@ -73,12 +73,11 @@
         scheduleIdle();
       });
       // הנקודות כבר עודכנו במסך; כאן רק מיישרים מול מה שנשמר בפועל
+      // לא מעדכנים כאן את הנקודות שעל המסך: התשובה מה-DB מגיעה לפעמים לפני שהאנימציה
+      // מוסיפה את ה-5, ואז הם נספרו פעמיים על המסך (10 במקום 5). המסך מוסיף 5 בעצמו,
+      // וה-DB נשמר בנפרד; בטעינה הבאה המסך נטען שוב מה-DB.
       window.expose.receiveDbData("receiveAddClassPoints", (rows) => {
-        if (!rows) return;
-        rows.forEach(row => {
-          const c = classesPoints.find(x => x.code == row.grade);
-          if (c) c.points = row.points;
-        });
+        if (!rows) console.error("saving class points failed");
       });
     }
 
