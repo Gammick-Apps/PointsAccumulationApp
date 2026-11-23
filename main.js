@@ -4,7 +4,7 @@ const path = require('path')
 let mainWindow
 const { initDatabase, waitDB, readData, readSystem, updateSystem, saveBackground, readBackground, closeDatabase, insertExcelToDB,
   addStudent, updateStudent, addTask, updateTask, addProduct, updateProduct, getStudentById, getTaskByCode,
-  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, setDefaultTask, getDefaultTask, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, getStudentParentByCode, updateStudentText, getStatistics, addPrize, updatePrize, deletePrize, readPrizes, readPrizeWinners, updatePrizeWinner, drawPrize, readTaskValidations, readTaskValidationRecords, readGiftsSummary, readGiftPurchases,
+  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, setDefaultTask, getDefaultTask, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, getStudentParentByCode, updateStudentText, updateParentsTz, getStatistics, addPrize, updatePrize, deletePrize, readPrizes, readPrizeWinners, updatePrizeWinner, drawPrize, readTaskValidations, readTaskValidationRecords, readGiftsSummary, readGiftPurchases,
   readFingerprints, readEnrollStudents, saveFingerprint, deleteFingerprint, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
 const { createFingerprint } = require('./fingerprint');
 
@@ -69,6 +69,16 @@ ipcMain.on("sendInsertExcelToDB", async (event, args) => {
   } else {
     console.error("Empty or invalid data.");
     mainWindow.webContents.send("receiveInsertExcelToDB" + args[0], false);
+  }
+});
+
+ipcMain.on("sendUpdateParentsTz", async (event, args) => {
+  try {
+    const data = await updateParentsTz(args);
+    mainWindow.webContents.send("receiveUpdateParentsTz", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveUpdateParentsTz", null);
   }
 });
 
