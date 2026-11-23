@@ -443,6 +443,42 @@ async function updateParentsTz(payload) {
   return { updated, notFound };
 }
 
+// מוסיף צוות (או כל אחד) לטבלת התלמידות בלי למחוק את הקיימות.
+// מי שהת"ז או הקוד שלה כבר קיימים — מדולגת, כדי לא ליצור כפילות בסריקה
+async function addStaff(payload) {
+  await waitDB();
+  const rows = JSON.parse(payload);
+  let added = 0;
+  const skipped = [];
+
+  await run('BEGIN TRANSACTION;');
+  try {
+    for (const row of rows) {
+      const tz = Number(row.tz);
+      if (!tz) continue;
+      const code = normalizeCodeValue(row.code);
+      const exists = await get(
+        'SELECT 1 FROM students WHERE tz = ? OR (? <> \'\' AND code = ?) LIMIT 1;',
+        [tz, code, code]
+      );
+      if (exists) {
+        skipped.push(row.tz);
+        continue;
+      }
+      await run(
+        'INSERT INTO students (tz, code, grade, name, points, tzParent) VALUES (?, ?, ?, ?, ?, ?);',
+        [tz, code || '0', row.grade || 'צוות', row.name || '--------', Number(row.points) || 0, Number(row.tzParent) || 0]
+      );
+      added++;
+    }
+    await run('COMMIT;');
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
+  return { added, skipped };
+}
+
 // מקבל את מצב ה-multiple ומחליט כאן, כדי שלכל העמדות תהיה הגדרה אחת
 async function hasStudentDoneSelected(studentId, taskId, multiple = MULTIPLE_ONCE) {
   await waitDB();
@@ -1035,6 +1071,7 @@ module.exports = {
   getStudentParentByCode,
   updateStudentText,
   updateParentsTz,
+  addStaff,
   getTaskByCode,
   getProductByCode,
   getTestByCode,

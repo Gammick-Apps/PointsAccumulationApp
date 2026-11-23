@@ -373,6 +373,10 @@
                         <input type=file class="form-control" id="uploadParents" accept=".xlsx,.xls,.csv">
                     </div>
                     <div class="col-md-2">
+                        <label for="uploadStaff" class="form-label">הוספת צוות</label>
+                        <input type=file class="form-control" id="uploadStaff" accept=".xlsx,.xls,.csv">
+                    </div>
+                    <div class="col-md-2">
                         <label for="uploadTasks" class="form-label">משימות </label>
                         <input type=file class="form-control" id="uploadTasks" name="files[]">
                     </div>
@@ -456,6 +460,38 @@
         document.getElementById('uploadTest').addEventListener('change', insertExcelToDB, false);
         document.getElementById('uploadQuestions').addEventListener('change', insertExcelToDB, false);
         document.getElementById('uploadParents').addEventListener('change', uploadParentsTz, false);
+        document.getElementById('uploadStaff').addEventListener('change', uploadStaff, false);
+
+        window.expose.receiveDbData("receiveAddStaff", (result) => {
+            document.getElementById('uploadStaff').value = "";
+            if (!result) {
+                showMessage("הוספת הצוות נכשלה");
+                return;
+            }
+            let message = "נוספו " + result.added + " אנשי צוות";
+            if (result.skipped.length > 0)
+                message += "<br>לא נוספו כי הת\"ז או הקוד כבר קיימים: " + result.skipped.join(", ");
+            showMessage(message);
+        });
+
+        // אותן עמודות כמו בקובץ התלמידות (tz, code, grade, name, points). מוסיף בלי למחוק; כיתה ריקה = "צוות"
+        function uploadStaff(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const workbook = XLSX.read(e.target.result, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(sheet);
+                if (rows.length === 0 || !('tz' in rows[0])) {
+                    document.getElementById('uploadStaff').value = "";
+                    showMessage("בקובץ חייבת להיות עמודת tz");
+                    return;
+                }
+                window.expose.sendDbData("sendAddStaff", JSON.stringify(rows));
+            };
+            reader.readAsArrayBuffer(file);
+        }
 
         // נרשם פעם אחת, אחרת כל העלאה מוסיפה מאזין והודעה כפולה
         window.expose.receiveDbData("receiveUpdateParentsTz", (result) => {

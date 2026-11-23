@@ -4,7 +4,7 @@ const path = require('path')
 let mainWindow
 const { initDatabase, waitDB, readData, readSystem, updateSystem, saveBackground, readBackground, closeDatabase, insertExcelToDB,
   addStudent, updateStudent, addTask, updateTask, addProduct, updateProduct, getStudentById, getTaskByCode,
-  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, setDefaultTask, getDefaultTask, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, getStudentParentByCode, updateStudentText, updateParentsTz, getStatistics, readClassPoints, addClassPoints, resetClassPoints, updateDailyTitles, addPrize, updatePrize, deletePrize, readPrizes, readPrizeWinners, updatePrizeWinner, drawPrize, readTaskValidations, readTaskValidationRecords, readGiftsSummary, readGiftPurchases,
+  isTaskUsed, isProductUsed, markProductAsUsed, hasStudentDoneSelected, setDefaultTask, getDefaultTask, saveStudentTask, saveStudentProduct, resetDatabase, getProductByCode, getTestByCode, getStudentParentByCode, updateStudentText, updateParentsTz, addStaff, getStatistics, readClassPoints, addClassPoints, resetClassPoints, updateDailyTitles, addPrize, updatePrize, deletePrize, readPrizes, readPrizeWinners, updatePrizeWinner, drawPrize, readTaskValidations, readTaskValidationRecords, readGiftsSummary, readGiftPurchases,
   readFingerprints, readEnrollStudents, saveFingerprint, deleteFingerprint, DB_FLAG_INCONSISTENT_ERROR_CODE } = require('./db/sqlite-storage');
 const { createFingerprint } = require('./fingerprint');
 
@@ -79,6 +79,17 @@ ipcMain.on("sendUpdateParentsTz", async (event, args) => {
   } catch (error) {
     console.error(error);
     mainWindow.webContents.send("receiveUpdateParentsTz", null);
+  }
+});
+
+ipcMain.on("sendAddStaff", async (event, args) => {
+  try {
+    const data = await addStaff(args);
+    await reloadFingerprints();
+    mainWindow.webContents.send("receiveAddStaff", data);
+  } catch (error) {
+    console.error(error);
+    mainWindow.webContents.send("receiveAddStaff", null);
   }
 });
 
