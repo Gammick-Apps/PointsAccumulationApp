@@ -369,6 +369,10 @@
                         <input type=file class="form-control" id="uploadStudents" name="files[]">
                     </div>
                     <div class="col-md-2">
+                        <label for="uploadParents" class="form-label">עדכון ת"ז הורים</label>
+                        <input type=file class="form-control" id="uploadParents" accept=".xlsx,.xls,.csv">
+                    </div>
+                    <div class="col-md-2">
                         <label for="uploadTasks" class="form-label">משימות </label>
                         <input type=file class="form-control" id="uploadTasks" name="files[]">
                     </div>
@@ -451,6 +455,39 @@
         document.getElementById('uploadProducts').addEventListener('change', insertExcelToDB, false);
         document.getElementById('uploadTest').addEventListener('change', insertExcelToDB, false);
         document.getElementById('uploadQuestions').addEventListener('change', insertExcelToDB, false);
+        document.getElementById('uploadParents').addEventListener('change', uploadParentsTz, false);
+
+        // נרשם פעם אחת, אחרת כל העלאה מוסיפה מאזין והודעה כפולה
+        window.expose.receiveDbData("receiveUpdateParentsTz", (result) => {
+            document.getElementById('uploadParents').value = "";
+            if (!result) {
+                showMessage("עדכון ת\"ז הורים נכשל");
+                return;
+            }
+            let message = "עודכנו " + result.updated + " תלמידות";
+            if (result.notFound.length > 0)
+                message += "<br>לא נמצאו תלמידות עם ת\"ז: " + result.notFound.join(", ");
+            showMessage(message);
+        });
+
+        // קובץ עם עמודות tz (ת"ז תלמידה) ו-tzParent (ת"ז הורה). מעדכן רק את ת"ז ההורה, לא מוחק כלום
+        function uploadParentsTz(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const workbook = XLSX.read(e.target.result, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(sheet);
+                if (rows.length === 0 || !('tz' in rows[0]) || !('tzParent' in rows[0])) {
+                    document.getElementById('uploadParents').value = "";
+                    showMessage("בקובץ חייבות להיות עמודות tz ו-tzParent");
+                    return;
+                }
+                window.expose.sendDbData("sendUpdateParentsTz", JSON.stringify(rows));
+            };
+            reader.readAsArrayBuffer(file);
+        }
 
     </script>
 </body>

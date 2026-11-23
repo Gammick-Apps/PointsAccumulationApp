@@ -417,6 +417,32 @@ async function updateStudentText(studentId, text) {
   }
 }
 
+// מעדכן רק ת"ז הורה לתלמידות קיימות לפי ת"ז תלמידה, בלי למחוק את הטבלה —
+// כדי לא לשבור את ההיסטוריה (משימות/קניות/צ'ופרים מקושרים ל-id של התלמידה) ואת המכתבים
+async function updateParentsTz(payload) {
+  await waitDB();
+  const rows = JSON.parse(payload);
+  let updated = 0;
+  const notFound = [];
+
+  await run('BEGIN TRANSACTION;');
+  try {
+    for (const row of rows) {
+      const tz = Number(row.tz);
+      const tzParent = Number(row.tzParent);
+      if (!tz || !tzParent) continue;
+      const result = await run('UPDATE students SET tzParent = ? WHERE tz = ?;', [tzParent, tz]);
+      if (result.changes > 0) updated += result.changes;
+      else notFound.push(row.tz);
+    }
+    await run('COMMIT;');
+  } catch (error) {
+    await run('ROLLBACK;');
+    throw error;
+  }
+  return { updated, notFound };
+}
+
 // מקבל את מצב ה-multiple ומחליט כאן, כדי שלכל העמדות תהיה הגדרה אחת
 async function hasStudentDoneSelected(studentId, taskId, multiple = MULTIPLE_ONCE) {
   await waitDB();
@@ -1008,6 +1034,7 @@ module.exports = {
   getStudentById,
   getStudentParentByCode,
   updateStudentText,
+  updateParentsTz,
   getTaskByCode,
   getProductByCode,
   getTestByCode,
