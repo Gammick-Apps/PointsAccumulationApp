@@ -28,12 +28,16 @@
 }
 
 #content {
-    background-color: #3196BD;
+    background-color: white;
     font-size: 2vw;
-    color: white
+    color: #333333;
 }
 
 #btnSave {
-    background-color: #75DDB4;
+    background-color: #E8559A;
     color: white;
+}
+.welcome #line1,
+.welcome #line2 {
+    color: #E8559A;
 }

@@ -189,6 +189,8 @@
     }
 
     function updateLines(line1Text, line2Text, line3Text = "") {
+      // הוורוד רק במסך הפתיחה (ברוכה הבאה לאסיפת הורים), לא בהודעות שאחרי הסריקה
+      document.getElementById("text").classList.remove("welcome");
       if (line1Text != "*")
         document.getElementById("line1").innerHTML = line1Text;
       document.getElementById("line2").innerHTML = line2Text;
@@ -216,7 +218,7 @@
   </script>
 
   <div class="background" id="background">
-    <div class="text" id="text">
+    <div class="text welcome" id="text">
       <div id="line1" data-t="welcomeNoMark">ברוכה הבאה</div>
       <div id="line2" data-t="toParentsMeeting">לאסיפת הורים</div>
       <div id="line3" data-t="validateCard">יש לתקף את הכרטיס האישי בסורק הברקוד</div>
