@@ -44,4 +44,18 @@
   FileWrite $5 "==== installer: done$\r$\n"
   drivers_done:
   FileClose $5
+
+  ; The receipt printer must be the Windows default printer. Runs on every
+  ; install and update (silent too), after the driver is installed. The
+  ; installer runs as the regular user (perMachine=false), so the per-user
+  ; default lands on the right account, not the admin of install-drivers.cmd.
+  IfFileExists "$INSTDIR\resources\set-default-printer.ps1" 0 default_printer_done
+  StrCpy $7 "powershell"
+  ; The installer is 32-bit; Sysnative runs the 64-bit PowerShell
+  IfFileExists "$WINDIR\Sysnative\WindowsPowerShell\v1.0\powershell.exe" 0 +2
+    StrCpy $7 "$WINDIR\Sysnative\WindowsPowerShell\v1.0\powershell.exe"
+  DetailPrint "Setting the receipt printer as the default printer..."
+  nsExec::Exec '"$7" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$INSTDIR\resources\set-default-printer.ps1" -Log "$INSTDIR\resources\drivers-log.txt"'
+  Pop $7
+  default_printer_done:
 !macroend

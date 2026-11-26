@@ -53,6 +53,10 @@
         "to": "install-drivers.cmd"
       },
       {
+        "from": "build/set-default-printer.ps1",
+        "to": "set-default-printer.ps1"
+      },
+      {
         "from": "build/printer-driver",
         "to": "printer-driver"
       }
