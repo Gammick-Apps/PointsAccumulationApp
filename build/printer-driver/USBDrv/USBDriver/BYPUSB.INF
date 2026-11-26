@@ -1,0 +1,129 @@
+;-------------------------------------------------------------------------------
+;
+; BYPUSB.INF  --	Windows USB Printer Device Driver
+;
+; Copyright(C) 2001-2011 Shandong New Beiyang Information Technology Co., Ltd. 
+;
+;-------------------------------------------------------------------------------
+
+[Version]
+Signature = "$CHICAGO$"
+Class     = USB
+ClassGUID = {36FC9E60-C465-11CF-8056-444553540000}
+provider  = SNBC
+CatalogFile =BYPUSB.cat
+DriverVer = 05/10/2011,3.2.0.0
+LayoutFile= layout.inf
+
+[Manufacturer]
+%Device.MfgSNBC%=ModelsSNBC,NTx86,NTamd64
+
+[ModelsSNBC]
+; POS/KIOSK Printers
+%USB\SNBC.POSPrinterDesc%=Device.Printer, USB\VID_154F&PID_154F
+%USB\SNBC.POSPrinterDesc%=Device.Printer, USB\VID_04ce&PID_04ce
+%USB\SNBC.POSPrinterDesc%=Device.Printer, USB\VID_154F&PID_1001
+
+;label printer pid_1000
+%USB\SNBC.LabelPrinterDesc%=Device.Printer, USB\VID_154F&PID_1000
+
+;General printer
+%USB\SNBC.PrinterDesc%=Device.Printer, USB\VID_154F&PID_1002
+
+[ModelsSNBC.NTx86]
+; POS/KIOSK Printers
+%USB\SNBC.POSPrinterDesc%=Device.Printer, USB\VID_154F&PID_154F
+%USB\SNBC.POSPrinterDesc%=Device.Printer, USB\VID_04ce&PID_04ce
+%USB\SNBC.POSPrinterDesc%=Device.Printer, USB\VID_154F&PID_1001
+
+;label printer pid_1000
+%USB\SNBC.LabelPrinterDesc%=Device.Printer, USB\VID_154F&PID_1000
+
+;General printer
+%USB\SNBC.PrinterDesc%=Device.Printer, USB\VID_154F&PID_1002
+
+[ModelsSNBC.NTamd64]
+; POS/KIOSK Printers
+%USB\SNBC.POSPrinterDesc%=Device.Printer, USB\VID_154F&PID_154F
+%USB\SNBC.POSPrinterDesc%=Device.Printer, USB\VID_04ce&PID_04ce
+%USB\SNBC.POSPrinterDesc%=Device.Printer, USB\VID_154F&PID_1001
+
+;label printer pid_1000
+%USB\SNBC.LabelPrinterDesc%=Device.Printer, USB\VID_154F&PID_1000
+
+;General printer
+%USB\SNBC.PrinterDesc%=Device.Printer, USB\VID_154F&PID_1002
+
+[PreCopySection]
+HKR,,NoSetupUI,,1
+
+[DestinationDirs]
+BYPUSB.Files.Ext = 10,System32\Drivers
+
+[Device.Printer]
+CopyFiles=BYPUSB.Files.Ext
+AddReg=BYPUSB.AddReg
+
+[Device.Printer.NTx86]
+CopyFiles=BYPUSB.Files.Ext
+AddReg=BYPUSB.AddReg
+
+[Device.Printer.NTx86.Services]
+Addservice = BYPUSB, 0x00000002, BYPUSB.AddService
+
+[Device.Printer.NTamd64]
+CopyFiles=BYPUSB.Files.Ext 
+AddReg=BYPUSB.AddReg
+
+[Device.Printer.NTamd64.Services]
+Addservice = BYPUSB, 0x00000002, BYPUSB.AddService
+
+[BYPUSB.AddService]
+DisplayName    = %BYPUSB.SvcDesc%
+ServiceType    = 1                  ; SERVICE_KERNEL_DRIVER
+StartType      = 3                  ;SERVICE_DEMAND_START
+ErrorControl   = 1                  ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %10%\System32\Drivers\BYPUSB.sys
+LoadOrderGroup = Base
+
+[BYPUSB.AddReg]
+HKR,,DevLoader,,*ntkern
+HKR,,NTMPDriver,,BYPUSB.sys
+;HKLM,"System\Currentcontrolset\Services\BYPUSB\Parameters","MaximumTransferSize",0x10001,4096
+;HKLM,"System\Currentcontrolset\Services\BYPUSB\Parameters","DebugLevel",0x10001,2
+
+HKLM,"SOFTWARE\BEIYANG\PRINTERPORT","D1",0x10001,
+HKLM,"SOFTWARE\BEIYANG\PRINTERPORT","D2",0x10001,
+HKLM,"SOFTWARE\BEIYANG\PRINTERPORT","D3",0x10001,
+HKLM,"SOFTWARE\BEIYANG\PRINTERPORT","D4",0x10001,
+HKLM,"SOFTWARE\BEIYANG\PRINTERPORT","D5",0x10001,
+HKLM,"SOFTWARE\BEIYANG\PRINTERPORT","D6",0x10001,
+HKLM,"SOFTWARE\BEIYANG\PRINTERPORT","D7",0x10001,
+HKLM,"SOFTWARE\BEIYANG\PRINTERPORT","D8",0x10001,
+
+
+[BYPUSB.Files.Ext]
+BYPUSB.sys
+
+[SourceDisksFiles]
+BYPUSB.sys=99
+
+[SourceDisksNames]
+99=%Disk%,,
+
+
+;-------------------------------------------------------------------------------
+;
+; Strings section - Always put strings down here so they can be easily localized 
+; to other languages
+;
+;-------------------------------------------------------------------------------
+
+[Strings]
+Provider="SNBC"
+Device.MfgSNBC="Shandong New Beiyang Information Technology Co., Ltd"
+USB\SNBC.POSPrinterDesc="USB Device Driver for POS/KIOSK Printers"
+USB\SNBC.LabelPrinterDesc="USB Device Driver for Label Printers"
+USB\SNBC.PrinterDesc="SNBC Printer USB Device Driver"
+BYPUSB.SvcDesc="SNBC Printer USB Device Driver"
+Disk="SNBC Printer Driver"

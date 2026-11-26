@@ -44,31 +44,29 @@
   <script src="../../js/jquery.min.js"></script>
   <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
   <script src="../../js/shared.js"></script>
+  <script src="../../js/languages.js"></script>
 
   <script>
     var currentDate = getTodayDate()
     var currentDateTime = getTodayDateTime()
     var systemConfig = ""
-    var parents = ""
     var searchVal = ""
     var step
+    var tableName
     const Steps = {
       step1: "1",
       step2: "2",
       step3: "3"
-    }; var result = "";
+    }; 
+    var result = "";
 
     function onLoad() {
       step = Steps.step1;
-      fileName = 'systemConfig'
-      window.expose.SendExcel("sendReadExcel", fileName);
-      window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-        if (data == 0) {
-          systemConfig = getDefaultConfig()
-        }
-        else {
-          systemConfig = JSON.parse(data)
-        }
+      tableName = 'systemConfig'
+      window.expose.sendSystem("sendReadSystem", tableName);
+      window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {
+        systemConfig = data
+        setLanguage(systemConfig.language);
         document.getElementById("position").style.backgroundColor = getPosition(systemConfig.color)[0]
         document.getElementById("position").style.color = getPosition(systemConfig.color)[1]
         document.getElementById("background").style.backgroundImage = getBackground(systemConfig.device, systemConfig.color)
@@ -80,13 +78,6 @@
         else {
           document.getElementById("position").style.display = "none";
         }
-        fileName = 'parents'
-        window.expose.SendExcel("sendReadExcel", fileName);
-        window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
-          if (data != 0) {
-            parents = JSON.parse(data)
-          }
-        })
       })
     }
 
@@ -99,7 +90,7 @@
             else if (searchVal == '207594581')
               login('../main/user')
             else //כיתה או בת
-              searchInExcel();
+              SearchStudentParent();
           }
         }
       } else {
@@ -107,26 +98,24 @@
       }
     });
 
-    function searchInExcel() {
-      for (var i = 0; i < parents.length; i++) {
-        if (parents[i]["tz"] == searchVal || parents[i]["tzParent"] == searchVal) {
-          result = parents[i];
-          break;
+    function SearchStudentParent() {
+      window.expose.sendDbData("sendGetStudentParentByCode", searchVal);
+      window.expose.receiveDbData("receiveGetStudentParentByCode", (studentParent) => {
+        result = studentParent;
+        if (result == null) {
+          showAlert(t('notFound'))
+          return;
         }
-      }
-      if (result == "") {
-        showAlert(" הברקוד לא מופיע ברשימות. גשו למורה!")
-        return;
-      }
-      if (result.tz == searchVal)
-        studentStart()
-      else if (result.tzParent == searchVal)
-        paretntStart()
+        if (result.scanType == 'parent')
+          parentStart()
+        else
+          studentStart()
+      });
     }
 
-    function paretntStart() {
+    function parentStart() {
       step = Steps.step2;
-      updateLines("", " שלום " + " אמא של " + result.name, "כתבי כאן כמה מילים טובות לביתך")
+      updateLines("", t('helloMotherOf', { name: result.name }), t('writeKindWords'))
       document.getElementById("line2").style.fontSize = "4.5vw"
       document.getElementById("text").style.top = "15%";
       document.getElementById("content").value = result.text ? result.text : ""
@@ -135,7 +124,7 @@
 
     function studentStart() {
       step = Steps.step2;
-      updateLines("", "שלום " + result.name, "!המכתב מאמא מודפס עכשיו. בהנאה");
+      updateLines("", t('helloName', { name: result.name }), t('letterPrinting'));
       setTimeout(function () {
         toPrint();
       }, 2500);
@@ -143,18 +132,15 @@
 
     function saveData() {
       result.text = document.getElementById("content").value;
-      for (var i = 0; i < parents.length; i++) {
-        if (parents[i]["tzParent"] == result.tzParent) {
-          parents[i] = result;
-          break;
+      window.expose.sendDbData("sendSaveStudentParentText", { studentId: result.id, text: result.text });
+      window.expose.receiveDbData("receiveSaveStudentParentText", (data) => {
+        if (!data) {
+          showAlert(t('letterSaveFailed'));
+          return;
         }
-      }
-      fileName = 'parents'
-      window.expose.SendExcel("sendWriteExcel", [fileName, JSON.stringify(parents)]);
-      window.expose.ReceiveExcel("receiveWriteExcel" + fileName, (data) => {
         document.getElementById("form").style.display = "none"
         document.getElementById("text").style.top = "30%";
-        updateLines("", "!המכתב נשמר", "...תודה רבה על שיתוף הפעולה")
+        updateLines("", t('letterSaved'), t('thanksCooperation'))
         reset(2000);
       });
     }
@@ -167,37 +153,31 @@
         <meta charset="utf-8" />
         <title>Print</title>
         <style>
-          body {
-            font-family: 'Arial', sans-serif;
-            direction: rtl;
-            margin: 0;
-            padding: 0;
-          }
           #title {
             font-size: 40px;
             text-align: center;
           }
           #content div {
-            font-size: 20px;
+            font-size: 17px;
             margin: 10px 0;
           }
           #footer {
-            font-size: 10px;
+            font-size: 12px;
             text-align: center;
             margin-top: 20px;
           }
         </style>
       </head>
       <body>
-        <div id="title">פתק מאמא</div>
+        <div id="title">${t('printMotherNote')}</div>
         <br>
         <div id="content">
           <div>${result.name}</div>
           <div>${result.grade}</div>
-          <div>${result.text || "הנחת ממך בוודאי אשמע, את הדש תקבלי בפעם הבאה!"}</div>
+          <div>${result.text || t('printMotherNoteEmpty')}</div>
         </div>
         <br>
-        <div id="footer">להזמנות: אפרת מלכה 0504167969 office@gammick.co.il</div>
+        <div id="footer">${t('printFooter')}</div>
       </body>
       </html>
       `;
@@ -237,29 +217,29 @@
 
   <div class="background" id="background">
     <div class="text" id="text">
-      <div id="line1">ברוכה הבאה</div>
-      <div id="line2">לאסיפת הורים</div>
-      <div id="line3">יש לתקף את הכרטיס האישי בסורק הברקוד</div>
+      <div id="line1" data-t="welcomeNoMark">ברוכה הבאה</div>
+      <div id="line2" data-t="toParentsMeeting">לאסיפת הורים</div>
+      <div id="line3" data-t="validateCard">יש לתקף את הכרטיס האישי בסורק הברקוד</div>
 
       <form id="form" style="display: none;direction: rtl;">
         <div class="form-group col-md-10" style="padding-left: 16.666%; ">
           <textarea id="content" class="form-control" rows="6"></textarea>
         </div>
         <div class="form-group col-md-8" style="padding-left: 33.33%; margin-top: 4%;">
-          <button type="button" onclick="saveData()" id="btnSave" class="form-control">
+          <button type="button" onclick="saveData()" id="btnSave" class="form-control" data-t="saveLetter">
             שמירת המכתב</button>
         </div>
       </form>
 
     </div>
-    <div id="position">עמדה</div>
+    <div id="position" data-t="position">עמדה</div>
   </div>
 
   <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="modalLabel">הודעת מערכת</h5>
+          <h5 class="modal-title" id="modalLabel" data-t="systemMessage">הודעת מערכת</h5>
         </div>
         <div class="modal-body"></div>
       </div>

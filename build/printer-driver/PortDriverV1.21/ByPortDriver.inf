@@ -1,0 +1,45 @@
+;
+; Installation inf for the SNBC Advanced Printer Driver (Printer Port)
+;
+; Copyright(C) 2009 SNBC Corp.
+;
+
+[Version]
+Signature=$CHICAGO$
+Provider=%SNBC%
+Class=System
+ClassGuid={4D36E97D-E325-11CE-BFC1-08002BE10318}
+DriverVer=1/18/2009,1.0.0.0
+
+; =================== Model Sections ===========================
+[ControlFlags]
+ExcludeFromSelect=*
+
+[Manufacturer]
+"SNBC"=SNBC,NTx86.5.1
+"SNBC"=SNBC, NTamd64
+
+[SNBC]
+%LPTENUM\SNBCPrinterPort.DeviceDesc% = , LPTENUM\"SNBCNIBBLEPORT7EB8","SNBCNIBBLEPORT7EB8"
+
+
+; For Windows XP
+[SNBC.NTx86.5.1]
+%LPTENUM\SNBCPrinterPort.DeviceDesc% = NO_DRV, LPTENUM\"SNBCNIBBLEPORT7EB8","SNBCNIBBLEPORT7EB8"
+
+
+[SNBC.NTamd64]
+%LPTENUM\SNBCPrinterPort.DeviceDesc% = NO_DRV, LPTENUM\"SNBCNIBBLEPORT7EB8","SNBCNIBBLEPORT7EB8"
+
+
+; =================== Service Sections ===========================
+[NO_DRV]
+
+[NO_DRV.Services]
+AddService = , %SPSVCINST_ASSOCSERVICE%   ; null service install
+
+[Strings]
+SNBC = "SNBC"
+LPTENUM\SNBCPrinterPort.DeviceDesc = "SNBC Printer Port Logical Interface"
+SPSVCINST_ASSOCSERVICE = 0x00000002
+
