@@ -1,6 +1,7 @@
-const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, session, dialog, shell } = require('electron')
 const fs = require('fs')
 const path = require('path')
+const { execFile, spawn } = require('child_process')
 let mainWindow
 const { initDatabase, waitDB, readData, readSystem, updateSystem, saveBackground, readBackground, closeDatabase, insertExcelToDB,
   addStudent, updateStudent, addTask, updateTask, addProduct, updateProduct, getStudentById, getTaskByCode,
@@ -33,6 +34,8 @@ function createWindow() {
 app.on('ready', async () => {
   createWindow();
   registerDownloadHandler();
+  cleanStuckReceipts();
+  setInterval(cleanStuckReceipts, 60 * 60 * 1000);
   try {
     await initDatabase(app);
   } catch (error) {
@@ -91,6 +94,14 @@ ipcMain.on("sendReadSystem", async (event, args) => {
   } catch (error) {
     mainWindow.webContents.send("receiveReadSystem" + args, null);
   }
+});
+
+ipcMain.on("sendGetDbPath", () => {
+  mainWindow.webContents.send("receiveGetDbPath", path.join(app.getPath('userData'), 'GammickDB.sqlite'));
+});
+
+ipcMain.on("sendOpenDbFolder", () => {
+  shell.showItemInFolder(path.join(app.getPath('userData'), 'GammickDB.sqlite'));
 });
 
 ipcMain.on("sendUpdateSystem", async (event, args) => {
@@ -742,6 +753,66 @@ ipcMain.on("sendPrint", (event, args) => {
       finishPrint(false);
     }
   });
+});
+
+// כשהמדפסת מנותקת Windows שומר את הקבלות בתור, וכשמחברים אותה כולן יוצאות בבת אחת.
+// בפתיחת התוכנה ואחר כך פעם בשעה מוחקים מהתור של מדפסת ברירת המחדל (שאליה התוכנה מדפיסה) קבלות שתקועות יותר מדקה.
+const STUCK_RECEIPT_MINUTES = 1;
+
+function cleanStuckReceipts() {
+  if (process.platform !== 'win32') return;
+  const script =
+    "$p = (Get-CimInstance Win32_Printer -Filter 'Default=TRUE').Name; " +
+    "if ($p) { Get-PrintJob -PrinterName $p | " +
+    `Where-Object { $_.SubmittedTime -lt (Get-Date).AddMinutes(-${STUCK_RECEIPT_MINUTES}) } | Remove-PrintJob }`;
+  execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script],
+    { windowsHide: true, timeout: 30000 },
+    (err) => {
+      if (err) console.error('Stuck receipts cleanup failed:', err.message);
+    });
+}
+
+// כפתור "מחיקת קבלות" בממשק הניהול: מוחק עכשיו את כל התור של מדפסת ברירת המחדל,
+// ומדווח אחרי כל קבלה שנמחקה כדי שפס החיווי יתקדם.
+let clearingReceipts = false;
+
+ipcMain.on("sendClearReceipts", () => {
+  const send = (channel, data) => { if (mainWindow) mainWindow.webContents.send(channel, data); };
+  if (process.platform !== 'win32') {
+    send("receiveClearReceipts", { ok: false, total: 0 });
+    return;
+  }
+  if (clearingReceipts) return;
+  clearingReceipts = true;
+
+  const script =
+    "$p = (Get-CimInstance Win32_Printer -Filter 'Default=TRUE').Name; " +
+    "if (-not $p) { 'NOPRINTER'; exit }; " +
+    "$jobs = @(Get-PrintJob -PrinterName $p); 'TOTAL ' + $jobs.Count; $i = 0; " +
+    "foreach ($j in $jobs) { try { Remove-PrintJob -InputObject $j -ErrorAction Stop } catch {}; $i++; 'DONE ' + $i }";
+  const ps = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { windowsHide: true });
+
+  let total = 0;
+  let failed = false;
+  let buffer = '';
+  ps.stdout.on('data', (chunk) => {
+    buffer += chunk.toString();
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop();
+    lines.forEach((line) => {
+      line = line.trim();
+      if (line === 'NOPRINTER') failed = true;
+      else if (line.startsWith('TOTAL ')) total = parseInt(line.slice(6), 10) || 0;
+      else if (line.startsWith('DONE ')) send("receiveClearReceiptsProgress", { done: parseInt(line.slice(5), 10) || 0, total });
+    });
+  });
+  const finish = (ok) => {
+    if (!clearingReceipts) return;
+    clearingReceipts = false;
+    send("receiveClearReceipts", { ok, total });
+  };
+  ps.on('error', (err) => { console.error('Clear receipts failed:', err.message); finish(false); });
+  ps.on('close', (code) => finish(!failed && code === 0));
 });
 
 function registerDownloadHandler() {

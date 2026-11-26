@@ -45,6 +45,11 @@
 
             fillLanguageOptions();
 
+            window.expose.send("sendGetDbPath");
+            window.expose.receive("receiveGetDbPath", (dbPath) => {
+                document.getElementById("dbPath").value = dbPath;
+            });
+
             tableName = 'systemConfig'
             window.expose.sendSystem("sendReadSystem", tableName);
             window.expose.receiveSystem("receiveReadSystem" + tableName, (data) => {               
@@ -397,6 +402,14 @@
                     <div class="col-md-2">
                         <label class="form-label">.</label>
                         <button type="button" id="reset" onclick="askResetDatabase()" class="form-control"> איפוס </button>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="dbPath" class="form-label">מיקום ה-DB</label>
+                        <input type="text" class="form-control" id="dbPath" readonly style="direction: ltr;">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">.</label>
+                        <button type="button" onclick="window.expose.send('sendOpenDbFolder')" class="form-control">פתח DB</button>
                     </div>
                 </div>
             </form>

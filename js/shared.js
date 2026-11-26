@@ -219,3 +219,97 @@ function launchConfetti(duration = 5000, canvasId = "confettiCanvas") {
     if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
     confettiAnimationId = requestAnimationFrame(frame);
 }
+
+// כפתור "ניהול קבלות" בממשקי הניהול: הפעלה/כיבוי של הדפסת קבלה,
+// ומחיקת כל הקבלות שמחכות בתור המדפסת עם פס חיווי.
+// withPrintSwitch - רק במסכים שבהם ההדפסה תלויה בהגדרה (ברקוד/מגנטי/צ'יפים/טביעת אצבע)
+var receiptsManagerListening = false;
+
+function openReceiptsManager(withPrintSwitch = false) {
+    let modalEl = document.getElementById("receiptsModal");
+    if (!modalEl) {
+        document.body.insertAdjacentHTML("beforeend", `
+            <div class="modal fade" id="receiptsModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content" style="direction: rtl; text-align: right;">
+                        <div class="modal-header">
+                            <h5 class="modal-title">ניהול קבלות</h5>
+                        </div>
+                        <div class="modal-body">
+                            <div id="receiptsPrintSec">
+                                <div class="form-check form-switch d-flex align-items-center gap-2 ps-0">
+                                    <input class="form-check-input m-0" type="checkbox" role="switch" id="receiptsPrintSwitch"
+                                        onchange="receiptsPrintChange()">
+                                    <label class="form-check-label" for="receiptsPrintSwitch" id="receiptsPrintLabel"></label>
+                                </div>
+                                <hr>
+                            </div>
+                            <div>קבלות שמחכות בתור המדפסת (למשל כשהמדפסת מנותקת) יודפסו כולן כשהיא תחובר.</div>
+                            <button type="button" class="btn btn-danger mt-3" id="receiptsClearBtn" onclick="clearReceiptsQueue()">מחיקת קבלות מהתור</button>
+                            <div id="receiptsProgressSec" style="display: none;">
+                                <div id="receiptsClearText" class="mt-3"></div>
+                                <div class="progress mt-2" style="height: 22px; direction: ltr;">
+                                    <div id="receiptsClearBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" id="receiptsCloseBtn" data-bs-dismiss="modal">סגור</button>
+                        </div>
+                    </div>
+                </div>
+            </div>`);
+        modalEl = document.getElementById("receiptsModal");
+    }
+
+    document.getElementById("receiptsPrintSec").style.display = withPrintSwitch ? "" : "none";
+    if (withPrintSwitch) {
+        document.getElementById("receiptsPrintSwitch").checked = systemConfig.hasPrint == "1";
+        showReceiptsPrintLabel();
+    }
+    document.getElementById("receiptsProgressSec").style.display = "none";
+    document.getElementById("receiptsClearBtn").disabled = false;
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+}
+
+function showReceiptsPrintLabel() {
+    document.getElementById("receiptsPrintLabel").innerHTML =
+        document.getElementById("receiptsPrintSwitch").checked ? 'הדפסת קבלה פעילה' : 'הדפסת קבלה לא פעילה';
+}
+
+function receiptsPrintChange() {
+    systemConfig.hasPrint = document.getElementById("receiptsPrintSwitch").checked ? "1" : "0";
+    showReceiptsPrintLabel();
+    window.expose.sendSystem("sendUpdateSystem", JSON.stringify(systemConfig));
+}
+
+function clearReceiptsQueue() {
+    const bar = document.getElementById("receiptsClearBar");
+    document.getElementById("receiptsProgressSec").style.display = "";
+    document.getElementById("receiptsClearText").innerHTML = "בודק את תור ההדפסה...";
+    bar.style.width = "0%";
+    bar.classList.add("progress-bar-animated");
+    document.getElementById("receiptsClearBtn").disabled = true;
+    document.getElementById("receiptsCloseBtn").disabled = true;
+
+    // מאזין אחד בלבד, אחרת כל לחיצה נוספת מוסיפה מאזין שנורה שוב
+    if (!receiptsManagerListening) {
+        receiptsManagerListening = true;
+        window.expose.receive("receiveClearReceiptsProgress", ({ done, total }) => {
+            document.getElementById("receiptsClearText").innerHTML = `נמחקו ${done} מתוך ${total} קבלות`;
+            document.getElementById("receiptsClearBar").style.width = (total ? Math.round(done / total * 100) : 100) + "%";
+        });
+        window.expose.receive("receiveClearReceipts", ({ ok, total }) => {
+            const barEl = document.getElementById("receiptsClearBar");
+            barEl.style.width = "100%";
+            barEl.classList.remove("progress-bar-animated");
+            document.getElementById("receiptsClearText").innerHTML = !ok
+                ? "לא הצלחנו לגשת לתור ההדפסה."
+                : total === 0 ? "אין קבלות שמחכות בתור." : `נמחקו ${total} קבלות מהתור.`;
+            document.getElementById("receiptsClearBtn").disabled = false;
+            document.getElementById("receiptsCloseBtn").disabled = false;
+        });
+    }
+
+    window.expose.send("sendClearReceipts");
+}

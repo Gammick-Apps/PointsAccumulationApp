@@ -23,8 +23,6 @@
         var currentDate = getTodayDate();
         var swich
 
-        var printSwitch;
-
         var gridOptions
         var columnDefs = [
             { headerName: "כיתה", field: "grade", editable: true },
@@ -57,10 +55,7 @@
                 systemConfig.hasBuy != 1 ?
                     swich_sec.style.display = 'none' :
                     swich.checked = systemConfig.buy;
-                printSwitch = document.getElementById("print-switch");
-                printSwitch.checked = systemConfig.hasPrint == "1" ? true : false;
                 showLabel();
-                showPrintLabel();
 
                 document.getElementById("giftsBtn").style.display = systemConfig.hasBuy == 1 ? '' : 'none';
             });
@@ -160,27 +155,10 @@
             });
         }
 
-        function printChange() {
-            updatePrintConfig();
-            showPrintLabel();
-        }
-
-        function updatePrintConfig() {
-            systemConfig.hasPrint = printSwitch.checked ? "1" : "0";
-            window.expose.sendSystem("sendUpdateSystem", JSON.stringify(systemConfig));
-            window.expose.receiveSystem("receiveUpdateSystem", (data) => { });
-        }
-
         function showLabel() {
             swich.checked ?
                 document.querySelector(".form-check-label").innerHTML = 'מצב קנייה פעיל' :
                 document.querySelector(".form-check-label").innerHTML = 'מצב צבירת נקודות פעיל';
-        }
-
-        function showPrintLabel() {
-            printSwitch.checked ?
-                document.querySelector(".form-print-label").innerHTML = 'הדפסת קבלה פעילה' :
-                document.querySelector(".form-print-label").innerHTML = 'הדפסת קבלה לא פעילה';
         }
 
     </script>
@@ -189,6 +167,7 @@
             <a href="#" class="prizes-open-btn" onclick="login('../main/prizes'); return false;">צ'ופרים</a>
             <a href="#" class="prizes-open-btn" onclick="login('../main/taskValidations'); return false;">משימות</a>
             <a href="#" class="prizes-open-btn" id="giftsBtn" style="display: none;" onclick="login('../main/gifts'); return false;">מתנות</a>
+            <a href="#" class="prizes-open-btn" onclick="openReceiptsManager(true); return false;">ניהול קבלות</a>
         </div>
         <div class="closeBtn">
             <img onclick="expose.appClose()" src="../../resources/barcode/x-light.svg" />
@@ -203,11 +182,6 @@
                             <input class="form-check-input" type="checkbox" role="switch" id="swich"
                                 onchange="swichChange()">
                             <label class="form-check-label" for="swich"></label>
-                        </div>
-                        <div class="form-check form-switch mb-2" id="print-switch-sec">
-                            <input class="form-check-input" type="checkbox" role="switch" id="print-switch"
-                                onchange="printChange()">
-                            <label class="form-print-label" for="print-switch"></label>
                         </div>
                     </div>
                     <div style="text-align: right;">
